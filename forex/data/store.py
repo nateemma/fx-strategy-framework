@@ -12,6 +12,7 @@ def asof_join(calendar: pd.DatetimeIndex, series: pd.Series,
     merged = pd.merge_asof(left, right, left_index=True, right_index=True,
                            direction="backward")
     out = merged["value"]
-    out.index.name = "date"
     out.name = series.name
-    return out.reindex(calendar)
+    out = out.reindex(calendar)
+    out.index.name = "date"
+    return out

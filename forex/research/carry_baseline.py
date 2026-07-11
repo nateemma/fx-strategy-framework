@@ -1,4 +1,3 @@
-import pandas as pd
 from forex.config import CURRENCIES
 from forex.data.fred import load_series
 from forex.data.prices import build_spot_panel, spot_returns
@@ -12,9 +11,10 @@ def run_baseline(cache_dir, loader=load_series, codes=None,
     panel = build_spot_panel(cache_dir, loader=loader, codes=codes)
     rets = spot_returns(panel)
     cal = panel.index
-    rates = {"USD": loader(CURRENCIES["USD"].rate_fred, cache_dir=cache_dir)}
+    # FRED IR3TIB rates are quoted in percent -> convert to annualized decimal
+    rates = {"USD": loader(CURRENCIES["USD"].rate_fred, cache_dir=cache_dir) / 100.0}
     for c in codes:
-        rates[c] = loader(CURRENCIES[c].rate_fred, cache_dir=cache_dir)
+        rates[c] = loader(CURRENCIES[c].rate_fred, cache_dir=cache_dir) / 100.0
     signal = carry_signal(cal, rates)
     weights = basket_weights(signal[codes], n_long=n_long, n_short=n_short)
     daily = simulate(weights, rets, carry=signal[codes].fillna(0.0), cost_bps=cost_bps)
