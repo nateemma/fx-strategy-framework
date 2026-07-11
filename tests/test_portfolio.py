@@ -18,6 +18,15 @@ def test_carry_accrues_daily():
     ret = simulate(weights, spot, carry, cost_bps=0.0)
     assert round(ret.loc["2020-01-02"], 4) == 0.01
 
+def test_first_day_entry_cost_is_charged():
+    idx = pd.to_datetime(["2020-01-01", "2020-01-02"])
+    weights = pd.DataFrame({"A": [1.0, 1.0]}, index=idx)
+    spot = pd.DataFrame({"A": [0.0, 0.0]}, index=idx)
+    carry = pd.DataFrame({"A": [0.0, 0.0]}, index=idx)
+    ret = simulate(weights, spot, carry, cost_bps=10.0)
+    # day 0: enter weight 1.0 => turnover 1.0 => cost = 10/1e4 * 1.0 = 0.001; no P&L yet
+    assert round(ret.loc["2020-01-01"], 6) == -0.001
+
 def test_metrics_shape():
     r = pd.Series([0.01,-0.02,0.03,0.00],
                   index=pd.to_datetime(["2020-01-01","2020-01-02","2020-01-03","2020-01-04"]))

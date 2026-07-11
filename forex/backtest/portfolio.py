@@ -9,7 +9,7 @@ def simulate(weights: pd.DataFrame, spot_rets: pd.DataFrame,
     car = carry.reindex(index=idx, columns=cols).fillna(0.0) / 252.0
     held = weights.shift(1).fillna(0.0)                      # act on next day -> no lookahead
     gross = (held * (spot + car)).sum(axis=1)
-    turnover = weights.diff().abs().sum(axis=1).fillna(weights.abs().sum(axis=1))
+    turnover = weights.diff().abs().sum(axis=1, min_count=1).fillna(weights.abs().sum(axis=1))
     cost = (cost_bps / 1e4) * turnover
     ret = (gross - cost).rename("ret")
     ret.index.name = "date"
