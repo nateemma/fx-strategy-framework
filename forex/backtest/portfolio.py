@@ -30,3 +30,17 @@ def metrics(returns: pd.Series) -> dict:
         "max_drawdown": mdd,
         "calmar": (ann_return / abs(mdd)) if mdd < 0 else 0.0,
     }
+
+def attribution(weights: pd.DataFrame, spot_rets: pd.DataFrame,
+                carry: pd.DataFrame) -> pd.DataFrame:
+    """Per-currency additive return contribution, split into spot and carry legs.
+    Same convention as simulate(): yesterday's weights (shift(1)) act on today's
+    spot return + daily carry accrual (carry/252)."""
+    cols = weights.columns
+    idx = weights.index
+    spot = spot_rets.reindex(index=idx, columns=cols).fillna(0.0)
+    car = carry.reindex(index=idx, columns=cols).fillna(0.0) / 252.0
+    held = weights.shift(1).fillna(0.0)
+    spot_c = (held * spot).sum()
+    carry_c = (held * car).sum()
+    return pd.DataFrame({"spot": spot_c, "carry": carry_c, "total": spot_c + carry_c})

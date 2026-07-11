@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-from forex.backtest.portfolio import simulate, metrics
+from forex.backtest.portfolio import simulate, metrics, attribution
 
 def test_simulate_applies_lagged_weights_and_carry():
     idx = pd.to_datetime(["2020-01-01","2020-01-02","2020-01-03"])
@@ -33,3 +33,14 @@ def test_metrics_shape():
     m = metrics(r)
     assert {"total_return","ann_return","ann_vol","sharpe","max_drawdown","calmar"} <= set(m)
     assert m["max_drawdown"] <= 0
+
+def test_attribution_splits_spot_and_carry_per_currency():
+    idx = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
+    weights = pd.DataFrame({"A": [1.0, 1.0, 1.0], "B": [-1.0, -1.0, -1.0]}, index=idx)
+    spot = pd.DataFrame({"A": [0.0, 0.10, 0.0], "B": [0.0, 0.0, 0.0]}, index=idx)
+    carry = pd.DataFrame({"A": [0.0, 0.0, 0.0], "B": [0.0, 2.52, 0.0]}, index=idx)  # B: 1%/day
+    att = attribution(weights, spot, carry)
+    assert round(att.loc["A", "spot"], 4) == 0.10   # A held from day1 earns +10% spot day2
+    assert round(att.loc["A", "carry"], 4) == 0.00
+    assert round(att.loc["B", "carry"], 4) == -0.01  # short B, +1%/day carry -> -0.01
+    assert round(att.loc["B", "total"], 4) == -0.01
