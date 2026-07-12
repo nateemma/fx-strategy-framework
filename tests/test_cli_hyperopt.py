@@ -36,3 +36,13 @@ def test_main_hyperopt_prints_winning_config(monkeypatch, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "strategy = \"carry\"" in out and "[strategy_params]" in out   # winning RunConfig TOML
+
+def test_main_hyperopt_prints_progress_to_stderr(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
+    rc = cli.main(["hyperopt", "--strategy", "carry", "--n-samples", "6", "--seed", "1",
+                   "--tune", "n_long,n_short", "--train-days", "250", "--test-days", "125"])
+    assert rc == 0
+    cap = capsys.readouterr()
+    assert "new best" in cap.err                       # progress went to stderr
+    assert "new best" not in cap.out                   # stdout stays clean
+    assert "strategy = \"carry\"" in cap.out            # winning-config TOML still on stdout
