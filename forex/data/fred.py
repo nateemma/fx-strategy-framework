@@ -19,10 +19,11 @@ def _default_client():
     from fredapi import Fred
     return Fred(api_key=os.environ["FRED_API_KEY"])
 
-def load_series(series_id: str, *, cache_dir: Path, client=None) -> pd.Series:
-    cached = _read_cache(cache_dir, series_id)
-    if cached is not None:
-        return cached
+def load_series(series_id: str, *, cache_dir: Path, client=None, force: bool = False) -> pd.Series:
+    if not force:
+        cached = _read_cache(cache_dir, series_id)
+        if cached is not None:
+            return cached
     if client is None:
         client = _default_client()
     raw = client.get_series(series_id)
