@@ -13,6 +13,27 @@ operations we need, so **one strategy definition drives research, backtest, walk
 lookahead-check, dry-run, and live** — the reuse and consistency goal, without copying freqtrade's
 per-pair-per-candle model (a poor fit for portfolio/cross-sectional FX).
 
+## Framework vs strategies (scope & intent)
+This is a **general, strategy-agnostic framework for systematic FX trading** — not a carry project.
+The framework (the `DataView`/`Strategy`/`Result` abstractions, the `backtest`/`walk_forward`/
+`hyperopt` drivers, `assert_causal`, the config tiers, the registry, and the CLI) makes **no
+assumption about carry, the G10 universe, or any particular signal**. Its only contract with a
+strategy is the atom: *point-in-time data → target currency weights*.
+
+**G10 carry + the vol-target overlay are the FIRST reference implementation**, chosen to exercise the
+whole pipeline end-to-end and prove the abstractions against real strategies (including composition —
+the overlay wraps a base strategy). They are *strategies on the framework*, not the framework's
+purpose. Any other approach — cross-sectional momentum, value/PPP, mean-reversion, an ML-fitted
+signal, a different or larger universe — is added the same way: implement `Strategy.target_weights`
+(plus optional `fit`/`params`/`search_space`) and register a name; every mode then works unchanged.
+
+Design implication: keep strategy-specific assumptions **inside strategy classes**, never in the core
+abstractions or drivers. A driver or `DataView` that "knows" about carry, rate differentials, or the
+G10 set is a design smell — the carry-ness lives only in `forex/strategies/` and the signal maths it
+calls (`forex/features/`). (Carry accrual in `backtest` is the one deliberate exception: it is a
+market fact of holding any FX position — the rate differential — not a property of the strategy, so
+it is computed from the `DataView` and applies to every strategy uniformly.)
+
 ## Operations → the atom
 Every mode reduces to one atom: *given data available as of time t, what are the target weights?*
 Each mode is a **driver** that calls that atom differently — over all history (backtest), over
