@@ -14,3 +14,7 @@ class CarryStrategy(Strategy):
 
     def params(self) -> dict:
         return {"n_long": self.n_long, "n_short": self.n_short}
+
+    def search_space(self) -> dict:
+        from forex.core.space import Int
+        return {"n_long": Int(2, 4), "n_short": Int(2, 4)}

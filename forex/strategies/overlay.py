@@ -28,3 +28,8 @@ class VolTargetOverlay(Strategy):
     def params(self) -> dict:
         return {"target_vol": self.target_vol, "cap": self.cap,
                 "cadence": self.cadence, "lam": self.lam}
+
+    def search_space(self) -> dict:
+        from forex.core.space import Float
+        return {**self.base.search_space(),
+                "target_vol": Float(0.06, 0.15), "cap": Float(1.0, 2.0)}
