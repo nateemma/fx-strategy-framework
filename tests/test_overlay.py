@@ -21,3 +21,11 @@ def test_run_overlay_returns_bare_and_overlay():
     assert isinstance(out["bare"], pd.Series) and isinstance(out["overlay"], pd.Series)
     assert "sharpe" in out["metrics_bare"] and "sharpe" in out["metrics_overlay"]
     assert len(out["overlay"]) == len(out["bare"])
+
+def test_run_overlay_delegates_and_overlay_differs_from_bare():
+    out = run_overlay(cache_dir="unused", loader=_synthetic_loader(),
+                      codes=["AUD","EUR"], n_long=1, n_short=1, cadence="D")
+    assert set(out) == {"bare","overlay","metrics_bare","metrics_overlay"}
+    # overlay is a levered version -> its return series is not identical to bare
+    assert not out["bare"].equals(out["overlay"])
+    assert "sharpe" in out["metrics_overlay"]

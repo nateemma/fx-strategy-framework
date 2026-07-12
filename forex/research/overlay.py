@@ -1,18 +1,19 @@
 from forex.data.fred import load_series
-from forex.research.carry_baseline import run_baseline
-from forex.features.volforecast import ewma_vol
-from forex.backtest.voltarget import vol_target
-from forex.backtest.portfolio import metrics
 
 def run_overlay(cache_dir, loader=load_series, codes=None, n_long=3, n_short=3,
                 cost_bps=1.0, target_vol=0.10, cap=1.5, cadence="MS", lam=0.94):
-    bare, m_bare = run_baseline(cache_dir, loader=loader, codes=codes,
-                                n_long=n_long, n_short=n_short, cost_bps=cost_bps)
-    vf = ewma_vol(bare, lam=lam)
-    overlay = vol_target(bare, vf, target_vol=target_vol, cap=cap,
-                         cadence=cadence, cost_bps=cost_bps)
-    return {"bare": bare, "overlay": overlay,
-            "metrics_bare": m_bare, "metrics_overlay": metrics(overlay)}
+    from forex.core.dataview import DataView
+    from forex.strategies.carry import CarryStrategy
+    from forex.strategies.overlay import VolTargetOverlay
+    from forex.run.backtest import backtest
+    view = DataView.from_fred(cache_dir, loader=loader, codes=codes)
+    base = CarryStrategy(n_long=n_long, n_short=n_short)
+    ov = VolTargetOverlay(base, target_vol=target_vol, cap=cap, cadence=cadence,
+                          lam=lam, cost_bps=cost_bps)
+    r_bare = backtest(base, view, cost_bps=cost_bps)
+    r_ov = backtest(ov, view, cost_bps=cost_bps)
+    return {"bare": r_bare.returns, "overlay": r_ov.returns,
+            "metrics_bare": r_bare.metrics, "metrics_overlay": r_ov.metrics}
 
 if __name__ == "__main__":
     from forex.backtest.validation import distant_window
