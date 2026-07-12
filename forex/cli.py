@@ -16,7 +16,7 @@ def _coerce(s: str):
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="forex")
     sub = p.add_subparsers(dest="mode", required=True)
-    for mode in ("backtest", "walkforward", "causal-check", "hyperopt"):
+    for mode in ("backtest", "walkforward", "causal-check", "hyperopt", "download"):
         sp = sub.add_parser(mode)
         sp.add_argument("--config")
         sp.add_argument("--strategy")
@@ -77,6 +77,10 @@ def _build_view(cfg, env):
     return view
 
 def run(cfg, env, mode) -> dict:
+    if mode == "download":
+        from forex.data.refresh import refresh_cache
+        series = refresh_cache(env.data_cache_dir, codes=cfg.universe)
+        return {"download": {"series": series, "cache_dir": env.data_cache_dir}}
     from forex.strategies.registry import build_strategy
     from forex.run.backtest import backtest
     from forex.run.walkforward import walk_forward
@@ -123,6 +127,9 @@ def _format(out: dict) -> str:
             "--- winning config ---",
             best.to_toml_str().rstrip(),
         ]))
+    if "download" in out:
+        d = out["download"]
+        return f"downloaded {len(d['series'])} series to {d['cache_dir']}"
     return str(out)
 
 def main(argv=None) -> int:
