@@ -1,0 +1,36 @@
+from dataclasses import dataclass
+import pandas as pd
+
+@dataclass
+class DataView:
+    spot: pd.DataFrame
+    rates: dict
+
+    @property
+    def codes(self) -> list:
+        return list(self.spot.columns)
+
+    @property
+    def calendar(self) -> pd.DatetimeIndex:
+        return self.spot.index
+
+    def truncate(self, asof) -> "DataView":
+        asof = pd.Timestamp(asof)
+        spot = self.spot.loc[:asof]
+        rates = {k: v.loc[:asof] for k, v in self.rates.items()}
+        return DataView(spot=spot, rates=rates)
+
+    @classmethod
+    def from_fred(cls, cache_dir, loader=None, codes=None) -> "DataView":
+        from forex.config import CURRENCIES
+        from forex.data.prices import build_spot_panel
+        from forex.data.fred import load_series
+        if loader is None:
+            loader = load_series
+        if codes is None:
+            codes = [c for c in CURRENCIES if c != "USD"]
+        spot = build_spot_panel(cache_dir, loader=loader, codes=codes)
+        rates = {"USD": loader(CURRENCIES["USD"].rate_fred, cache_dir=cache_dir) / 100.0}
+        for c in codes:
+            rates[c] = loader(CURRENCIES[c].rate_fred, cache_dir=cache_dir) / 100.0
+        return cls(spot=spot, rates=rates)
