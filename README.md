@@ -1,9 +1,19 @@
-# forex — Systematic FX Carry Research
+# forex — A Systematic FX Strategy Framework
 
-A research framework for systematic **foreign-exchange (FX)** trading strategies on G10 currencies,
-centred on the **carry trade** and a volatility-targeting overlay. It is the successor to a prior
-crypto ML program; the hard-won methodology carries over — **walk-forward + distant-window
-validation, point-in-time causality, and judging on realised P&L rather than model fit**.
+A general research framework for systematic **foreign-exchange (FX)** trading strategies. The
+framework — data, backtesting, walk-forward evaluation, lookahead-bias checks, hyperopt, config, and
+a CLI — is **strategy-agnostic**: any strategy that maps point-in-time data to target currency
+weights plugs in and gets every mode for free.
+
+The **first reference implementation** is the G10 **carry trade** with a volatility-targeting
+overlay — but that is *one strategy running on the framework*, not the purpose of it. New strategies
+(momentum, value, mean-reversion, ML-based; any currency universe) are added by implementing a single
+interface and registering a name; everything else — backtest, walk-forward, hyperopt, the CLI —
+works unchanged. See *[Adding a strategy](#adding-a-strategy)*.
+
+It is the successor to a prior crypto ML program; the hard-won methodology carries over —
+**walk-forward + distant-window validation, point-in-time causality, and judging on realised P&L
+rather than model fit**.
 
 The design goal is *one strategy definition, every mode*: the same `Strategy` object is driven by
 backtest, walk-forward, a lookahead-bias check, and hyperopt today (and paper/live later), so the
@@ -19,7 +29,11 @@ test suite runs offline in ~1 second.
 
 ## Forex concepts
 
-If you're new to FX, these are the ideas the code implements.
+If you're new to FX, these are the ideas the code implements. Some are **framework-general** (they
+apply to *any* strategy): leverage, volatility targeting, point-in-time causality, walk-forward,
+distant-window validation, and the metrics. Others — **carry**, the **basket**, and the **overlay** —
+belong to the first reference strategy and are the concepts you'd swap out when writing a different
+one.
 
 - **Exchange rate** — the price of one currency in another (e.g. USD per 1 EUR). Going "long AUD"
   means holding Australian dollars and profiting if AUD appreciates vs USD.
@@ -103,6 +117,24 @@ The **framework** the strategies plug into:
 - `forex/cli.py` + `forex/__main__.py` — the command-line interface.
 - `docs/superpowers/` — the design **specs** and implementation **plans** (the full rationale).
 
+### Adding a strategy
+
+A strategy is any class implementing the `Strategy` interface (`forex/core/strategy.py`):
+
+- **`target_weights(view) -> DataFrame`** (required) — given a point-in-time `DataView`, return the
+  target weight per currency for each date. Rows must be **causal** (use only data up to their own
+  date); the backtester applies the one-day execution lag and cost model.
+- `fit(train)` (optional) — for strategies that estimate parameters or fit a model; a no-op by
+  default. The walk-forward driver calls it on each training window.
+- `params()` / `search_space()` (optional) — expose current parameter values and the hyperopt-tunable
+  ranges (`Float`/`Int`/`Categorical`).
+
+Register a builder name in `forex/strategies/registry.py`, and the strategy is immediately usable from
+the CLI (`forex backtest --strategy yourname …`), walk-forward, hyperopt, and the lookahead check —
+**no other code changes**. `CarryStrategy` and `VolTargetOverlay` are the worked examples, including
+how one strategy (the overlay) *composes* another. The framework never assumes carry, G10, or any
+particular universe.
+
 ---
 
 ## Setup & data
@@ -182,7 +214,10 @@ Hyperopt's output *is* a config: it prints a `[strategy_params]` TOML block you 
 
 ---
 
-## Results so far (research, not advice)
+## First reference strategy — results (research, not advice)
+
+These are results for the *first* strategy on the framework (G10 carry + vol overlay), included to
+show the pipeline end-to-end — not a statement about the framework's ceiling.
 
 - **Bare G10 carry** (1982–2026, tradeable window): Sharpe ≈ 0.34, max drawdown ≈ −27%. The edge is
   carry income; the exchange-rate leg is a net drag — textbook.
