@@ -1,8 +1,4 @@
-from forex.config import CURRENCIES
 from forex.data.fred import load_series
-from forex.data.prices import build_spot_panel, spot_returns
-from forex.features.carry import carry_signal, basket_weights
-from forex.backtest.portfolio import simulate, metrics
 
 def run_baseline(cache_dir, loader=load_series, codes=None,
                  n_long=3, n_short=3, cost_bps=1.0):
