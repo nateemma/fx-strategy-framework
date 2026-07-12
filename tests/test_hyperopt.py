@@ -24,3 +24,32 @@ def test_optimize_is_deterministic():
     a = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
     b = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
     assert a["best_params"] == b["best_params"] and a["score"] == b["score"]
+
+def test_on_step_fires_once_per_sample_with_correct_flags():
+    calls = []
+    r = optimize("carry", _view(), train_days=250, test_days=125,
+                 n_samples=8, seed=1, tune=["n_long", "n_short"],
+                 on_step=lambda i, n, score, params, improved: calls.append(
+                     (i, n, score, dict(params), improved)))
+    # one call per sample, i is 1..n in order, n constant
+    assert len(calls) == 8
+    assert [c[0] for c in calls] == list(range(1, 9))
+    assert all(c[1] == 8 for c in calls)
+    # first sample is always a new best
+    assert calls[0][4] is True
+    # `improved` marks exactly the running-maximum samples
+    running = float("-inf")
+    for _i, _n, score, _params, improved in calls:
+        assert improved == (score > running)
+        if improved:
+            running = score
+    # the reported best equals the max improved score
+    assert r["score"] == running
+
+def test_on_step_none_is_backward_compatible():
+    v = _view()
+    a = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7,
+                 tune=["n_long", "n_short"])
+    b = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7,
+                 tune=["n_long", "n_short"], on_step=None)
+    assert a["best_params"] == b["best_params"] and a["score"] == b["score"]
