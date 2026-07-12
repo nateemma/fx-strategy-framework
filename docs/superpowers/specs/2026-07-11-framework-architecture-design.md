@@ -27,7 +27,9 @@ rolling windows (walk-forward), at "now" (live), or truncated-at-t (bias check).
   - `fit(train: DataView) -> None` — default no-op (rule-based); real for model strategies.
   - `target_weights(view: DataView) -> pd.DataFrame` — causal dates×currency target weights
     (vectorized: each row uses only data through its own date).
-  - `params() -> dict` — the hyperopt-able parameters (default `{}`).
+  - `params() -> dict` — the current parameter *values* (for reporting/reproducibility; default `{}`).
+  - `search_space() -> dict[str, Space]` — the tunable parameters' *ranges* (metadata, decoupled from
+    values; default `{}`). See Hyperopt below.
 - **`Result`** (`forex/core/result.py`) — one dataclass (`returns`, `weights`, `metrics`, optional
   trades) consumed by reporting / plotting / hyperopt.
 
@@ -80,15 +82,33 @@ of the timeframe-override footgun). We split them:
   self-register so runs can address them by name (`carry`, `carry_voltarget`).
 - **Thin argparse CLI** (`forex/__main__.py`) — `python -m forex <mode> [--config run.toml] --strategy … --timerange … --universe … --param k=v … --cost-bps N`, where `<mode>` ∈ `backtest | walkforward | hyperopt | causal-check | plot` (later `dryrun | live`). It resolves `RunConfig` (defaults ← file ← flags) + `EnvConfig` (env ← file) → builds `DataView` + `Strategy` (from the registry) → calls the driver → prints/saves the `Result`. **The Python API stays primary for exploratory research; the CLI is the reproducible, shell-scriptable shell over it.** One code path: CLI and scripts both go through `RunConfig`/`EnvConfig` → driver → `Result`.
 
+## Hyperopt parameters
+Separate the *values* from the *search space* (freqtrade fused them, which caused the
+`<Strategy>.json`-silently-overrides footgun):
+- **Values** flow only through `RunConfig.strategy_params` — a strategy always runs with whatever's
+  in its (visible, versioned) `RunConfig`. No hidden override file.
+- **Search space** is declared as metadata via `Strategy.search_space() -> dict[str, Space]`, where
+  `Space` (`forex/core/space.py`) is `Float(low, high)` / `Int(low, high)` / `Categorical([...])`.
+  Only tunable params appear; it is decoupled from the values.
+- **Hyperopt driver** (`forex/run/hyperopt.py`) samples `search_space()` (a subset can be selected →
+  "one space at a time"), builds `RunConfig` variants, runs **`walk_forward`** (OOS objective by
+  DEFAULT — in-sample hyperopt overfits, a hard-won crypto lesson), scores Sharpe/Calmar, and returns
+  the best `strategy_params`. **Its output *is* a `RunConfig` (TOML) — reproducible and diffable, not
+  a magic override.** It reports the OOS-vs-in-sample gap (and Sortino) as the overfit indicator.
+- **Optimizer engine:** stdlib random/grid search for v1 (spaces are tiny, zero-dependency);
+  `search_space()` is engine-agnostic so optuna/skopt can drop in later.
+
 ## How each mode maps (the payoff)
-`backtest` / `walk_forward` / hyperopt (wraps `walk_forward` + an objective over `params()`) /
-`assert_causal` / plot (renders `Result`) / dry-run + live (`LiveRunner` on `truncate(now)`) — all
-drive the **same `Strategy.target_weights`**.
+`backtest` / `walk_forward` / hyperopt (samples `search_space()`, scores an OOS objective via
+`walk_forward`) / `assert_causal` / plot (renders `Result`) / dry-run + live (`LiveRunner` on
+`truncate(now)`) — all drive the **same `Strategy.target_weights`**.
 
 ## Scope of the first (refactor) plan
 - Build: `DataView` (+`truncate`), `Strategy` ABC, `Result`, `CarryStrategy`, `VolTargetOverlay`,
   `backtest`, `walk_forward`, `Execution` protocol + `SimExecution`, `assert_causal`, `RunConfig`
   (+ TOML load), `EnvConfig` (env + TOML load), the registry, and the thin argparse CLI.
+- The `Strategy` ABC includes the `search_space()` hook (default `{}`), but the hyperopt driver +
+  `Space` classes + optimizer are a LATER increment (they build on `walk_forward`).
 - Define but do NOT implement: `LiveExecution` / `LiveRunner` (interfaces only — the parity seam).
   `EnvConfig` carries the IBKR fields, but nothing consumes them yet (no broker backend this plan).
 - **Behavior-preserving:** the strategies wrap the existing unchanged functions (`carry_signal`,
@@ -113,6 +133,7 @@ cleanly. The interfaces above are shaped so it drops in without change.
 - The precise `RunConfig` / `EnvConfig` field sets, the `--param k=v` parsing/typing rules, and the
   exact defaults←file←env←flags merge order implementation.
 - Registry mechanism (decorator vs explicit dict) and where strategies register.
+- The `Space` type set and the random/grid optimizer + objective wiring (hyperopt increment).
 - How `run_baseline`/`run_overlay` are re-expressed on the drivers without changing their outputs.
 - The `Execution.rebalance` signature that both `SimExecution` (now) and `LiveExecution` (later)
   must satisfy.
