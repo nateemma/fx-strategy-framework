@@ -8,7 +8,6 @@ class RunConfig:
     universe: list | None = None
     timerange: list | None = None
     cost_bps: float = 1.0
-    cadence: str = "MS"
     train_days: int = 1000
     test_days: int = 500
 

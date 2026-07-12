@@ -23,7 +23,6 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--universe")
         sp.add_argument("--timerange")
         sp.add_argument("--cost-bps", type=float, dest="cost_bps")
-        sp.add_argument("--cadence")
         sp.add_argument("--param", action="append", default=[], dest="params")
         sp.add_argument("--cache-dir", dest="cache_dir")
     return p
@@ -40,8 +39,6 @@ def resolve(args):
         overrides["timerange"] = [a or None, b or None]
     if args.cost_bps is not None:
         overrides["cost_bps"] = args.cost_bps
-    if args.cadence is not None:
-        overrides["cadence"] = args.cadence
     if args.params:
         sp = {}
         for kv in args.params:
@@ -50,7 +47,7 @@ def resolve(args):
         overrides["strategy_params"] = sp
     cfg = cfg.merge(overrides)
     env = EnvConfig.load()
-    if args.cache_dir:
+    if args.cache_dir is not None:
         env = replace(env, data_cache_dir=args.cache_dir)
     return cfg, env, args.mode
 
@@ -89,6 +86,8 @@ def _format(out: dict) -> str:
         m = out["metrics"]
         keys = ["total_return", "ann_return", "ann_vol", "sharpe", "max_drawdown", "calmar"]
         return "  ".join(f"{k}={m[k]:.4f}" for k in keys if k in m)
+    if "causal" in out:
+        return f"causal-check: {out['causal']}"
     return str(out)
 
 def main(argv=None) -> int:
