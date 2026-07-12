@@ -39,3 +39,14 @@ def test_rates_normalized_from_percent_keeps_carry_sane():
     # Long AUD carry 5% + short EUR carry (0-1=-1%, short earns +1%) ~ single-digit annualized.
     # Un-normalized (percent treated as decimal) would be ~hundreds of percent.
     assert m["ann_return"] < 0.5
+
+def test_run_baseline_matches_backtest_of_carry_strategy():
+    from forex.core.dataview import DataView
+    from forex.strategies.carry import CarryStrategy
+    from forex.run.backtest import backtest
+    loader = _synthetic_loader()   # existing helper in this test file
+    daily, m = run_baseline(cache_dir="unused", loader=loader, codes=["AUD","EUR"], n_long=1, n_short=1)
+    view = DataView.from_fred("unused", loader=loader, codes=["AUD","EUR"])
+    r = backtest(CarryStrategy(1,1), view, cost_bps=1.0)
+    assert (daily.round(10) == r.returns.round(10)).all()     # byte-identical delegation
+    assert m == r.metrics
