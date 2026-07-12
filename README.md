@@ -137,6 +137,29 @@ particular universe.
 
 ---
 
+## Accounts & API keys
+
+| Credential | Needed for | Required? | Cost |
+|---|---|---|---|
+| **FRED API key** | Downloading FX & interest-rate data | **Yes** (to fetch data; cached runs & tests need nothing) | Free |
+| **Interactive Brokers account** | Paper/live execution (`dryrun`/`live` modes) | Not yet — arrives with the live plan | Free to open; paper trading is free |
+
+**FRED** (Federal Reserve Economic Data) — the free data source for spot exchange rates (H.10) and
+short rates (OECD).
+1. Request a free key at <https://fred.stlouisfed.org/docs/api/api_key.html>.
+2. Set it: `export FRED_API_KEY="your_key"` (add to `~/.zshrc` to persist). It's only needed to
+   *fetch* series; once `data_cache/` is populated the whole framework — including the test suite —
+   runs offline with no key.
+
+**Interactive Brokers** *(planned — not wired up yet)* — the broker for execution. **No research mode
+needs it**: backtest, walk-forward, hyperopt, and the lookahead check are entirely offline. When the
+live plan lands you'll need an IBKR account (paper first) with TWS or IB Gateway running; the
+connection settings (`ib_host` / `ib_port` / `ib_client_id` / `ib_account`) already exist as
+`EnvConfig` fields and are supplied via **environment variables**, never a versioned config file —
+credentials stay out of git by design.
+
+---
+
 ## Setup & data
 
 ```bash
