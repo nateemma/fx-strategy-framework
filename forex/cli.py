@@ -16,7 +16,7 @@ def _coerce(s: str):
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="forex")
     sub = p.add_subparsers(dest="mode", required=True)
-    for mode in ("backtest", "walkforward", "causal-check", "hyperopt", "download"):
+    for mode in ("backtest", "walkforward", "causal-check", "hyperopt", "download", "dryrun"):
         sp = sub.add_parser(mode)
         sp.add_argument("--config")
         sp.add_argument("--strategy")
@@ -33,6 +33,9 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--seed", type=int)
             sp.add_argument("--objective")
             sp.add_argument("--tune")
+        if mode == "dryrun":
+            sp.add_argument("--preview", action="store_true")
+            sp.add_argument("--equity", type=float)
     return p
 
 def resolve(args):
@@ -60,10 +63,15 @@ def resolve(args):
     tune = getattr(args, "tune", None)
     if tune is not None:
         overrides["tune"] = tune.split(",")
+    if getattr(args, "preview", False):
+        overrides["preview"] = True
     cfg = cfg.merge(overrides)
     env = EnvConfig.load()
     if args.cache_dir is not None:
         env = replace(env, data_cache_dir=args.cache_dir)
+    equity = getattr(args, "equity", None)
+    if equity is not None:
+        env = replace(env, starting_equity=equity)
     return cfg, env, args.mode
 
 def _build_view(cfg, env):
@@ -104,6 +112,15 @@ def run(cfg, env, mode) -> dict:
                        n_samples=cfg.n_samples, seed=cfg.seed, cost_bps=cfg.cost_bps,
                        base_params=cfg.strategy_params, tune=cfg.tune, objective=cfg.objective)
         return {"hyperopt": {**res, "strategy": cfg.strategy, "cost_bps": cfg.cost_bps}}
+    if mode == "dryrun":
+        import os
+        from forex.run.execution import SimExecution
+        from forex.run.live import rebalance_now
+        pf = os.path.join(env.output_dir, "portfolio.json")
+        ex = SimExecution(pf, starting_equity=env.starting_equity, cost_bps=cfg.cost_bps,
+                          preview=cfg.preview)
+        rep = rebalance_now(build_strategy(cfg.strategy, cfg.strategy_params), view, ex)
+        return {"dryrun": rep}
     raise ValueError(f"unknown mode {mode}")
 
 def _format(out: dict) -> str:
@@ -130,6 +147,15 @@ def _format(out: dict) -> str:
     if "download" in out:
         d = out["download"]
         return f"downloaded {len(d['series'])} series to {d['cache_dir']}"
+    if "dryrun" in out:
+        rep = out["dryrun"]
+        head = f"{'PREVIEW ' if not rep.applied else ''}rebalance -> equity {rep.equity:.2f}  " \
+               f"turnover {rep.turnover:.3f}  cost {rep.cost:.2f}"
+        lines = [head, "orders (notional):"]
+        for c, v in sorted(rep.orders.items(), key=lambda kv: -abs(kv[1])):
+            if abs(v) > 1e-6:
+                lines.append(f"  {c:5} {v:+.2f}")
+        return "\n".join(lines)
     return str(out)
 
 def main(argv=None) -> int:

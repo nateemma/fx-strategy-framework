@@ -12,6 +12,7 @@ class EnvConfig:
     ib_client_id: int = 1
     ib_account: str | None = None
     dry_run: bool = True
+    starting_equity: float = 10000.0
 
     @classmethod
     def load(cls, path=None, environ=None) -> "EnvConfig":
@@ -27,6 +28,7 @@ class EnvConfig:
             "ib_host": environ.get("FOREX_IB_HOST"),
             "ib_port": environ.get("FOREX_IB_PORT"),
             "ib_account": environ.get("FOREX_IB_ACCOUNT"),
+            "starting_equity": environ.get("FOREX_STARTING_EQUITY"),
         }
         for k, v in env_map.items():
             if v is not None:
@@ -35,4 +37,6 @@ class EnvConfig:
         d = {k: v for k, v in data.items() if k in known}
         if "ib_port" in d:
             d["ib_port"] = int(d["ib_port"])
+        if "starting_equity" in d:
+            d["starting_equity"] = float(d["starting_equity"])
         return cls(**d)
