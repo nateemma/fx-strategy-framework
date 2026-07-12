@@ -16,7 +16,7 @@ def _coerce(s: str):
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="forex")
     sub = p.add_subparsers(dest="mode", required=True)
-    for mode in ("backtest", "walkforward", "causal-check"):
+    for mode in ("backtest", "walkforward", "causal-check", "hyperopt"):
         sp = sub.add_parser(mode)
         sp.add_argument("--config")
         sp.add_argument("--strategy")
@@ -25,6 +25,14 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--cost-bps", type=float, dest="cost_bps")
         sp.add_argument("--param", action="append", default=[], dest="params")
         sp.add_argument("--cache-dir", dest="cache_dir")
+        if mode in ("walkforward", "hyperopt"):
+            sp.add_argument("--train-days", type=int, dest="train_days")
+            sp.add_argument("--test-days", type=int, dest="test_days")
+        if mode == "hyperopt":
+            sp.add_argument("--n-samples", type=int, dest="n_samples")
+            sp.add_argument("--seed", type=int)
+            sp.add_argument("--objective")
+            sp.add_argument("--tune")
     return p
 
 def resolve(args):
@@ -45,6 +53,13 @@ def resolve(args):
             k, v = kv.split("=", 1)
             sp[k] = _coerce(v)
         overrides["strategy_params"] = sp
+    for attr in ("train_days", "test_days", "n_samples", "seed", "objective"):
+        v = getattr(args, attr, None)
+        if v is not None:
+            overrides[attr] = v
+    tune = getattr(args, "tune", None)
+    if tune is not None:
+        overrides["tune"] = tune.split(",")
     cfg = cfg.merge(overrides)
     env = EnvConfig.load()
     if args.cache_dir is not None:
@@ -79,6 +94,12 @@ def run(cfg, env, mode) -> dict:
         n = len(view.calendar)
         assert_causal(strat, view, view.calendar[[n // 4, n // 2, n - 1]])
         return {"causal": "PASS"}
+    if mode == "hyperopt":
+        from forex.run.hyperopt import optimize
+        res = optimize(cfg.strategy, view, train_days=cfg.train_days, test_days=cfg.test_days,
+                       n_samples=cfg.n_samples, seed=cfg.seed, cost_bps=cfg.cost_bps,
+                       base_params=cfg.strategy_params, tune=cfg.tune, objective=cfg.objective)
+        return {"hyperopt": {**res, "strategy": cfg.strategy, "cost_bps": cfg.cost_bps}}
     raise ValueError(f"unknown mode {mode}")
 
 def _format(out: dict) -> str:
@@ -88,6 +109,20 @@ def _format(out: dict) -> str:
         return "  ".join(f"{k}={m[k]:.4f}" for k in keys if k in m)
     if "causal" in out:
         return f"causal-check: {out['causal']}"
+    if "hyperopt" in out:
+        from forex.core.config import RunConfig
+        r = out["hyperopt"]
+        best = RunConfig(strategy=r["strategy"], cost_bps=r["cost_bps"],
+                         strategy_params=r["best_params"])
+        gap = r["in_sample"]["sharpe"] - r["oos"]["sharpe"]
+        return ("\n".join([
+            f"best {r['objective']} (OOS) = {r['score']:.4f}   [n_samples={r['n_samples']}]",
+            f"OOS       sharpe={r['oos']['sharpe']:.3f} calmar={r['oos']['calmar']:.3f} "
+            f"maxDD={r['oos']['max_drawdown']:.3f}",
+            f"in-sample sharpe={r['in_sample']['sharpe']:.3f}  (IS-OOS gap {gap:+.3f})",
+            "--- winning config ---",
+            best.to_toml_str().rstrip(),
+        ]))
     return str(out)
 
 def main(argv=None) -> int:
