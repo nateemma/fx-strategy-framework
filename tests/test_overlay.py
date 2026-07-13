@@ -9,6 +9,8 @@ def _synthetic_loader():
         "IR3TIB01USM156N": pd.Series(1.0, index=dates, name="value"),  # percent units
         "IR3TIB01AUM156N": pd.Series(6.0, index=dates, name="value"),
         "IR3TIB01EZM156N": pd.Series(0.0, index=dates, name="value"),
+        "RBAUBIS": pd.Series(100.0, index=dates, name="value"),
+        "RBXMBIS": pd.Series(100.0, index=dates, name="value"),
     }
     def loader(series_id, *, cache_dir, client=None):
         return series[series_id]
