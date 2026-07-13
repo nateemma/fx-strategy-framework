@@ -4,6 +4,7 @@ from forex.strategies.carry import CarryStrategy
 from forex.strategies.momentum import MomentumStrategy
 from forex.strategies.mloverlay import MLVolTargetOverlay
 from forex.strategies.overlay import VolTargetOverlay
+from forex.strategies.trend import TrendStrategy
 from forex.strategies.value import ValueStrategy
 
 def test_build_carry():
@@ -45,8 +46,20 @@ def test_build_carry_voltarget_ml_splits_params():
     assert isinstance(s.base, CarryStrategy) and s.base.n_long == 1
     assert s.target_vol == 0.10 and s.horizon == 21
 
+def test_build_trend():
+    s = build_strategy("trend", {"signal_type": "ema", "lookback": 60})
+    assert isinstance(s, TrendStrategy) and s.signal_type == "ema" and s.lookback == 60
+
+def test_build_trend_voltarget_splits_params():
+    s = build_strategy("trend_voltarget",
+                       {"signal_type": "donchian", "lookback": 60, "target_vol": 0.10, "cap": 1.5})
+    assert isinstance(s, VolTargetOverlay)
+    assert isinstance(s.base, TrendStrategy) and s.base.signal_type == "donchian"
+    assert s.target_vol == 0.10 and s.cap == 1.5
+
 def test_unknown_raises_and_available_lists():
     with pytest.raises(KeyError):
         build_strategy("nope")
     assert set(available()) == {"carry", "carry_voltarget", "carry_voltarget_ml",
-                                "momentum", "momentum_voltarget", "value", "value_voltarget"}
+                                "momentum", "momentum_voltarget", "value", "value_voltarget",
+                                "trend", "trend_voltarget"}

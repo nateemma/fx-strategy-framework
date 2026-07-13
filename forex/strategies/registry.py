@@ -2,6 +2,7 @@ from forex.strategies.carry import CarryStrategy
 from forex.strategies.mloverlay import MLVolTargetOverlay
 from forex.strategies.momentum import MomentumStrategy
 from forex.strategies.overlay import VolTargetOverlay
+from forex.strategies.trend import TrendStrategy
 from forex.strategies.value import ValueStrategy
 
 _BASE_KEYS = ("n_long", "n_short")
@@ -28,6 +29,16 @@ def _momentum_voltarget(p: dict):
     overlay = {k: v for k, v in p.items() if k not in _MOM_KEYS}
     return VolTargetOverlay(base, **overlay)
 
+_TREND_KEYS = ("signal_type", "lookback")
+
+def _trend(p: dict):
+    return TrendStrategy(**p)
+
+def _trend_voltarget(p: dict):
+    base = TrendStrategy(**{k: p[k] for k in _TREND_KEYS if k in p})
+    overlay = {k: v for k, v in p.items() if k not in _TREND_KEYS}
+    return VolTargetOverlay(base, **overlay)
+
 _VAL_KEYS = ("window", "n_long", "n_short")
 
 def _value(p: dict):
@@ -44,6 +55,8 @@ _BUILDERS = {
     "carry_voltarget_ml": _carry_voltarget_ml,
     "momentum": _momentum,
     "momentum_voltarget": _momentum_voltarget,
+    "trend": _trend,
+    "trend_voltarget": _trend_voltarget,
     "value": _value,
     "value_voltarget": _value_voltarget,
 }
