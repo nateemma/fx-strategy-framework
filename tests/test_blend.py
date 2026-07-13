@@ -7,7 +7,7 @@ from forex.strategies.trend import TrendStrategy
 from forex.diagnostics.causal import assert_causal
 from forex.run.backtest import backtest
 from forex.core.result import Result
-from forex.strategies.registry import build_strategy
+from forex.core.discovery import build_strategy
 
 def _view():
     idx = pd.date_range("2016-01-01", periods=500, freq="B")
@@ -65,5 +65,5 @@ def test_backtest_produces_finite_result():
 
 def test_voltarget_wrapped_blend_is_causal():
     v = _view()
-    s = build_strategy("carry_trend_voltarget")
+    s = build_strategy("carry_trend_voltarget", package="forex.strategies")
     assert_causal(s, v, v.calendar[[300, 450, 499]])
