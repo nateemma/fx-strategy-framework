@@ -1,10 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pandas as pd
 
 @dataclass
 class DataView:
     spot: pd.DataFrame
     rates: dict
+    reer: dict = field(default_factory=dict)
 
     @property
     def codes(self) -> list:
@@ -18,7 +19,8 @@ class DataView:
         asof = pd.Timestamp(asof)
         spot = self.spot.loc[:asof]
         rates = {k: v.loc[:asof] for k, v in self.rates.items()}
-        return DataView(spot=spot, rates=rates)
+        reer = {k: v.loc[:asof] for k, v in self.reer.items()}
+        return DataView(spot=spot, rates=rates, reer=reer)
 
     @classmethod
     def from_fred(cls, cache_dir, loader=None, codes=None) -> "DataView":
@@ -33,4 +35,5 @@ class DataView:
         rates = {"USD": loader(CURRENCIES["USD"].rate_fred, cache_dir=cache_dir) / 100.0}
         for c in codes:
             rates[c] = loader(CURRENCIES[c].rate_fred, cache_dir=cache_dir) / 100.0
-        return cls(spot=spot, rates=rates)
+        reer = {c: loader(CURRENCIES[c].reer_fred, cache_dir=cache_dir) for c in codes}
+        return cls(spot=spot, rates=rates, reer=reer)
