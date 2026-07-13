@@ -2,7 +2,7 @@ import numpy as np, pandas as pd
 import pytest
 from forex.core.dataview import DataView
 from forex.core.space import Categorical, Int
-from forex.strategies.trend import TrendStrategy
+from strategies.trend import TrendStrategy
 from forex.diagnostics.causal import assert_causal
 from forex.run.backtest import backtest
 from forex.core.result import Result

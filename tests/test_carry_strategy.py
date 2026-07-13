@@ -1,6 +1,6 @@
 import pandas as pd
 from forex.core.dataview import DataView
-from forex.strategies.carry import CarryStrategy
+from strategies.carry import CarryStrategy
 
 def test_carry_strategy_weights_are_dollar_neutral():
     idx = pd.date_range("2020-01-01", periods=2, freq="D")

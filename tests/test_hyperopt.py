@@ -12,7 +12,7 @@ def _view():
              "NZD": pd.Series(0.05, index=idx)}
     return DataView(spot=spot, rates=rates)
 
-build = lambda p: build_strategy("carry", p, "forex.strategies")
+build = lambda p: build_strategy("carry", p, "strategies")
 
 def test_optimize_returns_best_and_gap():
     r = optimize(build, _view(), train_days=250, test_days=125,

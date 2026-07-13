@@ -1,9 +1,9 @@
 import pandas as pd
 from forex.core.strategy import Strategy
 from forex.core.dataview import DataView
-from forex.features.momentum import momentum_signal
-from forex.features.carry import basket_weights
-from forex.strategies.overlay import VolTargetOverlay
+from strategies.features.momentum import momentum_signal
+from strategies.features.basket import basket_weights
+from strategies.overlay import VolTargetOverlay
 from forex.core.compose import split_params
 
 class MomentumStrategy(Strategy):

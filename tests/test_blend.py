@@ -1,9 +1,9 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
 from forex.core.space import Int, Categorical
-from forex.strategies.blend import BlendStrategy
-from forex.strategies.carry import CarryStrategy
-from forex.strategies.trend import TrendStrategy
+from strategies.blend import BlendStrategy
+from strategies.carry import CarryStrategy
+from strategies.trend import TrendStrategy
 from forex.diagnostics.causal import assert_causal
 from forex.run.backtest import backtest
 from forex.core.result import Result
@@ -65,5 +65,5 @@ def test_backtest_produces_finite_result():
 
 def test_voltarget_wrapped_blend_is_causal():
     v = _view()
-    s = build_strategy("carry_trend_voltarget", package="forex.strategies")
+    s = build_strategy("carry_trend_voltarget")
     assert_causal(s, v, v.calendar[[300, 450, 499]])

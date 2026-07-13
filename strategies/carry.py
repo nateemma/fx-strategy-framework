@@ -1,9 +1,10 @@
 import pandas as pd
 from forex.core.strategy import Strategy
 from forex.core.dataview import DataView
-from forex.features.carry import carry_signal, basket_weights
-from forex.strategies.overlay import VolTargetOverlay
-from forex.strategies.mloverlay import MLVolTargetOverlay
+from forex.features.carry import carry_signal
+from strategies.features.basket import basket_weights
+from strategies.overlay import VolTargetOverlay
+from strategies.mloverlay import MLVolTargetOverlay
 from forex.core.compose import split_params
 
 class CarryStrategy(Strategy):

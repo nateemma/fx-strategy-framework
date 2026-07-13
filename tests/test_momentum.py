@@ -1,5 +1,5 @@
 import pandas as pd
-from forex.features.momentum import momentum_signal
+from strategies.features.momentum import momentum_signal
 
 def test_signal_is_trailing_return_with_nan_warmup():
     idx = pd.date_range("2020-01-01", periods=4, freq="B")

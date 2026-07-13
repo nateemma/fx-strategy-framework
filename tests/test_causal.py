@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd, pytest
 from forex.core.dataview import DataView
 from forex.core.strategy import Strategy
-from forex.strategies.carry import CarryStrategy
+from strategies.carry import CarryStrategy
 from forex.diagnostics.causal import assert_causal
 
 def _view():

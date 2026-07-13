@@ -2,10 +2,10 @@ import pandas as pd
 from forex.core.strategy import Strategy
 from forex.core.dataview import DataView
 from forex.features.volforecast import ewma_vol
-from forex.strategies.carry import CarryStrategy
-from forex.strategies.trend import TrendStrategy
-from forex.strategies.value import ValueStrategy
-from forex.strategies.overlay import VolTargetOverlay
+from strategies.carry import CarryStrategy
+from strategies.trend import TrendStrategy
+from strategies.value import ValueStrategy
+from strategies.overlay import VolTargetOverlay
 from forex.core.compose import split_prefixed, build_components
 
 class BlendStrategy(Strategy):

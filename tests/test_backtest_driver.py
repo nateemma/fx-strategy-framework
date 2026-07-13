@@ -1,6 +1,6 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
-from forex.strategies.carry import CarryStrategy
+from strategies.carry import CarryStrategy
 from forex.run.backtest import backtest
 from forex.core.result import Result
 
