@@ -1,5 +1,6 @@
 import pytest
 from forex.strategies.registry import build_strategy, available
+from forex.strategies.blend import BlendStrategy
 from forex.strategies.carry import CarryStrategy
 from forex.strategies.momentum import MomentumStrategy
 from forex.strategies.mloverlay import MLVolTargetOverlay
@@ -57,9 +58,33 @@ def test_build_trend_voltarget_splits_params():
     assert isinstance(s.base, TrendStrategy) and s.base.signal_type == "donchian"
     assert s.target_vol == 0.10 and s.cap == 1.5
 
+def test_build_carry_trend_uses_hyperopt_defaults():
+    s = build_strategy("carry_trend")
+    assert isinstance(s, BlendStrategy)
+    assert s.components["carry"].n_long == 3 and s.components["carry"].n_short == 3
+    assert s.components["trend"].signal_type == "ema" and s.components["trend"].lookback == 108
+
+def test_build_carry_trend_overrides_prefixed_param():
+    s = build_strategy("carry_trend", {"trend_lookback": 50})
+    assert s.components["trend"].lookback == 50           # override applied
+    assert s.components["trend"].signal_type == "ema"     # default kept
+
+def test_build_carry_trend_value_has_three_components():
+    s = build_strategy("carry_trend_value")
+    assert set(s.components) == {"carry", "trend", "value"}
+    assert s.components["value"].window == 42 and s.components["value"].n_long == 4
+
+def test_build_carry_trend_voltarget_wraps_blend():
+    s = build_strategy("carry_trend_voltarget", {"target_vol": 0.12})
+    assert isinstance(s, VolTargetOverlay) and isinstance(s.base, BlendStrategy)
+    assert s.target_vol == 0.12
+    assert s.base.components["trend"].signal_type == "ema"
+
 def test_unknown_raises_and_available_lists():
     with pytest.raises(KeyError):
         build_strategy("nope")
     assert set(available()) == {"carry", "carry_voltarget", "carry_voltarget_ml",
                                 "momentum", "momentum_voltarget", "value", "value_voltarget",
-                                "trend", "trend_voltarget"}
+                                "trend", "trend_voltarget",
+                                "carry_trend", "carry_trend_value",
+                                "carry_trend_voltarget", "carry_trend_value_voltarget"}
