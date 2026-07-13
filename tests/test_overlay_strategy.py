@@ -20,3 +20,12 @@ def test_overlay_scales_base_weights_within_cap_and_preserves_zeros():
     assert (ow.abs() <= 1.5 * bw.abs() + 1e-9).all().all()
     # zero base weight -> zero overlay weight
     assert (ow[bw == 0].fillna(0.0) == 0.0).all().all()
+
+def test_vol_forecast_defaults_to_ewma():
+    from forex.strategies.overlay import VolTargetOverlay
+    from forex.strategies.carry import CarryStrategy
+    from forex.features.volforecast import ewma_vol
+    idx = pd.date_range("2019-01-01", periods=300, freq="B")
+    base_ret = pd.Series(np.random.RandomState(1).normal(0, 0.01, 300), index=idx)
+    ov = VolTargetOverlay(CarryStrategy(1, 1), lam=0.94)
+    assert (ov._vol_forecast(base_ret) == ewma_vol(base_ret, lam=0.94)).all()
