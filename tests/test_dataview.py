@@ -36,3 +36,4 @@ def test_from_fred_loads_reer(tmp_path):
     v = DataView.from_fred(tmp_path, loader=fake_loader, codes=["AUD", "EUR"])
     assert set(v.reer) == {"AUD", "EUR"}
     assert not v.reer["AUD"].empty
+    assert v.reer["AUD"].iloc[0] == 1.0    # REER is an index level, not divided by 100

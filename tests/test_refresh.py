@@ -23,4 +23,5 @@ def test_refresh_cache_forces_all_universe_series(tmp_path):
     ids = refresh_cache(tmp_path, codes=["AUD", "EUR"], loader=loader)
     assert CURRENCIES["USD"].rate_fred in ids
     assert CURRENCIES["AUD"].rate_fred in ids and CURRENCIES["AUD"].spot_fred in ids
+    assert CURRENCIES["AUD"].reer_fred in ids and CURRENCIES["EUR"].reer_fred in ids
     assert all(force is True for _, force in seen)      # every fetch forced

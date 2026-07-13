@@ -11,6 +11,8 @@ def refresh_cache(cache_dir, codes=None, loader=load_series) -> list:
         ids.append(cur.rate_fred)
         if cur.spot_fred:
             ids.append(cur.spot_fred)
+        if cur.reer_fred:
+            ids.append(cur.reer_fred)
     for sid in ids:
         loader(sid, cache_dir=cache_dir, force=True)
     return ids
