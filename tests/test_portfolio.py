@@ -44,3 +44,20 @@ def test_attribution_splits_spot_and_carry_per_currency():
     assert round(att.loc["A", "carry"], 4) == 0.00
     assert round(att.loc["B", "carry"], 4) == -0.01  # short B, +1%/day carry -> -0.01
     assert round(att.loc["B", "total"], 4) == -0.01
+
+def test_sortino_present_and_downside_only():
+    idx = pd.date_range("2020-01-01", periods=6, freq="B")
+    r = pd.Series([0.01, -0.02, 0.01, -0.01, 0.02, 0.01], index=idx)
+    m = metrics(r)
+    assert "sortino" in m and np.isfinite(m["sortino"])
+    # hand-computed downside deviation (MAR=0), annualized
+    downside = r.clip(upper=0.0)
+    dd = (downside.pow(2).mean() ** 0.5) * np.sqrt(252)
+    assert abs(m["sortino"] - m["ann_return"] / dd) < 1e-9
+    # right-skewed (mostly-up) series -> downside dev < total std -> sortino > sharpe
+    assert m["sortino"] > m["sharpe"]
+
+def test_sortino_zero_when_no_downside():
+    idx = pd.date_range("2020-01-01", periods=4, freq="B")
+    m = metrics(pd.Series([0.01, 0.02, 0.0, 0.01], index=idx))
+    assert m["sortino"] == 0.0        # no negative returns -> dd == 0 -> guarded to 0.0

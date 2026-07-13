@@ -22,6 +22,8 @@ def metrics(returns: pd.Series) -> dict:
     ann_return = (1 + r).prod() ** (252 / len(r)) - 1 if len(r) else 0.0
     ann_vol = r.std() * np.sqrt(252)
     mdd = dd.min() if len(dd) else 0.0
+    downside = r.clip(upper=0.0)
+    downside_dev = (downside.pow(2).mean() ** 0.5) * np.sqrt(252) if len(r) else 0.0
     return {
         "total_return": eq.iloc[-1] - 1 if len(eq) else 0.0,
         "ann_return": ann_return,
@@ -29,6 +31,7 @@ def metrics(returns: pd.Series) -> dict:
         "sharpe": (ann_return / ann_vol) if ann_vol else 0.0,
         "max_drawdown": mdd,
         "calmar": (ann_return / abs(mdd)) if mdd < 0 else 0.0,
+        "sortino": (ann_return / downside_dev) if downside_dev > 0 else 0.0,
     }
 
 def attribution(weights: pd.DataFrame, spot_rets: pd.DataFrame,
