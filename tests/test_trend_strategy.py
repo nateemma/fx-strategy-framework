@@ -17,7 +17,7 @@ def _view():
 
 def test_params_and_search_space():
     s = TrendStrategy("tsmom", 252)
-    assert s.params() == {"signal_type": "tsmom", "lookback": 252}
+    assert s.params() == {"signal_type": "tsmom", "lookback": 252, "band": 0.0}
     space = s.search_space()
     assert space["signal_type"] == Categorical(["tsmom", "ema", "donchian"])
     assert space["lookback"] == Int(21, 252)
@@ -39,3 +39,13 @@ def test_backtest_produces_finite_result(stype):
     r = backtest(TrendStrategy(stype, 20), _view(), cost_bps=1.0)
     assert isinstance(r, Result)
     assert np.isfinite(r.metrics["total_return"]) and np.isfinite(r.metrics["sharpe"])
+
+def test_band_param_and_search_space():
+    s = TrendStrategy("tsmom", 252, band=0.03)
+    assert s.params() == {"signal_type": "tsmom", "lookback": 252, "band": 0.03}
+    from forex.core.space import Float
+    assert s.search_space()["band"] == Float(0.0, 0.10)
+
+def test_band_still_causal():
+    v = _view()
+    assert_causal(TrendStrategy("tsmom", 20, band=0.02), v, v.calendar[[100, 250, 399]])

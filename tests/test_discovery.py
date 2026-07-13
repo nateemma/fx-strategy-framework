@@ -48,6 +48,10 @@ def test_three_way_blend_routes_prefixed_params():
     sv = build_strategy("carry_trend_value_voltarget", {"value_window": 50, "target_vol": 0.09}, "strategies")
     assert sv.base.components["value"].window == 50 and sv.target_vol == 0.09
 
+def test_trend_voltarget_routes_band():
+    s = build_strategy("trend_voltarget", {"band": 0.05, "target_vol": 0.1}, "strategies")
+    assert s.base.band == 0.05 and s.target_vol == 0.1      # band -> base, not overlay
+
 def test_duplicate_name_raises(tmp_path, monkeypatch):
     from forex.core import discovery
     pkg = tmp_path / "dup_pkg"

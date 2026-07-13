@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 def trend_signal(spot: pd.DataFrame, signal_type: str = "tsmom",
-                 lookback: int = 252) -> pd.DataFrame:
+                 lookback: int = 252, band: float = 0.0) -> pd.DataFrame:
     if signal_type == "tsmom":
         sig = np.sign(spot / spot.shift(lookback) - 1.0)
     elif signal_type == "ema":
@@ -18,6 +18,9 @@ def trend_signal(spot: pd.DataFrame, signal_type: str = "tsmom",
         sig = raw.ffill()
     else:
         raise ValueError(f"unknown signal_type '{signal_type}'")
+    if band > 0:
+        strength = (spot / spot.shift(lookback) - 1.0).abs()
+        sig = sig.mask(strength < band, 0.0)
     sig.index.name = "date"
     return sig
 

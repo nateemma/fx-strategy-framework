@@ -32,3 +32,21 @@ def test_directional_weights_equal_weight_signed():
     assert abs(row["A"] - 1/3) < 1e-9 and abs(row["B"] - 1/3) < 1e-9
     assert abs(row["C"] + 1/3) < 1e-9
     assert abs(row.sum() - 1/3) < 1e-9          # net = mean signal; gross = 1
+
+def test_band_zeroes_weak_trends():
+    idx = pd.date_range("2020-01-01", periods=20, freq="B")
+    # AUD rises ~30% over the window (strong), TINY drifts ~1% (weak)
+    spot = pd.DataFrame({"AUD": 1.0 + np.linspace(0, 0.3, 20),
+                         "TINY": 1.0 + np.linspace(0, 0.01, 20)}, index=idx)
+    s0 = trend_signal(spot, "tsmom", lookback=5, band=0.0)
+    s = trend_signal(spot, "tsmom", lookback=5, band=0.05)   # 5% neutral band
+    last0, last = s0.iloc[-1], s.iloc[-1]
+    assert last0["AUD"] == 1.0 and last0["TINY"] == 1.0       # band=0: both long
+    assert last["AUD"] == 1.0 and last["TINY"] == 0.0         # band=5%: AUD kept, TINY flat
+
+def test_band_zero_is_noop():
+    idx = pd.date_range("2020-01-01", periods=20, freq="B")
+    spot = pd.DataFrame({"AUD": 1.0 + np.linspace(0, 0.3, 20)}, index=idx)
+    a = trend_signal(spot, "ema", lookback=5, band=0.0)
+    b = trend_signal(spot, "ema", lookback=5)                 # default band
+    assert a.equals(b)
