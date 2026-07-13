@@ -1,4 +1,5 @@
 from forex.strategies.carry import CarryStrategy
+from forex.strategies.mloverlay import MLVolTargetOverlay
 from forex.strategies.momentum import MomentumStrategy
 from forex.strategies.overlay import VolTargetOverlay
 from forex.strategies.value import ValueStrategy
@@ -13,6 +14,11 @@ def _carry_voltarget(p: dict):
     base = CarryStrategy(**{k: p[k] for k in _BASE_KEYS if k in p})
     overlay = {k: v for k, v in p.items() if k not in _BASE_KEYS}
     return VolTargetOverlay(base, **overlay)
+
+def _carry_voltarget_ml(p: dict):
+    base = CarryStrategy(**{k: p[k] for k in _BASE_KEYS if k in p})
+    overlay = {k: v for k, v in p.items() if k not in _BASE_KEYS}
+    return MLVolTargetOverlay(base, **overlay)
 
 def _momentum(p: dict):
     return MomentumStrategy(**p)
@@ -35,6 +41,7 @@ def _value_voltarget(p: dict):
 _BUILDERS = {
     "carry": _carry,
     "carry_voltarget": _carry_voltarget,
+    "carry_voltarget_ml": _carry_voltarget_ml,
     "momentum": _momentum,
     "momentum_voltarget": _momentum_voltarget,
     "value": _value,
