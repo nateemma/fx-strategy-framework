@@ -47,3 +47,20 @@ def test_three_way_blend_routes_prefixed_params():
     assert set(s.components) == {"carry", "trend", "value"} and s.components["value"].window == 42
     sv = build_strategy("carry_trend_value_voltarget", {"value_window": 50, "target_vol": 0.09}, "strategies")
     assert sv.base.components["value"].window == 50 and sv.target_vol == 0.09
+
+def test_duplicate_name_raises(tmp_path, monkeypatch):
+    from forex.core import discovery
+    pkg = tmp_path / "dup_pkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    body = ("from forex.core.strategy import Strategy\n"
+            "class {cls}(Strategy):\n"
+            "    NAME = 'dup'\n"
+            "    def target_weights(self, view):\n"
+            "        return None\n")
+    (pkg / "a.py").write_text(body.format(cls="A"))
+    (pkg / "b.py").write_text(body.format(cls="B"))
+    monkeypatch.syspath_prepend(str(tmp_path))
+    discovery._CACHE.pop("dup_pkg", None)            # ensure a fresh scan
+    with pytest.raises(ValueError):
+        discovery.load_strategies("dup_pkg")
