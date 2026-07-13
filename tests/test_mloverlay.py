@@ -44,9 +44,17 @@ def test_ml_overlay_is_causal():
     v = _view()
     ov = MLVolTargetOverlay(CarryStrategy(1, 1), cadence="D")
     ov.fit(v)                                     # fix coefficients; predict must be truncation-invariant
-    assert_causal(ov, v, v.calendar[[200, 400, 699]])
+    assert_causal(ov, v, v.calendar[[30, 200, 400, 699]])
 
 def test_backtest_produces_finite_result():
     r = backtest(MLVolTargetOverlay(CarryStrategy(1, 1), cadence="D"), _view(), cost_bps=1.0)
     assert isinstance(r, Result)
+    assert np.isfinite(r.metrics["total_return"]) and np.isfinite(r.metrics["sharpe"])
+
+def test_walk_forward_oos_is_finite():
+    from forex.run.walkforward import walk_forward
+    v = _view()
+    r = walk_forward(lambda: MLVolTargetOverlay(CarryStrategy(1, 1), cadence="D"),
+                     v, train_days=252, test_days=126, cost_bps=1.0)
+    assert len(r.returns) > 0
     assert np.isfinite(r.metrics["total_return"]) and np.isfinite(r.metrics["sharpe"])

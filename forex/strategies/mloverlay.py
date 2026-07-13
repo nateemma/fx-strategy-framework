@@ -18,7 +18,7 @@ class MLVolTargetOverlay(VolTargetOverlay):
         self.forecaster.fit(base_ret, horizon=self.horizon, alpha=self.ridge_alpha)
 
     def _vol_forecast(self, base_ret: pd.Series) -> pd.Series:
-        if not self.forecaster.fitted:
+        if not self.forecaster.fitted:      # plain-backtest self-fit (in-sample); causal-checks must fit() first
             self.forecaster.fit(base_ret, horizon=self.horizon, alpha=self.ridge_alpha)
         har = self.forecaster.predict(base_ret)
         return har.fillna(ewma_vol(base_ret, lam=self.lam))
