@@ -2,8 +2,12 @@ import pandas as pd
 from forex.core.strategy import Strategy
 from forex.core.dataview import DataView
 from forex.features.carry import carry_signal, basket_weights
+from forex.strategies.overlay import VolTargetOverlay
+from forex.strategies.mloverlay import MLVolTargetOverlay
+from forex.core.compose import split_params
 
 class CarryStrategy(Strategy):
+    NAME = "carry"
     def __init__(self, n_long: int = 3, n_short: int = 3):
         self.n_long = n_long
         self.n_short = n_short
@@ -18,3 +22,17 @@ class CarryStrategy(Strategy):
     def search_space(self) -> dict:
         from forex.core.space import Int
         return {"n_long": Int(2, 4), "n_short": Int(2, 4)}
+
+class CarryVolTarget(VolTargetOverlay):
+    NAME = "carry_voltarget"
+    @classmethod
+    def build(cls, params):
+        base, overlay = split_params(params, ("n_long", "n_short"))
+        return cls(CarryStrategy(**base), **overlay)
+
+class CarryVolTargetML(MLVolTargetOverlay):
+    NAME = "carry_voltarget_ml"
+    @classmethod
+    def build(cls, params):
+        base, overlay = split_params(params, ("n_long", "n_short"))
+        return cls(CarryStrategy(**base), **overlay)
