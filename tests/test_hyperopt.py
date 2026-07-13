@@ -1,5 +1,6 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
+from forex.core.discovery import build_strategy
 from forex.run.hyperopt import optimize
 
 def _view():
@@ -11,8 +12,10 @@ def _view():
              "NZD": pd.Series(0.05, index=idx)}
     return DataView(spot=spot, rates=rates)
 
+build = lambda p: build_strategy("carry", p, "forex.strategies")
+
 def test_optimize_returns_best_and_gap():
-    r = optimize("carry", _view(), train_days=250, test_days=125,
+    r = optimize(build, _view(), train_days=250, test_days=125,
                  n_samples=8, seed=1, tune=["n_long", "n_short"])
     assert 2 <= r["best_params"]["n_long"] <= 4          # sampled within the Int space
     assert r["objective"] == "sharpe"
@@ -21,13 +24,13 @@ def test_optimize_returns_best_and_gap():
 
 def test_optimize_is_deterministic():
     v = _view()
-    a = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
-    b = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
+    a = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
+    b = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7, tune=["n_long","n_short"])
     assert a["best_params"] == b["best_params"] and a["score"] == b["score"]
 
 def test_on_step_fires_once_per_sample_with_correct_flags():
     calls = []
-    r = optimize("carry", _view(), train_days=250, test_days=125,
+    r = optimize(build, _view(), train_days=250, test_days=125,
                  n_samples=8, seed=1, tune=["n_long", "n_short"],
                  on_step=lambda i, n, score, params, improved: calls.append(
                      (i, n, score, dict(params), improved)))
@@ -48,8 +51,8 @@ def test_on_step_fires_once_per_sample_with_correct_flags():
 
 def test_on_step_none_is_backward_compatible():
     v = _view()
-    a = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7,
+    a = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7,
                  tune=["n_long", "n_short"])
-    b = optimize("carry", v, train_days=250, test_days=125, n_samples=6, seed=7,
+    b = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7,
                  tune=["n_long", "n_short"], on_step=None)
     assert a["best_params"] == b["best_params"] and a["score"] == b["score"]

@@ -113,7 +113,8 @@ def run(cfg, env, mode) -> dict:
             if improved:
                 ps = ", ".join(f"{k}={v}" for k, v in params.items())
                 print(f"[{i:>3}/{n}] new best {_obj}={score:.4f} @ {{{ps}}}", file=sys.stderr)
-        res = optimize(cfg.strategy, view, train_days=cfg.train_days, test_days=cfg.test_days,
+        build = lambda p: build_strategy(cfg.strategy, p, "forex.strategies")
+        res = optimize(build, view, train_days=cfg.train_days, test_days=cfg.test_days,
                        n_samples=cfg.n_samples, seed=cfg.seed, cost_bps=cfg.cost_bps,
                        base_params=cfg.strategy_params, tune=cfg.tune, objective=cfg.objective,
                        on_step=_on_step)
