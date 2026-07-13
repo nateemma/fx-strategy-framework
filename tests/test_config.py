@@ -13,3 +13,9 @@ def test_jpy_is_inverted():
     # DEXJPUS is JPY-per-USD, so it must be flagged for inversion to USD-per-JPY
     assert CURRENCIES["JPY"].spot_invert is True
     assert CURRENCIES["EUR"].spot_invert is False  # DEXUSEU is already USD-per-EUR
+
+
+def test_reer_fred_set_for_non_usd_none_for_usd():
+    assert CURRENCIES["USD"].reer_fred is None
+    assert CURRENCIES["AUD"].reer_fred == "RBAUBIS"
+    assert all(CURRENCIES[c].reer_fred is not None for c in CURRENCIES if c != "USD")
