@@ -1,13 +1,13 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
 from forex.core.space import Int, Categorical
-from forex.strategies.blend import BlendStrategy
-from forex.strategies.carry import CarryStrategy
-from forex.strategies.trend import TrendStrategy
+from strategies.blend import BlendStrategy
+from strategies.carry import CarryStrategy
+from strategies.trend import TrendStrategy
 from forex.diagnostics.causal import assert_causal
 from forex.run.backtest import backtest
 from forex.core.result import Result
-from forex.strategies.registry import build_strategy
+from forex.core.discovery import build_strategy
 
 def _view():
     idx = pd.date_range("2016-01-01", periods=500, freq="B")

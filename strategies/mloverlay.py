@@ -1,7 +1,7 @@
 import pandas as pd
 from forex.core.dataview import DataView
-from forex.strategies.overlay import VolTargetOverlay
-from forex.features.mlvol import HARVolForecaster
+from strategies.overlay import VolTargetOverlay
+from strategies.features.mlvol import HARVolForecaster
 from forex.features.volforecast import ewma_vol
 
 class MLVolTargetOverlay(VolTargetOverlay):

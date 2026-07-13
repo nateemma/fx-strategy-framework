@@ -2,6 +2,11 @@ import pandas as pd
 from forex.core.strategy import Strategy
 from forex.core.dataview import DataView
 from forex.features.volforecast import ewma_vol
+from strategies.carry import CarryStrategy
+from strategies.trend import TrendStrategy
+from strategies.value import ValueStrategy
+from strategies.overlay import VolTargetOverlay
+from forex.core.compose import split_prefixed, build_components
 
 class BlendStrategy(Strategy):
     def __init__(self, components: dict, lam: float = 0.94,
@@ -39,3 +44,34 @@ class BlendStrategy(Strategy):
     def search_space(self) -> dict:
         return {f"{p}_{k}": sp for p, s in self.components.items()
                 for k, sp in s.search_space().items()}
+
+class CarryTrend(BlendStrategy):
+    NAME = "carry_trend"
+    SPECS = [("carry", CarryStrategy, {"n_long": 3, "n_short": 3}),
+             ("trend", TrendStrategy, {"signal_type": "ema", "lookback": 108})]
+    @classmethod
+    def build(cls, params):
+        return cls(build_components(cls.SPECS, params))
+
+class CarryTrendValue(BlendStrategy):
+    NAME = "carry_trend_value"
+    SPECS = [("carry", CarryStrategy, {"n_long": 3, "n_short": 3}),
+             ("trend", TrendStrategy, {"signal_type": "ema", "lookback": 108}),
+             ("value", ValueStrategy, {"window": 42, "n_long": 4, "n_short": 4})]
+    @classmethod
+    def build(cls, params):
+        return cls(build_components(cls.SPECS, params))
+
+class CarryTrendVolTarget(VolTargetOverlay):
+    NAME = "carry_trend_voltarget"
+    @classmethod
+    def build(cls, params):
+        blend_p, overlay = split_prefixed(params, ("carry", "trend"))
+        return cls(BlendStrategy(build_components(CarryTrend.SPECS, blend_p)), **overlay)
+
+class CarryTrendValueVolTarget(VolTargetOverlay):
+    NAME = "carry_trend_value_voltarget"
+    @classmethod
+    def build(cls, params):
+        blend_p, overlay = split_prefixed(params, ("carry", "trend", "value"))
+        return cls(BlendStrategy(build_components(CarryTrendValue.SPECS, blend_p)), **overlay)

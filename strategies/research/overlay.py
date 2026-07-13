@@ -3,8 +3,8 @@ from forex.data.fred import load_series
 def run_overlay(cache_dir, loader=load_series, codes=None, n_long=3, n_short=3,
                 cost_bps=1.0, target_vol=0.10, cap=1.5, cadence="MS", lam=0.94):
     from forex.core.dataview import DataView
-    from forex.strategies.carry import CarryStrategy
-    from forex.strategies.overlay import VolTargetOverlay
+    from strategies.carry import CarryStrategy
+    from strategies.overlay import VolTargetOverlay
     from forex.run.backtest import backtest
     view = DataView.from_fred(cache_dir, loader=loader, codes=codes)
     base = CarryStrategy(n_long=n_long, n_short=n_short)

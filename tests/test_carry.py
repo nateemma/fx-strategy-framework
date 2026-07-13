@@ -1,5 +1,6 @@
 import numpy as np, pandas as pd
-from forex.features.carry import carry_signal, basket_weights
+from forex.features.carry import carry_signal
+from strategies.features.basket import basket_weights
 
 def test_carry_is_differential_vs_usd():
     cal = pd.to_datetime(["2020-06-01"])

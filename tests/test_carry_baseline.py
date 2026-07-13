@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-from forex.research.carry_baseline import run_baseline
+from strategies.research.carry_baseline import run_baseline
 
 def _synthetic_loader():
     """A tiny deterministic FRED stand-in: 2 currencies, AUD high-yield & rising."""
@@ -46,7 +46,7 @@ def test_rates_normalized_from_percent_keeps_carry_sane():
 
 def test_run_baseline_matches_backtest_of_carry_strategy():
     from forex.core.dataview import DataView
-    from forex.strategies.carry import CarryStrategy
+    from strategies.carry import CarryStrategy
     from forex.run.backtest import backtest
     loader = _synthetic_loader()   # existing helper in this test file
     daily, m = run_baseline(cache_dir="unused", loader=loader, codes=["AUD","EUR"], n_long=1, n_short=1)

@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
-from forex.strategies.carry import CarryStrategy
-from forex.strategies.overlay import VolTargetOverlay
+from strategies.carry import CarryStrategy
+from strategies.overlay import VolTargetOverlay
 
 def _view():
     idx = pd.date_range("2019-01-01", periods=400, freq="B")
@@ -22,8 +22,8 @@ def test_overlay_scales_base_weights_within_cap_and_preserves_zeros():
     assert (ow[bw == 0].fillna(0.0) == 0.0).all().all()
 
 def test_vol_forecast_defaults_to_ewma():
-    from forex.strategies.overlay import VolTargetOverlay
-    from forex.strategies.carry import CarryStrategy
+    from strategies.overlay import VolTargetOverlay
+    from strategies.carry import CarryStrategy
     from forex.features.volforecast import ewma_vol
     idx = pd.date_range("2019-01-01", periods=300, freq="B")
     base_ret = pd.Series(np.random.RandomState(1).normal(0, 0.01, 300), index=idx)

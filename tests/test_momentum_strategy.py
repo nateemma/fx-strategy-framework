@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
 from forex.core.space import Int
-from forex.strategies.momentum import MomentumStrategy
+from strategies.momentum import MomentumStrategy
 from forex.diagnostics.causal import assert_causal
 from forex.run.backtest import backtest
 from forex.core.result import Result

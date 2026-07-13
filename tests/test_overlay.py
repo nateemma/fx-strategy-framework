@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-from forex.research.overlay import run_overlay
+from strategies.research.overlay import run_overlay
 
 def _synthetic_loader():
     dates = pd.date_range("2018-01-01", periods=600, freq="B")

@@ -1,5 +1,5 @@
-from forex.strategies.carry import CarryStrategy
-from forex.strategies.overlay import VolTargetOverlay
+from strategies.carry import CarryStrategy
+from strategies.overlay import VolTargetOverlay
 from forex.core.space import Int, Float
 
 def test_carry_search_space():

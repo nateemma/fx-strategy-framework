@@ -89,20 +89,20 @@ def run(cfg, env, mode) -> dict:
         from forex.data.refresh import refresh_cache
         series = refresh_cache(env.data_cache_dir, codes=cfg.universe)
         return {"download": {"series": series, "cache_dir": env.data_cache_dir}}
-    from forex.strategies.registry import build_strategy
+    from forex.core.discovery import build_strategy
     from forex.run.backtest import backtest
     from forex.run.walkforward import walk_forward
     from forex.diagnostics.causal import assert_causal
     view = _build_view(cfg, env)
     if mode == "backtest":
-        r = backtest(build_strategy(cfg.strategy, cfg.strategy_params), view, cfg.cost_bps)
+        r = backtest(build_strategy(cfg.strategy, cfg.strategy_params, "strategies"), view, cfg.cost_bps)
         return {"metrics": r.metrics}
     if mode == "walkforward":
-        r = walk_forward(lambda: build_strategy(cfg.strategy, cfg.strategy_params),
+        r = walk_forward(lambda: build_strategy(cfg.strategy, cfg.strategy_params, "strategies"),
                          view, cfg.train_days, cfg.test_days, cfg.cost_bps)
         return {"metrics": r.metrics}
     if mode == "causal-check":
-        strat = build_strategy(cfg.strategy, cfg.strategy_params)
+        strat = build_strategy(cfg.strategy, cfg.strategy_params, "strategies")
         n = len(view.calendar)
         assert_causal(strat, view, view.calendar[[n // 4, n // 2, n - 1]])
         return {"causal": "PASS"}
@@ -113,7 +113,8 @@ def run(cfg, env, mode) -> dict:
             if improved:
                 ps = ", ".join(f"{k}={v}" for k, v in params.items())
                 print(f"[{i:>3}/{n}] new best {_obj}={score:.4f} @ {{{ps}}}", file=sys.stderr)
-        res = optimize(cfg.strategy, view, train_days=cfg.train_days, test_days=cfg.test_days,
+        build = lambda p: build_strategy(cfg.strategy, p, "strategies")
+        res = optimize(build, view, train_days=cfg.train_days, test_days=cfg.test_days,
                        n_samples=cfg.n_samples, seed=cfg.seed, cost_bps=cfg.cost_bps,
                        base_params=cfg.strategy_params, tune=cfg.tune, objective=cfg.objective,
                        on_step=_on_step)
@@ -125,7 +126,7 @@ def run(cfg, env, mode) -> dict:
         pf = os.path.join(env.output_dir, "portfolio.json")
         ex = SimExecution(pf, starting_equity=env.starting_equity, cost_bps=cfg.cost_bps,
                           preview=cfg.preview)
-        rep = rebalance_now(build_strategy(cfg.strategy, cfg.strategy_params), view, ex)
+        rep = rebalance_now(build_strategy(cfg.strategy, cfg.strategy_params, "strategies"), view, ex)
         return {"dryrun": rep}
     raise ValueError(f"unknown mode {mode}")
 

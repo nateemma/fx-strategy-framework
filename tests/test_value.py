@@ -1,5 +1,5 @@
 import pandas as pd
-from forex.features.value import value_signal
+from strategies.features.value import value_signal
 
 def test_value_signal_sign_and_warmup():
     midx = pd.date_range("2019-01-01", periods=6, freq="MS")

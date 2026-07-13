@@ -1,6 +1,6 @@
 import numpy as np, pandas as pd
 import pytest
-from forex.features.trend import trend_signal, directional_weights
+from strategies.features.trend import trend_signal, directional_weights
 
 def _panel():
     idx = pd.date_range("2020-01-01", periods=20, freq="B")

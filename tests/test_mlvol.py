@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-from forex.features.mlvol import HARVolForecaster
+from strategies.features.mlvol import HARVolForecaster
 
 def _regime_returns():
     idx = pd.date_range("2015-01-01", periods=1000, freq="B")
