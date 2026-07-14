@@ -86,7 +86,9 @@ def _build_view(cfg, env):
         s, e = cfg.timerange
         spot = view.spot.loc[s:e]
         rates = {k: v.loc[s:e] for k, v in view.rates.items()}
-        view = DataView(spot=spot, rates=rates)
+        reer = {k: v.loc[s:e] for k, v in view.reer.items()}
+        macro = {k: v.loc[s:e] for k, v in view.macro.items()}
+        view = DataView(spot=spot, rates=rates, reer=reer, macro=macro)
     return view
 
 def run(cfg, env, mode) -> dict:
