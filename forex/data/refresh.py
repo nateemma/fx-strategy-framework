@@ -1,7 +1,7 @@
 from forex.config import CURRENCIES, MACRO_SERIES
 from forex.data.fred import load_series
 
-def refresh_cache(cache_dir, codes=None, loader=load_series) -> list:
+def refresh_cache(cache_dir, codes=None, loader=load_series, on_step=None) -> list:
     """Force-refetch every FRED series the universe needs, overwriting the cache."""
     if codes is None:
         codes = [c for c in CURRENCIES if c != "USD"]
@@ -14,6 +14,8 @@ def refresh_cache(cache_dir, codes=None, loader=load_series) -> list:
         if cur.reer_fred:
             ids.append(cur.reer_fred)
     ids += list(MACRO_SERIES.values())
-    for sid in ids:
+    for i, sid in enumerate(ids, 1):
+        if on_step:
+            on_step(i, len(ids), sid)
         loader(sid, cache_dir=cache_dir, force=True)
     return ids

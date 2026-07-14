@@ -93,8 +93,11 @@ def _build_view(cfg, env):
 
 def run(cfg, env, mode) -> dict:
     if mode == "download":
+        import sys
         from forex.data.refresh import refresh_cache
-        series = refresh_cache(env.data_cache_dir, codes=cfg.universe)
+        def _on_step(i, n, sid):
+            print(f"[{i:>2}/{n}] fetching {sid}", file=sys.stderr)
+        series = refresh_cache(env.data_cache_dir, codes=cfg.universe, on_step=_on_step)
         return {"download": {"series": series, "cache_dir": env.data_cache_dir}}
     from forex.core.discovery import build_strategy
     from forex.run.backtest import backtest

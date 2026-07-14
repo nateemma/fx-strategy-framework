@@ -35,3 +35,14 @@ def test_refresh_cache_includes_macro(tmp_path):
         return pd.Series([1.0], index=pd.to_datetime(["2020-01-01"]))
     ids = refresh_cache(tmp_path, codes=["AUD", "EUR"], loader=loader)
     assert all(sid in ids for sid in MACRO_SERIES.values())
+
+
+def test_refresh_cache_reports_progress(tmp_path):
+    steps = []
+    def loader(series_id, *, cache_dir, client=None, force=False):
+        return pd.Series([1.0], index=pd.to_datetime(["2020-01-01"]))
+    ids = refresh_cache(tmp_path, codes=["AUD"], loader=loader,
+                        on_step=lambda i, n, sid: steps.append((i, n, sid)))
+    assert [s[0] for s in steps] == list(range(1, len(ids) + 1))  # 1-based, contiguous
+    assert all(n == len(ids) for _, n, _ in steps)                # total is stable
+    assert [s[2] for s in steps] == ids                           # reports each id in order
