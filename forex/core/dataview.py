@@ -6,6 +6,7 @@ class DataView:
     spot: pd.DataFrame
     rates: dict
     reer: dict = field(default_factory=dict)
+    macro: dict = field(default_factory=dict)
 
     @property
     def codes(self) -> list:
@@ -20,11 +21,12 @@ class DataView:
         spot = self.spot.loc[:asof]
         rates = {k: v.loc[:asof] for k, v in self.rates.items()}
         reer = {k: v.loc[:asof] for k, v in self.reer.items()}
-        return DataView(spot=spot, rates=rates, reer=reer)
+        macro = {k: v.loc[:asof] for k, v in self.macro.items()}
+        return DataView(spot=spot, rates=rates, reer=reer, macro=macro)
 
     @classmethod
     def from_fred(cls, cache_dir, loader=None, codes=None) -> "DataView":
-        from forex.config import CURRENCIES
+        from forex.config import CURRENCIES, MACRO_SERIES
         from forex.data.prices import build_spot_panel
         from forex.data.fred import load_series
         if loader is None:
@@ -36,4 +38,5 @@ class DataView:
         for c in codes:
             rates[c] = loader(CURRENCIES[c].rate_fred, cache_dir=cache_dir) / 100.0
         reer = {c: loader(CURRENCIES[c].reer_fred, cache_dir=cache_dir) for c in codes}
-        return cls(spot=spot, rates=rates, reer=reer)
+        macro = {name: loader(sid, cache_dir=cache_dir) for name, sid in MACRO_SERIES.items()}
+        return cls(spot=spot, rates=rates, reer=reer, macro=macro)

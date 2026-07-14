@@ -1,4 +1,4 @@
-from forex.config import CURRENCIES
+from forex.config import CURRENCIES, MACRO_SERIES
 from forex.data.fred import load_series
 
 def refresh_cache(cache_dir, codes=None, loader=load_series) -> list:
@@ -13,6 +13,7 @@ def refresh_cache(cache_dir, codes=None, loader=load_series) -> list:
             ids.append(cur.spot_fred)
         if cur.reer_fred:
             ids.append(cur.reer_fred)
+    ids += list(MACRO_SERIES.values())
     for sid in ids:
         loader(sid, cache_dir=cache_dir, force=True)
     return ids

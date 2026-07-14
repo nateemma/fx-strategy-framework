@@ -20,12 +20,12 @@ class VolTargetOverlay(Strategy):
         from forex.run.backtest import returns_of
         w = self.base.target_weights(view)
         base_ret = returns_of(w, view, self.cost_bps)
-        vf = self._vol_forecast(base_ret).reindex(w.index).ffill()
+        vf = self._vol_forecast(base_ret, view).reindex(w.index).ffill()
         raw = (self.target_vol / vf).clip(upper=self.cap)
         L = raw.resample(self.cadence).first().reindex(w.index, method="ffill")
         return w.mul(L, axis=0)   # causal, NOT pre-shifted; backtest applies shift(1)
 
-    def _vol_forecast(self, base_ret: pd.Series) -> pd.Series:
+    def _vol_forecast(self, base_ret: pd.Series, view) -> pd.Series:
         return ewma_vol(base_ret, lam=self.lam)
 
     def params(self) -> dict:

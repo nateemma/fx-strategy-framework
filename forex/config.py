@@ -19,6 +19,9 @@ class Currency:
 # (Task 3, Step 6), spot-check each ID at https://fred.stlouisfed.org/series/<ID>; if one is
 # dead, substitute the nearest 3-month rate for that country and update this dict. Same caveat
 # applies to the reer_fred IDs. Tests use fixtures and do not depend on the IDs being live.
+# Global (market-wide) risk-off series for the cross-asset ML vol overlay (FRED, daily).
+MACRO_SERIES = {"vix": "VIXCLS", "hy_oas": "BAMLH0A0HYM2", "term": "T10Y2Y"}
+
 CURRENCIES: dict[str, Currency] = {
     "USD": Currency("USD", None,       False, "IR3TIB01USM156N", 0, None),
     "EUR": Currency("EUR", "DEXUSEU",  False, "IR3TIB01EZM156N", 0, "RBXMBIS"),

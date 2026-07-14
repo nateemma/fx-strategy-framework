@@ -19,3 +19,8 @@ def test_reer_fred_set_for_non_usd_none_for_usd():
     assert CURRENCIES["USD"].reer_fred is None
     assert CURRENCIES["AUD"].reer_fred == "RBAUBIS"
     assert all(CURRENCIES[c].reer_fred is not None for c in CURRENCIES if c != "USD")
+
+
+def test_macro_series():
+    from forex.config import MACRO_SERIES
+    assert MACRO_SERIES == {"vix": "VIXCLS", "hy_oas": "BAMLH0A0HYM2", "term": "T10Y2Y"}

@@ -51,6 +51,35 @@ def test_backtest_produces_finite_result():
     assert isinstance(r, Result)
     assert np.isfinite(r.metrics["total_return"]) and np.isfinite(r.metrics["sharpe"])
 
+def _macro_view():
+    v = _view()
+    idx = v.calendar
+    import numpy as np
+    v.macro = {"vix": pd.Series(15.0 + 5*np.sin(np.arange(len(idx))/50), index=idx),
+               "hy_oas": pd.Series(4.0 + np.linspace(0, 1, len(idx)), index=idx),
+               "term": pd.Series(1.0 - np.linspace(0, 0.5, len(idx)), index=idx)}
+    return v
+
+def test_build_exog_has_three_columns():
+    from strategies.mloverlay import MLVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    v = _macro_view()
+    ov = MLVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, cadence="D")
+    ex = ov._build_exog(v, v.calendar)
+    assert list(ex.columns) == ["vix", "hy_oas", "term"] and len(ex) == len(v.calendar)
+
+def test_xasset_is_causal_and_finite():
+    from strategies.mloverlay import MLVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    from forex.run.backtest import backtest
+    from forex.core.result import Result
+    v = _macro_view()
+    ov = MLVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, cadence="D")
+    ov.fit(v)
+    assert_causal(ov, v, v.calendar[[200, 400, 699]])
+    r = backtest(ov, v, cost_bps=1.0)
+    assert isinstance(r, Result) and np.isfinite(r.metrics["sharpe"])
+
 def test_walk_forward_oos_is_finite():
     from forex.run.walkforward import walk_forward
     v = _view()

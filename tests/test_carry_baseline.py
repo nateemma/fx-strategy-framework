@@ -12,6 +12,9 @@ def _synthetic_loader():
         "IR3TIB01EZM156N": pd.Series(0.0, index=dates, name="value"),  # low carry
         "RBAUBIS": pd.Series(100.0, index=dates, name="value"),
         "RBXMBIS": pd.Series(100.0, index=dates, name="value"),
+        "VIXCLS": pd.Series(20.0, index=dates, name="value"),
+        "BAMLH0A0HYM2": pd.Series(4.0, index=dates, name="value"),
+        "T10Y2Y": pd.Series(1.0, index=dates, name="value"),
     }
     def loader(series_id, *, cache_dir, client=None):
         return series[series_id]
@@ -35,6 +38,9 @@ def test_rates_normalized_from_percent_keeps_carry_sane():
         "IR3TIB01EZM156N": pd.Series(0.0, index=dates, name="value"),  # 0%
         "RBAUBIS": pd.Series(100.0, index=dates, name="value"),
         "RBXMBIS": pd.Series(100.0, index=dates, name="value"),
+        "VIXCLS": pd.Series(20.0, index=dates, name="value"),
+        "BAMLH0A0HYM2": pd.Series(4.0, index=dates, name="value"),
+        "T10Y2Y": pd.Series(1.0, index=dates, name="value"),
     }
     def loader(series_id, *, cache_dir, client=None):
         return series[series_id]
