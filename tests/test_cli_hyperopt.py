@@ -32,7 +32,8 @@ def test_run_hyperopt(monkeypatch):
 def test_main_hyperopt_prints_winning_config(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
     rc = cli.main(["hyperopt", "--strategy", "carry", "--n-samples", "6", "--seed", "1",
-                   "--tune", "n_long,n_short", "--train-days", "250", "--test-days", "125"])
+                   "--tune", "n_long,n_short", "--train-days", "250", "--test-days", "125",
+                   "--jobs", "1"])
     assert rc == 0
     out = capsys.readouterr().out
     assert "strategy = \"carry\"" in out and "[strategy_params]" in out   # winning RunConfig TOML
@@ -40,9 +41,19 @@ def test_main_hyperopt_prints_winning_config(monkeypatch, capsys):
 def test_main_hyperopt_prints_progress_to_stderr(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
     rc = cli.main(["hyperopt", "--strategy", "carry", "--n-samples", "6", "--seed", "1",
-                   "--tune", "n_long,n_short", "--train-days", "250", "--test-days", "125"])
+                   "--tune", "n_long,n_short", "--train-days", "250", "--test-days", "125",
+                   "--jobs", "1"])
     assert rc == 0
     cap = capsys.readouterr()
     assert "new best" in cap.err                       # progress went to stderr
     assert "new best" not in cap.out                   # stdout stays clean
     assert "strategy = \"carry\"" in cap.out            # winning-config TOML still on stdout
+
+def test_resolve_jobs_flag_and_default():
+    import os
+    from forex.cli import build_parser, resolve
+    cfg, _, _ = resolve(build_parser().parse_args(
+        ["hyperopt", "--strategy", "carry", "--jobs", "4"]))
+    assert cfg.jobs == 4
+    cfg2, _, _ = resolve(build_parser().parse_args(["hyperopt", "--strategy", "carry"]))
+    assert cfg2.jobs == max(1, (os.cpu_count() or 1) - 1)   # parallel by default
