@@ -64,10 +64,12 @@ class CarryTrendValue(BlendStrategy):
 
 class CarryTrendVolTarget(VolTargetOverlay):
     NAME = "carry_trend_voltarget"
+    DEFAULTS = {"target_vol": 0.062, "cap": 1.20}      # validated bests (hyperopt target_vol,cap)
     @classmethod
     def build(cls, params):
         blend_p, overlay = split_prefixed(params, ("carry", "trend"))
-        return cls(BlendStrategy(build_components(CarryTrend.SPECS, blend_p)), **overlay)
+        return cls(BlendStrategy(build_components(CarryTrend.SPECS, blend_p)),
+                   **{**cls.DEFAULTS, **overlay})
 
 class CarryTrendValueVolTarget(VolTargetOverlay):
     NAME = "carry_trend_value_voltarget"

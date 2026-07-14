@@ -68,3 +68,10 @@ def test_duplicate_name_raises(tmp_path, monkeypatch):
     discovery._CACHE.pop("dup_pkg", None)            # ensure a fresh scan
     with pytest.raises(ValueError):
         discovery.load_strategies("dup_pkg")
+
+
+def test_carry_trend_voltarget_tuned_defaults():
+    s = build_strategy("carry_trend_voltarget", package="strategies")
+    assert abs(s.target_vol - 0.062) < 1e-9 and abs(s.cap - 1.20) < 1e-9   # validated bests
+    s2 = build_strategy("carry_trend_voltarget", {"target_vol": 0.1}, "strategies")
+    assert s2.target_vol == 0.1 and abs(s2.cap - 1.20) < 1e-9              # override target_vol, keep cap default
