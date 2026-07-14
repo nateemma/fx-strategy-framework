@@ -115,6 +115,16 @@ def test_crash_tilt_shifts_weight_under_carry_drawdown():
     assert diff.max() > 1e-6            # on a carry-drawdown view the tilt engaged and changed the mix
     # (tilt=0 identical everywhere is asserted separately; direction carry->trend is by construction)
 
+def test_crash_tilt_moves_toward_trend_leg():
+    from strategies.blend import CarryTrendCrash
+    v = _crash_view()
+    comps = lambda: {"carry": CarryStrategy(1, 1), "trend": TrendStrategy("ema", 40)}
+    trend_w = TrendStrategy("ema", 40).target_weights(v).fillna(0.0)
+    static = CarryTrendCrash(comps(), tilt=0.0).target_weights(v).fillna(0.0)
+    crash = CarryTrendCrash(comps(), dd_threshold=0.02, tilt=0.4).target_weights(v).fillna(0.0)
+    align = lambda w: float((w * trend_w).to_numpy().sum())   # projection onto the trend leg
+    assert align(crash) > align(static) + 1e-6                # carry drawdown tilts TOWARD trend (sign)
+
 def test_crash_variants_are_causal():
     from strategies.blend import CarryTrendCrash
     v = _view()
