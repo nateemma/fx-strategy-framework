@@ -4,7 +4,9 @@ import pandas as pd
 class HARVolForecaster:
     """HAR-RV ridge forecaster of forward annualised realised volatility (log-vol space).
     Optionally accepts exogenous features; standardizes the feature matrix when exog is present.
-    Consistency contract: predict must receive `anchor` iff fit did."""
+    Consistency contract: predict must receive `anchor` iff fit did (enforced), and the anchor must
+    cover the full prediction index (an uncovered date yields a NaN forecast, which the overlay's EWMA
+    fallback then fills)."""
     WINDOWS = (5, 21, 63)
 
     def __init__(self):
@@ -12,6 +14,7 @@ class HARVolForecaster:
         self.fitted = False
         self.mean_ = None
         self.std_ = None
+        self._anchored = False
 
     def _features(self, returns, exog=None):
         feats = {}
@@ -42,9 +45,12 @@ class HARVolForecaster:
         A = Xm.T @ Xm + alpha * np.eye(Xm.shape[1])
         self.coef_ = np.linalg.solve(A, Xm.T @ d["_y"].values)
         self.fitted = True
+        self._anchored = anchor is not None
         return self
 
     def predict(self, returns, exog=None, anchor=None):
+        if (anchor is not None) != self._anchored:
+            raise ValueError("predict must receive `anchor` iff fit did")
         X = self._features(returns, exog)
         Xv = X.values
         if self.mean_ is not None:

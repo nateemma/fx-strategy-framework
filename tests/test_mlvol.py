@@ -62,3 +62,14 @@ def test_anchored_prediction_tracks_anchor():
     assert not pred.dropna().equals(plain.dropna())     # anchoring changes the forecast
     # residual target is centered near 0 -> anchored forecast stays near exp(anchor)
     assert abs(np.log(pred.dropna()).mean() - np.log(0.12)) < abs(np.log(plain.dropna()).mean() - np.log(0.12))
+
+def test_anchor_consistency_contract_enforced():
+    import pytest
+    r = _returns()
+    anchor = pd.Series(np.log(0.12), index=r.index)
+    fitted_anchored = HARVolForecaster().fit(r, anchor=anchor)
+    with pytest.raises(ValueError):
+        fitted_anchored.predict(r)                          # fit anchored, predict not -> reject
+    fitted_plain = HARVolForecaster().fit(r)
+    with pytest.raises(ValueError):
+        fitted_plain.predict(r, anchor=anchor)              # fit plain, predict anchored -> reject
