@@ -44,3 +44,10 @@ class CarryVolTargetXAsset(MLVolTargetOverlay):
     def build(cls, params):
         base, overlay = split_params(params, ("n_long", "n_short"))
         return cls(CarryStrategy(**base), use_macro=True, **overlay)
+
+class CarryVolTargetXAssetAnchored(MLVolTargetOverlay):
+    NAME = "carry_voltarget_xasset_anchored"
+    @classmethod
+    def build(cls, params):
+        base, overlay = split_params(params, ("n_long", "n_short"))
+        return cls(CarryStrategy(**base), use_macro=True, anchor_ewma=True, **overlay)

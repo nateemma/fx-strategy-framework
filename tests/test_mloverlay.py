@@ -87,3 +87,28 @@ def test_walk_forward_oos_is_finite():
                      v, train_days=252, test_days=126, cost_bps=1.0)
     assert len(r.returns) > 0
     assert np.isfinite(r.metrics["total_return"]) and np.isfinite(r.metrics["sharpe"])
+
+def test_anchored_variant_builds_via_discovery_and_flag_hidden():
+    from forex.core.discovery import build_strategy
+    ov = build_strategy("carry_voltarget_xasset_anchored", package="strategies")
+    assert ov.use_macro is True and ov.anchor_ewma is True
+    assert "anchor_ewma" not in ov.params()          # structural, not tunable
+
+def test_anchor_off_by_default():
+    from strategies.mloverlay import MLVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    ov = MLVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, cadence="D")
+    assert ov.anchor_ewma is False
+    assert ov._anchor(pd.Series([0.01, -0.01, 0.02])) is None
+
+def test_anchored_xasset_is_causal_and_finite():
+    from strategies.mloverlay import MLVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    from forex.run.backtest import backtest
+    from forex.core.result import Result
+    v = _macro_view()
+    ov = MLVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, anchor_ewma=True, cadence="D")
+    ov.fit(v)
+    assert_causal(ov, v, v.calendar[[200, 400, 699]])
+    r = backtest(ov, v, cost_bps=1.0)
+    assert isinstance(r, Result) and np.isfinite(r.metrics["sharpe"])
