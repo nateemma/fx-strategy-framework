@@ -111,12 +111,23 @@ trailing anchor. `carry_voltarget_xasset_anchored` must pass `causal-check`.
   `carry_voltarget_xasset`) is unchanged.
 - Full suite green.
 
-## Validation (post-merge)
-Walk-forward `carry_voltarget` (EWMA) vs `carry_voltarget_xasset` (macro-HAR) vs
-`carry_voltarget_xasset_anchored` (macro-HAR anchored to EWMA), `--timerange 1997-01-01:
---train-days 2520 --test-days 504`. Record: does anchoring let the macro features add OOS edge over
-EWMA? If yes → new preferred ML variant. If no → the ML-vol-overlay track is exhausted, airtight
-(EWMA beats macro-HAR *even when the macro-HAR is handed EWMA as a free offset*); EWMA stays default.
+## Validation (post-merge) — RESULT: airtight negative, EWMA stays default
+Walk-forward `--timerange 1997-01-01: --train-days 2520 --test-days 504` (run 2026-07-14):
+
+| variant | Sharpe | maxDD | Calmar | total |
+|---|---|---|---|---|
+| `carry_voltarget` (EWMA) | **0.1227** | **−24.6%** | **0.0476** | 23.3% |
+| `carry_voltarget_xasset` (macro-HAR) | 0.0846 | −31.4% | 0.0289 | 17.6% |
+| `carry_voltarget_xasset_anchored` (anchored) | 0.0873 | −31.0% | 0.0300 | 18.1% |
+
+Anchoring behaved exactly as designed — it lifted the macro-HAR toward EWMA (0.0846 → 0.0873 Sharpe)
+by nesting EWMA as the floor — but the anchored variant still trails EWMA by ~29% Sharpe / ~37% Calmar.
+Since the anchored variant differs from EWMA *only* by the learned corrections, this isolates and
+quantifies the conclusion: **the optimal weight on the ML signal is zero.** The only lever left,
+`alpha → ∞`, converges the anchored model to EWMA from below — it cannot beat it. The ML-vol-overlay
+track (price-only HAR, cross-asset macro HAR, EWMA-anchored macro HAR) is exhausted end-to-end; EWMA
+remains the deployable default (`carry_trend_voltarget`). The rejected variants stay registered as
+documented negatives.
 
 ## Out of scope (YAGNI)
 - A price-only anchored variant (`carry_voltarget_ml_anchored`) — a trivial follow-on if the macro
