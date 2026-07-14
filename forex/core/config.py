@@ -15,6 +15,7 @@ class RunConfig:
     objective: str = "sharpe"
     tune: list | None = None
     preview: bool = False
+    jobs: int = 1
 
     @classmethod
     def from_dict(cls, d: dict) -> "RunConfig":

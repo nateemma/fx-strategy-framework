@@ -1,4 +1,6 @@
 import argparse
+import os
+import functools
 from dataclasses import replace
 from forex.core.config import RunConfig
 from forex.core.env import EnvConfig
@@ -33,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--seed", type=int)
             sp.add_argument("--objective")
             sp.add_argument("--tune")
+            sp.add_argument("--jobs", type=int)
         if mode == "dryrun":
             sp.add_argument("--preview", action="store_true")
             sp.add_argument("--equity", type=float)
@@ -65,6 +68,8 @@ def resolve(args):
         overrides["tune"] = tune.split(",")
     if getattr(args, "preview", False):
         overrides["preview"] = True
+    overrides["jobs"] = args.jobs if getattr(args, "jobs", None) is not None \
+        else max(1, (os.cpu_count() or 1) - 1)
     cfg = cfg.merge(overrides)
     env = EnvConfig.load()
     if args.cache_dir is not None:
@@ -113,11 +118,11 @@ def run(cfg, env, mode) -> dict:
             if improved:
                 ps = ", ".join(f"{k}={v}" for k, v in params.items())
                 print(f"[{i:>3}/{n}] new best {_obj}={score:.4f} @ {{{ps}}}", file=sys.stderr)
-        build = lambda p: build_strategy(cfg.strategy, p, "strategies")
+        build = functools.partial(build_strategy, cfg.strategy, package="strategies")
         res = optimize(build, view, train_days=cfg.train_days, test_days=cfg.test_days,
                        n_samples=cfg.n_samples, seed=cfg.seed, cost_bps=cfg.cost_bps,
                        base_params=cfg.strategy_params, tune=cfg.tune, objective=cfg.objective,
-                       on_step=_on_step)
+                       on_step=_on_step, jobs=cfg.jobs)
         return {"hyperopt": {**res, "strategy": cfg.strategy, "cost_bps": cfg.cost_bps}}
     if mode == "dryrun":
         import os
