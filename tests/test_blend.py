@@ -17,6 +17,15 @@ def _view():
              "EUR": pd.Series(0.0, index=idx), "SEK": pd.Series(0.03, index=idx)}
     return DataView(spot=spot, rates=rates)
 
+def _crash_view():
+    # high-rate AUD (carry goes long) depreciates -> carry draws down -> stress engages
+    idx = pd.date_range("2016-01-01", periods=500, freq="B")
+    spot = pd.DataFrame({"AUD": 1.0 - np.linspace(0, 0.30, 500), "EUR": 1.1 + np.linspace(0, 0.02, 500),
+                         "SEK": 1.0 + np.linspace(0, 0.01, 500)}, index=idx)
+    rates = {"USD": pd.Series(0.01, index=idx), "AUD": pd.Series(0.06, index=idx),
+             "EUR": pd.Series(0.0, index=idx), "SEK": pd.Series(0.03, index=idx)}
+    return DataView(spot=spot, rates=rates)
+
 def test_single_component_reproduces_the_sub():
     v = _view()
     carry = CarryStrategy(1, 1)
@@ -86,3 +95,36 @@ def test_refactor_matches_inline_blend():
         ref = ref.add(sub_w[p].mul(norm[p], axis=0), fill_value=0.0)
     got = b.target_weights(v)
     assert (got - ref).abs().max().max() < 1e-12
+
+def test_crash_tilt_zero_equals_static_blend():
+    from strategies.blend import CarryTrendCrash
+    v = _view()
+    comps = {"carry": CarryStrategy(1, 1), "trend": TrendStrategy("ema", 40)}
+    static = BlendStrategy(dict(comps)).target_weights(v)
+    crash = CarryTrendCrash(dict(comps), tilt=0.0).target_weights(v)
+    assert (crash - static).abs().max().max() < 1e-12          # tilt=0 -> identical
+
+def test_crash_tilt_shifts_weight_under_carry_drawdown():
+    from strategies.blend import CarryTrendCrash
+    v = _crash_view()
+    comps = lambda: {"carry": CarryStrategy(1, 1), "trend": TrendStrategy("ema", 40)}
+    static = CarryTrendCrash(comps(), tilt=0.0).target_weights(v)          # == static blend
+    crash = CarryTrendCrash(comps(), dd_threshold=0.02, tilt=0.4).target_weights(v)
+    diff = (crash - static).abs().to_numpy()
+    diff = diff[~np.isnan(diff)]
+    assert diff.max() > 1e-6            # on a carry-drawdown view the tilt engaged and changed the mix
+    # (tilt=0 identical everywhere is asserted separately; direction carry->trend is by construction)
+
+def test_crash_variants_are_causal():
+    from strategies.blend import CarryTrendCrash
+    v = _view()
+    ov = CarryTrendCrash({"carry": CarryStrategy(1, 1), "trend": TrendStrategy("ema", 40)},
+                         dd_threshold=0.03, tilt=0.3)
+    assert_causal(ov, v, v.calendar[[200, 350, 499]])
+    assert_causal(build_strategy("carry_trend_crash_voltarget"), v, v.calendar[[300, 450, 499]])
+
+def test_crash_variant_hyperopt_levers_present():
+    ov = build_strategy("carry_trend_crash")
+    p, sp = ov.params(), ov.search_space()
+    assert "dd_threshold" in p and "tilt" in p
+    assert "dd_threshold" in sp and "tilt" in sp

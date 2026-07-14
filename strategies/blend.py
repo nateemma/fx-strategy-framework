@@ -6,7 +6,7 @@ from strategies.carry import CarryStrategy
 from strategies.trend import TrendStrategy
 from strategies.value import ValueStrategy
 from strategies.overlay import VolTargetOverlay
-from forex.core.compose import split_prefixed, build_components
+from forex.core.compose import split_prefixed, build_components, split_params
 
 class BlendStrategy(Strategy):
     def __init__(self, components: dict, lam: float = 0.94,
@@ -86,3 +86,55 @@ class CarryTrendValueVolTarget(VolTargetOverlay):
     def build(cls, params):
         blend_p, overlay = split_prefixed(params, ("carry", "trend", "value"))
         return cls(BlendStrategy(build_components(CarryTrendValue.SPECS, blend_p)), **overlay)
+
+class CarryTrendCrash(BlendStrategy):
+    NAME = "carry_trend_crash"
+    SPECS = CarryTrend.SPECS
+    def __init__(self, components, dd_threshold: float = 0.05, tilt: float = 0.30, **kw):
+        super().__init__(components, **kw)
+        self.dd_threshold = dd_threshold
+        self.tilt = tilt
+
+    def _crash_stress(self, view, sub_w, idx):
+        from forex.run.backtest import returns_of
+        rc = returns_of(sub_w["carry"], view, self.cost_bps).reindex(idx).fillna(0.0)
+        eq = (1.0 + rc).cumprod()
+        depth = -(eq / eq.cummax() - 1.0)
+        return ((depth - self.dd_threshold) / self.dd_threshold).clip(lower=0.0, upper=1.0)
+
+    def target_weights(self, view: DataView) -> pd.DataFrame:
+        sub_w, idx, cols = self._sub_weights(view)
+        norm = self._base_norm(view, sub_w, idx)
+
+        if self.tilt > 0:
+            norm = norm.copy()
+            shift = self.tilt * self._crash_stress(view, sub_w, idx)
+            norm["trend"] = (norm["trend"] + shift).clip(lower=0.0, upper=1.0)
+            norm["carry"] = (norm["carry"] - shift).clip(lower=0.0, upper=1.0)
+            norm = norm.div(norm.sum(axis=1), axis=0)
+
+        norm = norm.resample(self.cadence).first().reindex(idx, method="ffill")
+        return self._combine(sub_w, norm, idx, cols)
+
+    def params(self) -> dict:
+        return {**super().params(), "dd_threshold": self.dd_threshold, "tilt": self.tilt}
+
+    def search_space(self) -> dict:
+        from forex.core.space import Float
+        return {**super().search_space(),
+                "dd_threshold": Float(0.02, 0.15), "tilt": Float(0.0, 0.5)}
+
+    @classmethod
+    def build(cls, params):
+        own, comps = split_params(params, ("dd_threshold", "tilt"))
+        return cls(build_components(cls.SPECS, comps), **own)
+
+class CarryTrendCrashVolTarget(VolTargetOverlay):
+    NAME = "carry_trend_crash_voltarget"
+    DEFAULTS = {"target_vol": 0.062, "cap": 1.20}
+    @classmethod
+    def build(cls, params):
+        crash_p, rest = split_params(params, ("dd_threshold", "tilt"))
+        blend_p, overlay = split_prefixed(rest, ("carry", "trend"))
+        inner = CarryTrendCrash(build_components(CarryTrend.SPECS, blend_p), **crash_p)
+        return cls(inner, **{**cls.DEFAULTS, **overlay})
