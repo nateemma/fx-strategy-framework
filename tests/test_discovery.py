@@ -1,9 +1,10 @@
 import pytest
 from forex.core.discovery import build_strategy, available, load_strategies
 
-def test_available_lists_all_13():
+def test_available_lists_all_14():
     assert set(available("strategies")) == {
-        "carry", "carry_voltarget", "carry_voltarget_ml", "momentum", "momentum_voltarget",
+        "carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset",
+        "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget"}
 
@@ -23,7 +24,8 @@ def test_unknown_raises():
     with pytest.raises(KeyError):
         build_strategy("nope", package="strategies")
 
-_ALL = ["carry", "carry_voltarget", "carry_voltarget_ml", "momentum", "momentum_voltarget",
+_ALL = ["carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset",
+        "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget"]
 
@@ -69,6 +71,13 @@ def test_duplicate_name_raises(tmp_path, monkeypatch):
     with pytest.raises(ValueError):
         discovery.load_strategies("dup_pkg")
 
+
+def test_carry_voltarget_xasset_uses_macro():
+    from strategies.mloverlay import MLVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    s = build_strategy("carry_voltarget_xasset", {"n_long": 1, "n_short": 1, "target_vol": 0.1}, "strategies")
+    assert isinstance(s, MLVolTargetOverlay) and s.use_macro is True
+    assert isinstance(s.base, CarryStrategy) and s.base.n_long == 1 and s.target_vol == 0.1
 
 def test_carry_trend_voltarget_tuned_defaults():
     s = build_strategy("carry_trend_voltarget", package="strategies")

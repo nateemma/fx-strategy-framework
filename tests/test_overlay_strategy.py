@@ -28,4 +28,4 @@ def test_vol_forecast_defaults_to_ewma():
     idx = pd.date_range("2019-01-01", periods=300, freq="B")
     base_ret = pd.Series(np.random.RandomState(1).normal(0, 0.01, 300), index=idx)
     ov = VolTargetOverlay(CarryStrategy(1, 1), lam=0.94)
-    assert (ov._vol_forecast(base_ret) == ewma_vol(base_ret, lam=0.94)).all()
+    assert (ov._vol_forecast(base_ret, None) == ewma_vol(base_ret, lam=0.94)).all()
