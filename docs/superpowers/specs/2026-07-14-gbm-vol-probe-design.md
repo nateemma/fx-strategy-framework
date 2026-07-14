@@ -77,14 +77,24 @@ freezes the tree ensemble, `predict` uses only trailing data. `carry_voltarget_x
   view; discovery count +1.
 - Full suite green.
 
-## Validation (post-merge)
-Walk-forward `carry_voltarget` (EWMA) vs `carry_voltarget_xasset_anchored` (linear, anchored) vs
-`carry_voltarget_xasset_gbm` (nonlinear, anchored), `--timerange 1997-01-01: --train-days 2520
---test-days 504`. Decision:
-- GBM Sharpe/Calmar **> EWMA** → nonlinearity carries edge → build the MLX LSTM (its long-memory DoF may
-  add more).
-- GBM **≤ EWMA** → nonlinearity adds nothing over EWMA; the LSTM is shelved as not-worth-it; record the
-  negative alongside the HAR results.
+## Validation (post-merge) — RESULT: nonlinearity hurts; LSTM shelved
+Walk-forward `--timerange 1997-01-01: --train-days 2520 --test-days 504` (run 2026-07-14):
+
+| variant | Sharpe | maxDD | Calmar | total |
+|---|---|---|---|---|
+| `carry_voltarget` (EWMA, 0 params) | **0.1227** | −24.6% | **0.0476** | 23.3% |
+| `carry_voltarget_xasset_anchored` (linear ridge) | 0.0873 | −31.0% | 0.0300 | 18.1% |
+| `carry_voltarget_xasset_gbm` (nonlinear GBM) | 0.0638 | −27.8% | 0.0248 | 13.1% |
+
+Performance is **monotone-decreasing in model capacity**: EWMA > linear ridge > nonlinear GBM. Adding
+nonlinearity/interactions made it *worse*, not better — the classic weak-signal / small-data signature
+where estimation variance, not capacity, is the binding constraint. **Decision: the LSTM is shelved.**
+An LSTM is strictly more flexible than the GBM, so the monotone trend predicts it lands at/below the
+GBM; and its one unique DoF (learned temporal memory) is exactly what EWMA already is (an
+exponential-memory model with one parameter). The ML-vol-overlay track — linear HAR, macro HAR,
+EWMA-anchored HAR, and now nonlinear GBM — is closed. EWMA stays the deployable default. Residual
+caveat: the GBM had windowed (not recurrent) memory, so a thin "maybe the LSTM sees more" remains, but
+the evidence weight is strongly against it.
 
 ## Out of scope (YAGNI)
 - The MLX LSTM itself (this probe decides whether it's worth building).
