@@ -100,12 +100,15 @@ Order flow has real predictive content (Evans & Lyons). **Blocked:** genuine flo
 ### 11. Time-series trend-following (CTA overlay)
 Absolute-momentum trend on each pair; a diversifier and a crude regime signal. Easy to add; modest
 standalone edge, better as an overlay.
-> **Status (2026-07-14): signal BUILT, overlay NOT — NEXT UP.** `trend.py` (tsmom / ema / donchian, per
-> currency, with a strength band) exists and is a component in the blend (`ema`, lookback 108). Not yet
-> evaluated or deployed as an explicit *crash overlay*. **Next work:** does trend deliver *convex*
-> returns during carry drawdowns, and can leaning on it cap the blend's drawdown / lift Calmar past
-> ~0.33? This is the crash-management retry after #4 (ML vol) closed negative — no new data needed, and
-> it makes the deployable book safer for imminent live (IBKR approved, awaiting funding).
+> **Status (2026-07-14): signal BUILT; crash-overlay TESTED → static already captures it.** `trend.py`
+> (tsmom / ema / donchian) is a blend component. A diagnostic *confirmed* trend is a convex carry-crash
+> hedge (corr deepens −0.10→−0.30 in carry-down months; +0.48% mean in worst-decile carry months; +11%
+> in 2008-10). BUT a state-conditioned **crash overlay** (`carry_trend_crash*`, tilt to trend on carry
+> drawdown) **lost to the static blend** — worse Calmar *and deeper* drawdown at defaults, and hyperopt
+> walked the tilt to ~0 (static). The static blend holds trend *continuously* so it's positioned before
+> the crash; the dynamic tilt buys the hedge late (resample lag) and whipsaws into the recovery.
+> **Always-on beats timed** (cf. #4). `carry_trend_voltarget` stands; crash variants kept as documented
+> negatives. Trend's hedge is captured by *holding it*, not timing it.
 
 ### 12. EM carry extension
 Bigger carry differentials in liquid EM (MXN, ZAR, PLN…) — but fatter crash tails and the crypto

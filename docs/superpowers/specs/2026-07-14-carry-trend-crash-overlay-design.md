@@ -139,15 +139,32 @@ class CarryTrendCrashVolTarget(VolTargetOverlay):
 - **Discovery:** both new names build via discovery; count +2.
 - Full suite green.
 
-## Validation (post-merge)
-Walk-forward `--timerange 1997-01-01: --train-days 2520 --test-days 504`:
-`carry_trend` vs `carry_trend_crash` (and `carry_trend_voltarget` vs `carry_trend_crash_voltarget`), at
-the v1 defaults, then **hyperopt `dd_threshold`+`tilt` only** (one space) with an added **distant-window**
-check (the memory lesson: adjacent windows share a regime). Decision:
-- Dynamic beats static on **OOS Calmar / max-drawdown** *and* the edge survives the distant window →
-  ship `carry_trend_crash_voltarget` as the deployable book.
-- Otherwise → record "the static blend already captures the carry-trend crash hedge; no state-timing
-  edge"; `carry_trend_voltarget` stands; the crash variants remain registered as documented negatives.
+## Validation (post-merge) — RESULT: static wins; optimal tilt is zero
+Walk-forward `--timerange 1997-01-01: --train-days 2520 --test-days 504` (run 2026-07-14).
+
+At the v1 defaults (dd_threshold=0.05, tilt=0.30) the dynamic overlay was **worse on every metric,
+including *deeper* drawdown** (the opposite of its purpose):
+
+| variant | Sharpe | maxDD | Calmar |
+|---|---|---|---|
+| `carry_trend` (static) | **0.167** | **−11.2%** | **0.071** |
+| `carry_trend_crash` (dynamic, defaults) | 0.094 | −14.5% | 0.036 |
+| `carry_trend_voltarget` (static) | 0.154 | −13.2% | 0.061 |
+| `carry_trend_crash_voltarget` (dynamic, defaults) | 0.085 | −16.3% | 0.028 |
+
+Hyperopt of `dd_threshold`+`tilt` (60 samples, objective=Calmar, OOS-selected) walked **tilt → 0**:
+0.20→Calmar 0.050, 0.15→0.061, 0.05→0.066, **0.007→0.071 (best)** — monotone, every tilt reduction
+improved OOS Calmar. The winner (tilt≈0.007) reproduces the static blend. The IS-OOS gap (in-sample
+Sharpe 0.372 vs OOS 0.166) shows the active tilts overfit in-sample and were correctly rejected OOS.
+**No tilt>0 beats static, so the distant-window check was moot (it was contingent on a positive).**
+
+**Conclusion: the static blend already fully captures the carry-trend crash hedge; optimal state-timing
+tilt is zero.** Why: the static blend holds trend *continuously*, so it is positioned *before* a carry
+crash; the dynamic overlay detects carry drawdown and tilts in with a ~month resample lag, buying the
+hedge late and holding it into the carry recovery (whipsaw). This is the program's recurring law —
+**always-on beats timed** (cf. EWMA beating every ML vol forecaster). `carry_trend_voltarget` stands as
+the deployable book; the crash variants remain registered as documented negatives. A useful pre-live
+result: there is no crash-overlay improvement available, so the book ships as-is.
 
 ## Out of scope (YAGNI)
 - The exogenous risk-off (VIX/credit) trigger variant — only if the endogenous v1 shows promise.
