@@ -112,3 +112,25 @@ def test_anchored_xasset_is_causal_and_finite():
     assert_causal(ov, v, v.calendar[[200, 400, 699]])
     r = backtest(ov, v, cost_bps=1.0)
     assert isinstance(r, Result) and np.isfinite(r.metrics["sharpe"])
+
+def test_gbm_variant_builds_and_uses_gbm_forecaster():
+    from forex.core.discovery import build_strategy
+    from strategies.features.gbmvol import GBMVolForecaster
+    from strategies.features.mlvol import HARVolForecaster
+    ov = build_strategy("carry_voltarget_xasset_gbm", package="strategies")
+    assert ov.use_macro is True and ov.anchor_ewma is True
+    assert isinstance(ov.forecaster, GBMVolForecaster)
+    # base/HAR variants unchanged
+    assert isinstance(build_strategy("carry_voltarget_ml", package="strategies").forecaster, HARVolForecaster)
+
+def test_gbm_xasset_is_causal_and_finite():
+    from strategies.mloverlay import GBMVolTargetOverlay
+    from strategies.carry import CarryStrategy
+    from forex.run.backtest import backtest
+    from forex.core.result import Result
+    v = _macro_view()
+    ov = GBMVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, anchor_ewma=True, cadence="D")
+    ov.fit(v)
+    assert_causal(ov, v, v.calendar[[200, 400, 699]])
+    r = backtest(ov, v, cost_bps=1.0)
+    assert isinstance(r, Result) and np.isfinite(r.metrics["sharpe"])

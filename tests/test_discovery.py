@@ -1,9 +1,9 @@
 import pytest
 from forex.core.discovery import build_strategy, available, load_strategies
 
-def test_available_lists_all_15():
+def test_available_lists_all_16():
     assert set(available("strategies")) == {
-        "carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset", "carry_voltarget_xasset_anchored",
+        "carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset", "carry_voltarget_xasset_anchored", "carry_voltarget_xasset_gbm",
         "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget"}
@@ -24,7 +24,7 @@ def test_unknown_raises():
     with pytest.raises(KeyError):
         build_strategy("nope", package="strategies")
 
-_ALL = ["carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset", "carry_voltarget_xasset_anchored",
+_ALL = ["carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset", "carry_voltarget_xasset_anchored", "carry_voltarget_xasset_gbm",
         "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget"]

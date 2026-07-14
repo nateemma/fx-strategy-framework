@@ -4,7 +4,7 @@ from forex.core.dataview import DataView
 from forex.features.carry import carry_signal
 from strategies.features.basket import basket_weights
 from strategies.overlay import VolTargetOverlay
-from strategies.mloverlay import MLVolTargetOverlay
+from strategies.mloverlay import MLVolTargetOverlay, GBMVolTargetOverlay
 from forex.core.compose import split_params
 
 class CarryStrategy(Strategy):
@@ -47,6 +47,13 @@ class CarryVolTargetXAsset(MLVolTargetOverlay):
 
 class CarryVolTargetXAssetAnchored(MLVolTargetOverlay):
     NAME = "carry_voltarget_xasset_anchored"
+    @classmethod
+    def build(cls, params):
+        base, overlay = split_params(params, ("n_long", "n_short"))
+        return cls(CarryStrategy(**base), use_macro=True, anchor_ewma=True, **overlay)
+
+class CarryVolTargetXAssetGBM(GBMVolTargetOverlay):
+    NAME = "carry_voltarget_xasset_gbm"
     @classmethod
     def build(cls, params):
         base, overlay = split_params(params, ("n_long", "n_short"))

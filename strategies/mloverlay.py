@@ -13,7 +13,10 @@ class MLVolTargetOverlay(VolTargetOverlay):
         self.ridge_alpha = ridge_alpha
         self.use_macro = use_macro
         self.anchor_ewma = anchor_ewma
-        self.forecaster = HARVolForecaster()
+        self.forecaster = self._make_forecaster()
+
+    def _make_forecaster(self):
+        return HARVolForecaster()
 
     def _build_exog(self, view, index):
         m = view.macro
@@ -50,3 +53,8 @@ class MLVolTargetOverlay(VolTargetOverlay):
     def search_space(self) -> dict:
         from forex.core.space import Int
         return {**super().search_space(), "horizon": Int(10, 42)}
+
+class GBMVolTargetOverlay(MLVolTargetOverlay):
+    def _make_forecaster(self):
+        from strategies.features.gbmvol import GBMVolForecaster
+        return GBMVolForecaster()
