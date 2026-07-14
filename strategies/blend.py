@@ -21,13 +21,13 @@ class BlendStrategy(Strategy):
             sub.fit(train)
 
     def target_weights(self, view: DataView) -> pd.DataFrame:
-        from forex.run.backtest import backtest
+        from forex.run.backtest import returns_of
         sub_w = {p: s.target_weights(view) for p, s in self.components.items()}
         any_w = next(iter(sub_w.values()))
         idx, cols = any_w.index, any_w.columns
         inv = {}
-        for p, s in self.components.items():
-            r = backtest(s, view, cost_bps=self.cost_bps).returns
+        for p in self.components:
+            r = returns_of(sub_w[p], view, self.cost_bps)
             inv[p] = 1.0 / ewma_vol(r, lam=self.lam).reindex(idx).ffill()
         inv_df = pd.DataFrame(inv, index=idx)
         norm = inv_df.div(inv_df.sum(axis=1), axis=0)

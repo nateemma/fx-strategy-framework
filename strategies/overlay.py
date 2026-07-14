@@ -17,9 +17,9 @@ class VolTargetOverlay(Strategy):
         self.base.fit(train)
 
     def target_weights(self, view: DataView) -> pd.DataFrame:
-        from forex.run.backtest import backtest
+        from forex.run.backtest import returns_of
         w = self.base.target_weights(view)
-        base_ret = backtest(self.base, view, cost_bps=self.cost_bps).returns
+        base_ret = returns_of(w, view, self.cost_bps)
         vf = self._vol_forecast(base_ret).reindex(w.index).ffill()
         raw = (self.target_vol / vf).clip(upper=self.cap)
         L = raw.resample(self.cadence).first().reindex(w.index, method="ffill")
