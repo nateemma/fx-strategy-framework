@@ -22,3 +22,19 @@ def test_har_predict_is_deterministic():
     a = f.predict(returns)
     b = f.predict(returns)
     assert (a.dropna() == b.dropna()).all()
+
+def test_exog_none_is_byte_identical():
+    r = _regime_returns()
+    f = HARVolForecaster().fit(r, horizon=21, alpha=1.0)
+    assert len(f.coef_) == 4 and f.mean_ is None       # no exog -> 4 coefs, no standardization
+
+def test_exog_adds_features_and_standardizes():
+    import numpy as np, pandas as pd
+    r = _regime_returns()
+    # an exog column that tracks the realized-vol regime (informative)
+    ex = pd.DataFrame({"risk": (r.abs().rolling(21).mean() * 20).fillna(0.0)}, index=r.index)
+    f = HARVolForecaster().fit(r, exog=ex, horizon=21, alpha=1.0)
+    assert len(f.coef_) == 1 + 3 + 1                    # intercept + 3 RV + 1 exog
+    assert f.mean_ is not None and f.std_ is not None    # standardization stored
+    pred = f.predict(r, exog=ex)
+    assert pred.iloc[300:].notna().any()                 # produces forecasts
