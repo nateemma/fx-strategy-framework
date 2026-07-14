@@ -67,3 +67,22 @@ def test_voltarget_wrapped_blend_is_causal():
     v = _view()
     s = build_strategy("carry_trend_voltarget")
     assert_causal(s, v, v.calendar[[300, 450, 499]])
+
+def test_refactor_matches_inline_blend():
+    from forex.run.backtest import returns_of
+    from forex.features.volforecast import ewma_vol
+    v = _view()
+    comps = {"carry": CarryStrategy(2, 2), "trend": TrendStrategy("ema", 60)}
+    b = BlendStrategy(comps)
+    sub_w = {p: s.target_weights(v) for p, s in comps.items()}
+    idx = next(iter(sub_w.values())).index
+    cols = next(iter(sub_w.values())).columns
+    inv = {p: 1.0 / ewma_vol(returns_of(sub_w[p], v, b.cost_bps), lam=b.lam).reindex(idx).ffill()
+           for p in comps}
+    norm = pd.DataFrame(inv, index=idx)
+    norm = norm.div(norm.sum(axis=1), axis=0).resample(b.cadence).first().reindex(idx, method="ffill")
+    ref = pd.DataFrame(0.0, index=idx, columns=cols)
+    for p in comps:
+        ref = ref.add(sub_w[p].mul(norm[p], axis=0), fill_value=0.0)
+    got = b.target_weights(v)
+    assert (got - ref).abs().max().max() < 1e-12

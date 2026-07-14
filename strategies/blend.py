@@ -20,22 +20,31 @@ class BlendStrategy(Strategy):
         for sub in self.components.values():
             sub.fit(train)
 
-    def target_weights(self, view: DataView) -> pd.DataFrame:
-        from forex.run.backtest import returns_of
+    def _sub_weights(self, view: DataView):
         sub_w = {p: s.target_weights(view) for p, s in self.components.items()}
         any_w = next(iter(sub_w.values()))
-        idx, cols = any_w.index, any_w.columns
+        return sub_w, any_w.index, any_w.columns
+
+    def _base_norm(self, view: DataView, sub_w, idx) -> pd.DataFrame:
+        from forex.run.backtest import returns_of
         inv = {}
         for p in self.components:
             r = returns_of(sub_w[p], view, self.cost_bps)
             inv[p] = 1.0 / ewma_vol(r, lam=self.lam).reindex(idx).ffill()
         inv_df = pd.DataFrame(inv, index=idx)
-        norm = inv_df.div(inv_df.sum(axis=1), axis=0)
-        norm = norm.resample(self.cadence).first().reindex(idx, method="ffill")
+        return inv_df.div(inv_df.sum(axis=1), axis=0)
+
+    def _combine(self, sub_w, norm, idx, cols) -> pd.DataFrame:
         out = pd.DataFrame(0.0, index=idx, columns=cols)
         for p in self.components:
             out = out.add(sub_w[p].mul(norm[p], axis=0), fill_value=0.0)
         return out
+
+    def target_weights(self, view: DataView) -> pd.DataFrame:
+        sub_w, idx, cols = self._sub_weights(view)
+        norm = self._base_norm(view, sub_w, idx)
+        norm = norm.resample(self.cadence).first().reindex(idx, method="ffill")
+        return self._combine(sub_w, norm, idx, cols)
 
     def params(self) -> dict:
         return {f"{p}_{k}": v for p, s in self.components.items()
