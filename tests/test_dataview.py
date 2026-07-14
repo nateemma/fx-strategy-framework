@@ -37,3 +37,20 @@ def test_from_fred_loads_reer(tmp_path):
     assert set(v.reer) == {"AUD", "EUR"}
     assert not v.reer["AUD"].empty
     assert v.reer["AUD"].iloc[0] == 1.0    # REER is an index level, not divided by 100
+
+
+def test_macro_defaults_empty_and_truncate_clips_it():
+    assert _view().macro == {}
+    idx = pd.date_range("2020-01-01", periods=5, freq="D")
+    spot = pd.DataFrame({"AUD": range(5)}, index=idx).astype(float)
+    macro = {"vix": pd.Series([20.0]*5, index=idx)}
+    v = DataView(spot=spot, rates={"USD": pd.Series([0.01]*5, index=idx)}, macro=macro)
+    t = v.truncate("2020-01-03")
+    assert t.macro["vix"].index.max() == pd.Timestamp("2020-01-03")
+
+def test_from_fred_loads_macro(tmp_path):
+    midx = pd.date_range("2015-01-01", periods=24, freq="MS")
+    def fake_loader(series_id, *, cache_dir=None, **kw):
+        return pd.Series(range(1, 25), index=midx, dtype="float64", name="value")
+    v = DataView.from_fred(tmp_path, loader=fake_loader, codes=["AUD", "EUR"])
+    assert set(v.macro) == {"vix", "hy_oas", "term"}
