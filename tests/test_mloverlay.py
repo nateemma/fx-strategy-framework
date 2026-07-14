@@ -56,7 +56,7 @@ def _macro_view():
     idx = v.calendar
     import numpy as np
     v.macro = {"vix": pd.Series(15.0 + 5*np.sin(np.arange(len(idx))/50), index=idx),
-               "hy_oas": pd.Series(4.0 + np.linspace(0, 1, len(idx)), index=idx),
+               "credit": pd.Series(4.0 + np.linspace(0, 1, len(idx)), index=idx),
                "term": pd.Series(1.0 - np.linspace(0, 0.5, len(idx)), index=idx)}
     return v
 
@@ -66,7 +66,7 @@ def test_build_exog_has_three_columns():
     v = _macro_view()
     ov = MLVolTargetOverlay(CarryStrategy(1, 1), use_macro=True, cadence="D")
     ex = ov._build_exog(v, v.calendar)
-    assert list(ex.columns) == ["vix", "hy_oas", "term"] and len(ex) == len(v.calendar)
+    assert list(ex.columns) == ["vix", "credit", "term"] and len(ex) == len(v.calendar)
 
 def test_xasset_is_causal_and_finite():
     from strategies.mloverlay import MLVolTargetOverlay

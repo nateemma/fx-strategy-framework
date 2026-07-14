@@ -53,4 +53,4 @@ def test_from_fred_loads_macro(tmp_path):
     def fake_loader(series_id, *, cache_dir=None, **kw):
         return pd.Series(range(1, 25), index=midx, dtype="float64", name="value")
     v = DataView.from_fred(tmp_path, loader=fake_loader, codes=["AUD", "EUR"])
-    assert set(v.macro) == {"vix", "hy_oas", "term"}
+    assert set(v.macro) == {"vix", "credit", "term"}

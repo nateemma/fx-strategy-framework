@@ -12,7 +12,7 @@ def _synthetic_loader():
         "RBAUBIS": pd.Series(100.0, index=dates, name="value"),
         "RBXMBIS": pd.Series(100.0, index=dates, name="value"),
         "VIXCLS": pd.Series(20.0, index=dates, name="value"),
-        "BAMLH0A0HYM2": pd.Series(4.0, index=dates, name="value"),
+        "BAA10Y": pd.Series(4.0, index=dates, name="value"),
         "T10Y2Y": pd.Series(1.0, index=dates, name="value"),
     }
     def loader(series_id, *, cache_dir, client=None):

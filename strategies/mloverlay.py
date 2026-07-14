@@ -18,7 +18,7 @@ class MLVolTargetOverlay(VolTargetOverlay):
         m = view.macro
         ex = pd.DataFrame(index=index)
         ex["vix"] = np.log(m["vix"].reindex(index, method="ffill"))
-        ex["hy_oas"] = np.log(m["hy_oas"].reindex(index, method="ffill"))
+        ex["credit"] = np.log(m["credit"].reindex(index, method="ffill"))
         ex["term"] = m["term"].reindex(index, method="ffill")
         return ex
 

@@ -23,4 +23,4 @@ def test_reer_fred_set_for_non_usd_none_for_usd():
 
 def test_macro_series():
     from forex.config import MACRO_SERIES
-    assert MACRO_SERIES == {"vix": "VIXCLS", "hy_oas": "BAMLH0A0HYM2", "term": "T10Y2Y"}
+    assert MACRO_SERIES == {"vix": "VIXCLS", "credit": "BAA10Y", "term": "T10Y2Y"}
