@@ -1,3 +1,4 @@
+import functools
 import numpy as np, pandas as pd
 from forex.core.dataview import DataView
 from forex.core.discovery import build_strategy
@@ -56,3 +57,20 @@ def test_on_step_none_is_backward_compatible():
     b = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7,
                  tune=["n_long", "n_short"], on_step=None)
     assert a["best_params"] == b["best_params"] and a["score"] == b["score"]
+
+def test_jobs_invariant_determinism():
+    v = _view()
+    build = functools.partial(build_strategy, "carry", package="strategies")   # picklable
+    a = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7,
+                 tune=["n_long", "n_short"], jobs=1)
+    b = optimize(build, v, train_days=250, test_days=125, n_samples=6, seed=7,
+                 tune=["n_long", "n_short"], jobs=4)
+    assert a["best_params"] == b["best_params"] and a["score"] == b["score"]
+
+def test_parallel_path_completes():
+    v = _view()
+    build = functools.partial(build_strategy, "carry", package="strategies")
+    r = optimize(build, v, train_days=250, test_days=125, n_samples=4, seed=1,
+                 tune=["n_long", "n_short"], jobs=2)
+    assert set(r) >= {"best_params", "score", "oos", "in_sample", "n_samples"}
+    assert r["n_samples"] == 4
