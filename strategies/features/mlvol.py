@@ -3,7 +3,8 @@ import pandas as pd
 
 class HARVolForecaster:
     """HAR-RV ridge forecaster of forward annualised realised volatility (log-vol space).
-    Optionally accepts exogenous features; standardizes the feature matrix when exog is present."""
+    Optionally accepts exogenous features; standardizes the feature matrix when exog is present.
+    Consistency contract: predict must receive `anchor` iff fit did."""
     WINDOWS = (5, 21, 63)
 
     def __init__(self):
@@ -22,10 +23,12 @@ class HARVolForecaster:
             X = X.join(exog)
         return X
 
-    def fit(self, returns, exog=None, horizon: int = 21, alpha: float = 1.0):
+    def fit(self, returns, exog=None, anchor=None, horizon: int = 21, alpha: float = 1.0):
         X = self._features(returns, exog)
         fwd = (returns.pow(2).rolling(horizon).mean().shift(-horizon) * 252) ** 0.5
         y = np.log(fwd.clip(lower=1e-8))
+        if anchor is not None:
+            y = y - anchor
         d = X.assign(_y=y).dropna()
         Xv = d[X.columns].values
         if exog is not None:
@@ -41,10 +44,13 @@ class HARVolForecaster:
         self.fitted = True
         return self
 
-    def predict(self, returns, exog=None):
+    def predict(self, returns, exog=None, anchor=None):
         X = self._features(returns, exog)
         Xv = X.values
         if self.mean_ is not None:
             Xv = (Xv - self.mean_) / self.std_
         Xm = np.column_stack([np.ones(len(X)), Xv])
-        return pd.Series(np.exp(Xm @ self.coef_), index=X.index, name="vol_forecast")
+        pred = Xm @ self.coef_
+        if anchor is not None:
+            pred = pred + anchor.reindex(X.index).values
+        return pd.Series(np.exp(pred), index=X.index, name="vol_forecast")

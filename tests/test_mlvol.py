@@ -38,3 +38,27 @@ def test_exog_adds_features_and_standardizes():
     assert f.mean_ is not None and f.std_ is not None    # standardization stored
     pred = f.predict(r, exog=ex)
     assert pred.iloc[300:].notna().any()                 # produces forecasts
+
+def _returns(n=800, seed=0):
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2000-01-01", periods=n, freq="B")
+    return pd.Series(rng.normal(0, 0.01, n), index=idx)
+
+def test_anchor_none_is_byte_identical():
+    r = _returns()
+    a = HARVolForecaster().fit(r)                       # baseline (no anchor)
+    b = HARVolForecaster().fit(r, anchor=None)          # explicit None
+    assert np.array_equal(a.coef_, b.coef_)
+    pa, pb = a.predict(r), b.predict(r, anchor=None)
+    assert pa.equals(pb)
+
+def test_anchored_prediction_tracks_anchor():
+    r = _returns()
+    f = HARVolForecaster()
+    anchor = pd.Series(np.log(0.12), index=r.index)     # constant log-vol anchor
+    f.fit(r, anchor=anchor)
+    pred = f.predict(r, anchor=anchor)
+    plain = HARVolForecaster().fit(r).predict(r)
+    assert not pred.dropna().equals(plain.dropna())     # anchoring changes the forecast
+    # residual target is centered near 0 -> anchored forecast stays near exp(anchor)
+    assert abs(np.log(pred.dropna()).mean() - np.log(0.12)) < abs(np.log(plain.dropna()).mean() - np.log(0.12))
