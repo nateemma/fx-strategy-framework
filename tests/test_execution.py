@@ -29,6 +29,6 @@ def test_max_position_weight_clips(tmp_path):
     assert r.positions["AUD"] == 0.5
 
 def test_live_execution_preview_false_raises():
-    # non-preview mode must raise before placing any order
-    with pytest.raises(NotImplementedError):
+    # non-preview mode must raise (confirm guard) before placing any order
+    with pytest.raises(RuntimeError):
         LiveExecution(preview=False).rebalance(pd.Series(dtype=float), pd.Series(dtype=float))

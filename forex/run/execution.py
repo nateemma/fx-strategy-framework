@@ -71,14 +71,19 @@ class SimExecution:
                                turnover=turnover, cost=cost, applied=applied)
 
 class LiveExecution:
-    """ib_async IBKR adapter. Phase 1: PREVIEW-ONLY — computes the FX orders to reach the target
-    weights and returns them with applied=False; places NOTHING. Non-preview raises NotImplementedError.
-    Connects readonly=True; prices from historical MIDPOINT bars (competing-session-proof)."""
+    """ib_async IBKR adapter. Preview path: readonly=True, applied=False, places nothing.
+    Placement path: confirm=True required; connects readonly=False; five guards before any placeOrder."""
     def __init__(self, host="127.0.0.1", port=4002, client_id=23, cost_bps: float = 1.0,
-                 preview: bool = True, ib_factory=None, contract_factory=None):
+                 preview: bool = True, ib_factory=None, contract_factory=None,
+                 confirm: bool = False, max_order_frac: float = 0.25, max_gross: float = 2.5,
+                 min_order_units: int = 20000, allow_live: bool = False, tif: str = "DAY",
+                 order_factory=None):
         self.host = host; self.port = port; self.client_id = client_id
         self.cost_bps = cost_bps; self.preview = preview
         self._ib_factory = ib_factory; self._contract_factory = contract_factory
+        self.confirm = confirm; self.max_order_frac = max_order_frac; self.max_gross = max_gross
+        self.min_order_units = min_order_units; self.allow_live = allow_live; self.tif = tif
+        self._order_factory = order_factory
 
     def _make_ib(self):
         if self._ib_factory is not None:
@@ -94,6 +99,12 @@ class LiveExecution:
         from ib_async import Forex
         return Forex
 
+    def _make_order(self):
+        if self._order_factory is not None:
+            return self._order_factory
+        from ib_async import MarketOrder
+        return MarketOrder
+
     @staticmethod
     def _pair(code):
         from forex.config import CURRENCIES
@@ -104,47 +115,92 @@ class LiveExecution:
     def _cexp(units, base_usd, p):        # signed USD-notional exposure to the foreign ccy
         return -units if base_usd else units * p
 
+    def _compute(self, ib, target_weights) -> dict:
+        nav = next((float(v.value) for v in ib.accountSummary() if v.tag == "NetLiquidation"), None)
+        if nav is None:
+            raise RuntimeError("could not read NetLiquidation (NAV) from IBKR")
+        make_contract = self._make_contract()
+        cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
+        orders, positions, turnover = {}, {}, 0.0
+        base_usd_map, price_map, contract_map = {}, {}, {}
+        for code in target_weights.index:
+            w = float(target_weights[code])
+            if code == "USD" or abs(w) < 1e-12:
+                continue
+            pair, base_usd = self._pair(code)
+            c = make_contract(pair); ib.qualifyContracts(c)
+            if not getattr(c, "conId", None):
+                raise RuntimeError(f"could not qualify {pair} on IBKR IDEALPRO")
+            bars = ib.reqHistoricalData(c, "", "2 D", "1 day", "MIDPOINT", useRTH=False)
+            if not bars:
+                raise RuntimeError(f"no historical price for {pair}")
+            p = float(bars[-1].close)
+            usd_notional = w * nav
+            target_units = (-usd_notional) if base_usd else (usd_notional / p)
+            current_units = cur_by_conid.get(getattr(c, "conId", None), 0.0)
+            orders[pair] = target_units - current_units
+            positions[pair] = target_units
+            turnover += abs(usd_notional - self._cexp(current_units, base_usd, p)) / nav
+            base_usd_map[pair] = base_usd
+            price_map[pair] = p
+            contract_map[pair] = c
+        return {"nav": nav, "orders": orders, "positions": positions,
+                "base_usd": base_usd_map, "price": price_map, "contract": contract_map,
+                "turnover": turnover}
+
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
-        if not self.preview:
-            raise NotImplementedError("live order placement is Phase 2; LiveExecution is preview-only")
-        make_contract = self._make_contract()   # prices arg (FRED, USD-per-FX) is intentionally
-        ib = self._make_ib()                     # ignored; we re-fetch IBKR's native midpoint below
         competing = {"hit": False}
-        def _on_err(reqId, code, msg, contract):
-            if code == 10197:
-                competing["hit"] = True
-        ib.errorEvent += _on_err
+        def _on_err(rid, code, msg, c):
+            if code == 10197: competing["hit"] = True
+        if self.preview:
+            ib = self._make_ib(); ib.errorEvent += _on_err
+            try:
+                ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=True)
+                c = self._compute(ib, target_weights)
+                if competing["hit"]:
+                    print("WARNING: competing live session (Error 10197) — another IBKR login holds the "
+                          "market-data line; log out of TWS / mobile app / web portal for live streaming "
+                          "(historical prices used here are unaffected).")
+                cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
+                return RebalanceReport(orders=c["orders"], positions=c["positions"], equity=c["nav"],
+                                       turnover=c["turnover"], cost=cost, applied=False)
+            finally:
+                ib.disconnect()
+        # ---- placement ----
+        if not self.confirm:
+            raise RuntimeError("placement requires confirm=True (pass --confirm)")
+        ib = self._make_ib()
         try:
-            ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=True)
-            nav = next((float(v.value) for v in ib.accountSummary() if v.tag == "NetLiquidation"), None)
-            if nav is None:
-                raise RuntimeError("could not read NetLiquidation (NAV) from IBKR")
-            cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
-            orders, positions, turnover = {}, {}, 0.0
-            for code in target_weights.index:
-                w = float(target_weights[code])
-                if code == "USD" or abs(w) < 1e-12:
+            ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=False)
+            acct = (ib.managedAccounts() or [""])[0]
+            if not acct.startswith("DU") and not self.allow_live:
+                raise RuntimeError(f"refusing to place on non-paper account {acct!r} without allow_live")
+            c = self._compute(ib, target_weights)
+            gross = sum(abs(float(target_weights[k])) for k in target_weights.index if k != "USD")
+            if gross > self.max_gross:
+                raise RuntimeError(f"gross {gross:.2f}x exceeds max_gross {self.max_gross}")
+            for pair, units in c["orders"].items():
+                notional = abs(units) * (1.0 if c["base_usd"][pair] else c["price"][pair])
+                if notional / c["nav"] > self.max_order_frac:
+                    raise RuntimeError(f"order {pair} {notional / c['nav']:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
+            make_order = self._make_order()
+            trades = []
+            for pair, units in c["orders"].items():
+                if abs(units) < self.min_order_units:
                     continue
-                pair, base_usd = self._pair(code)
-                c = make_contract(pair); ib.qualifyContracts(c)
-                if not getattr(c, "conId", None):
-                    raise RuntimeError(f"could not qualify {pair} on IBKR IDEALPRO")
-                bars = ib.reqHistoricalData(c, "", "2 D", "1 day", "MIDPOINT", useRTH=False)
-                if not bars:
-                    raise RuntimeError(f"no historical price for {pair}")
-                p = float(bars[-1].close)
-                usd_notional = w * nav
-                target_units = (-usd_notional) if base_usd else (usd_notional / p)
-                current_units = cur_by_conid.get(getattr(c, "conId", None), 0.0)
-                orders[pair] = target_units - current_units
-                positions[pair] = target_units
-                turnover += abs(usd_notional - self._cexp(current_units, base_usd, p)) / nav
-            if competing["hit"]:
-                print("WARNING: competing live session (Error 10197) — another IBKR login holds the "
-                      "market-data line; log out of TWS / mobile app / web portal for live streaming "
-                      "(historical prices used here are unaffected).")
-            cost = (self.cost_bps / 1e4) * turnover * nav
-            return RebalanceReport(orders=orders, positions=positions, equity=nav,
-                                   turnover=turnover, cost=cost, applied=False)
+                order = make_order("BUY" if units > 0 else "SELL", round(abs(units)))
+                order.tif = self.tif
+                trades.append((pair, ib.placeOrder(c["contract"][pair], order)))
+            fills = {}
+            for pair, tr in trades:
+                for _ in range(30):
+                    if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                        break
+                    ib.sleep(1)
+                sgn = 1.0 if tr.order.action == "BUY" else -1.0
+                fills[pair] = sgn * float(tr.orderStatus.filled)
+            cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
+            return RebalanceReport(orders=fills, positions=c["positions"], equity=c["nav"],
+                                   turnover=c["turnover"], cost=cost, applied=True)
         finally:
             ib.disconnect()
