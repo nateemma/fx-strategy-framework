@@ -28,6 +28,7 @@ def test_max_position_weight_clips(tmp_path):
                      ).rebalance(pd.Series({"AUD": 1.0}), pd.Series({"AUD": 1.0}))
     assert r.positions["AUD"] == 0.5
 
-def test_live_execution_is_not_implemented():
+def test_live_execution_preview_false_raises():
+    # non-preview mode must raise before placing any order
     with pytest.raises(NotImplementedError):
-        LiveExecution().rebalance(pd.Series(dtype=float), pd.Series(dtype=float))
+        LiveExecution(preview=False).rebalance(pd.Series(dtype=float), pd.Series(dtype=float))

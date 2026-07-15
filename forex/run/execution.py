@@ -71,10 +71,69 @@ class SimExecution:
                                turnover=turnover, cost=cost, applied=applied)
 
 class LiveExecution:
-    """ib_async broker adapter — NOT IMPLEMENTED (deferred until a TWS/IBKR paper account exists).
-    Intended flow: query current positions + NAV from IB; target units = target_weight * NAV / price;
-    place IDEALPRO orders to reach target; reconcile fills. Same Execution protocol as SimExecution."""
-    def __init__(self, *args, **kwargs):
-        pass
+    """ib_async IBKR adapter. Phase 1: PREVIEW-ONLY — computes the FX orders to reach the target
+    weights and returns them with applied=False; places NOTHING. Non-preview raises NotImplementedError.
+    Connects readonly=True; prices from historical MIDPOINT bars (competing-session-proof)."""
+    def __init__(self, host="127.0.0.1", port=4002, client_id=23, cost_bps: float = 1.0,
+                 preview: bool = True, ib_factory=None):
+        self.host = host; self.port = port; self.client_id = client_id
+        self.cost_bps = cost_bps; self.preview = preview; self._ib_factory = ib_factory
+
+    def _make_ib(self):
+        if self._ib_factory is not None:
+            return self._ib_factory()
+        from ib_async import IB
+        return IB()
+
+    @staticmethod
+    def _pair(code):
+        from forex.config import CURRENCIES
+        invert = CURRENCIES[code].spot_invert
+        return (f"USD{code}", True) if invert else (f"{code}USD", False)
+
+    @staticmethod
+    def _cexp(units, base_usd, p):        # signed USD-notional exposure to the foreign ccy
+        return -units if base_usd else units * p
+
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
-        raise NotImplementedError("LiveExecution (ib_async) is deferred; use SimExecution (paper).")
+        if not self.preview:
+            raise NotImplementedError("live order placement is Phase 2; LiveExecution is preview-only")
+        from ib_async import Forex
+        ib = self._make_ib()
+        competing = {"hit": False}
+        def _on_err(reqId, code, msg, contract):
+            if code == 10197:
+                competing["hit"] = True
+        ib.errorEvent += _on_err
+        try:
+            ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=True)
+            nav = next((float(v.value) for v in ib.accountSummary() if v.tag == "NetLiquidation"), None)
+            if nav is None:
+                raise RuntimeError("could not read NetLiquidation (NAV) from IBKR")
+            cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
+            orders, positions, turnover = {}, {}, 0.0
+            for code in target_weights.index:
+                w = float(target_weights[code])
+                if code == "USD" or abs(w) < 1e-12:
+                    continue
+                pair, base_usd = self._pair(code)
+                c = Forex(pair); ib.qualifyContracts(c)
+                bars = ib.reqHistoricalData(c, "", "2 D", "1 day", "MIDPOINT", useRTH=False)
+                if not bars:
+                    raise RuntimeError(f"no historical price for {pair}")
+                p = float(bars[-1].close)
+                usd_notional = w * nav
+                target_units = (-usd_notional) if base_usd else (usd_notional / p)
+                current_units = cur_by_conid.get(getattr(c, "conId", None), 0.0)
+                orders[pair] = target_units - current_units
+                positions[pair] = target_units
+                turnover += abs(usd_notional - self._cexp(current_units, base_usd, p)) / nav
+            if competing["hit"]:
+                print("WARNING: competing live session (Error 10197) — another IBKR login holds the "
+                      "market-data line; log out of TWS / mobile app / web portal for live streaming "
+                      "(historical prices used here are unaffected).")
+            cost = (self.cost_bps / 1e4) * turnover * nav
+            return RebalanceReport(orders=orders, positions=positions, equity=nav,
+                                   turnover=turnover, cost=cost, applied=False)
+        finally:
+            ib.disconnect()

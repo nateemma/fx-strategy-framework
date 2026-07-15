@@ -12,6 +12,7 @@ forex = "forex.cli:main"
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 probe = ["scikit-learn>=1.4"]
+live = ["ib_async>=2.0"]
 
 [build-system]
 requires = ["setuptools>=77"]
