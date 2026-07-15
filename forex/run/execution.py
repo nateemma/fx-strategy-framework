@@ -13,6 +13,7 @@ class RebalanceReport:
     turnover: float
     cost: float
     applied: bool
+    complete: bool = True
 
 class Execution(Protocol):
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
@@ -153,6 +154,21 @@ class LiveExecution:
                 "base_usd": base_usd_map, "price": price_map, "contract": contract_map,
                 "turnover": turnover}
 
+    def _unwind(self, ib, placed):
+        ib.sleep(2)                                    # let statuses settle
+        for pair, tr, contract, _intended in placed:
+            try:
+                if tr.orderStatus.status not in ("Filled",):
+                    ib.cancelOrder(tr.order)           # unfilled remainder -> cancel
+                filled = sum(float(f.execution.shares) for f in getattr(tr, "fills", [])) or float(tr.orderStatus.filled)
+                if filled:                             # already filled -> flatten opposite
+                    opp = "SELL" if tr.order.action == "BUY" else "BUY"
+                    o = self._make_order()(opp, round(abs(filled))); o.tif = self.tif
+                    ib.placeOrder(contract, o)         # contract carries exchange=IDEALPRO already
+            except Exception:
+                pass                                   # best-effort: never let unwind raise
+        ib.sleep(3)
+
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
         competing = {"hit": False}
         def _on_err(rid, code, msg, c):
@@ -188,28 +204,31 @@ class LiveExecution:
                 notional = abs(units) * (1.0 if c["base_usd"][pair] else c["price"][pair])
                 if notional / c["nav"] > self.max_order_frac:
                     raise RuntimeError(f"order {pair} {notional / c['nav']:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
-            make_order = self._make_order()
-            trades = []
-            for pair, units in c["orders"].items():
-                if abs(units) < self.min_order_units:
-                    continue
-                order = make_order("BUY" if units > 0 else "SELL", round(abs(units)))
-                order.tif = self.tif
-                trades.append((pair, ib.placeOrder(c["contract"][pair], order)))
+            placed = []   # list of (pair, trade, contract, intended_units)
+            try:
+                make_order = self._make_order()
+                for pair, units in c["orders"].items():
+                    if abs(units) < self.min_order_units:
+                        continue
+                    order = make_order("BUY" if units > 0 else "SELL", round(abs(units))); order.tif = self.tif
+                    tr = ib.placeOrder(c["contract"][pair], order)
+                    placed.append((pair, tr, c["contract"][pair], units))
+            except Exception as e:
+                self._unwind(ib, placed)               # cancel unfilled + flatten filled (best-effort)
+                raise RuntimeError(f"placement failed after {len(placed)} orders; auto-unwound: {e}") from e
             TERMINAL = ("Filled", "Cancelled", "ApiCancelled", "Inactive")
             for _ in range(60):                       # wait for ALL orders to settle (not per-order)
-                if all(tr.orderStatus.status in TERMINAL for _, tr in trades):
-                    break
+                if all(tr.orderStatus.status in TERMINAL for _, tr, _, _ in placed): break
                 ib.sleep(1)
-            fills = {}
-            for pair, tr in trades:
+            fills, complete = {}, True
+            for pair, tr, _c, intended in placed:
                 sgn = 1.0 if tr.order.action == "BUY" else -1.0
-                qty = sum(float(f.execution.shares) for f in getattr(tr, "fills", []))   # actual executions
-                if qty == 0.0:                        # fallback if the fills list lags the status
-                    qty = float(tr.orderStatus.filled)
+                qty = sum(float(f.execution.shares) for f in getattr(tr, "fills", [])) or float(tr.orderStatus.filled)
                 fills[pair] = sgn * qty
+                if abs(qty) < abs(intended) - 1.0:    # under-filled (1-unit tolerance)
+                    complete = False
             cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
             return RebalanceReport(orders=fills, positions=c["positions"], equity=c["nav"],
-                                   turnover=c["turnover"], cost=cost, applied=True)
+                                   turnover=c["turnover"], cost=cost, applied=True, complete=complete)
         finally:
             ib.disconnect()

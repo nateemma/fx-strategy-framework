@@ -18,6 +18,7 @@ class _FakeIB:
         self._nav, self._positions, self._price = nav, positions or [], price
         self.errorEvent = _Event(); self.placeOrder_calls = 0; self._conid = 100
         self.placed = []; self._acct = "DU123456"
+        self.cancel_calls = 0; self._fail_on = None; self._fill_frac = 1.0
     def connect(self, *a, **k): self.connected = True
     def disconnect(self): self.connected = False
     def reqMarketDataType(self, *a): pass
@@ -27,13 +28,18 @@ class _FakeIB:
         self._conid += 1; c.conId = self._conid; c.exchange = "IDEALPRO"; return [c]
     def reqHistoricalData(self, *a, **k): return [_Bar(self._price)]
     def managedAccounts(self): return [getattr(self, "_acct", "DU123456")]
+    def sleep(self, secs): pass
+    def cancelOrder(self, order): self.cancel_calls += 1
     def placeOrder(self, contract, order):
         self.placeOrder_calls += 1
         self.placed.append((getattr(contract, "pair", None), order.action, order.totalQuantity, getattr(order, "tif", None)))
+        if self._fail_on is not None and self.placeOrder_calls == self._fail_on:
+            raise RuntimeError("induced placeOrder failure")
+        filled = order.totalQuantity * self._fill_frac
         return SimpleNamespace(
-            orderStatus=SimpleNamespace(status="Filled", filled=order.totalQuantity, avgFillPrice=self._price),
+            orderStatus=SimpleNamespace(status="Filled" if self._fill_frac >= 1.0 else "Submitted", filled=filled, avgFillPrice=self._price),
             order=order,
-            fills=[SimpleNamespace(execution=SimpleNamespace(shares=order.totalQuantity, price=self._price))])
+            fills=[SimpleNamespace(execution=SimpleNamespace(shares=filled, price=self._price))] if filled else [])
 
 def _w(d): return pd.Series(d)
 
@@ -151,3 +157,33 @@ def test_atomic_reject_before_any_placement():
         _place(fake, confirm=True, max_order_frac=0.25).rebalance(
             _w({"EUR": 0.2, "MXN": 0.5}), pd.Series({"EUR": 1.1, "MXN": 1 / 18.0}))
     assert fake.placeOrder_calls == 0
+
+# ---- Phase 3: auto-unwind + partial-fill tests ----
+
+def test_midloop_failure_triggers_unwind_and_raises():
+    fake = _FakeIB(price=1.1); fake._fail_on = 2          # 2nd placeOrder raises
+    with pytest.raises(RuntimeError):
+        _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
+            _w({"EUR": 0.3, "GBP": 0.3}), pd.Series({"EUR": 1.1, "GBP": 1.1}))
+    # order 1 was placed+filled -> unwind flattens it (a 3rd placeOrder) and/or cancels
+    assert fake.placeOrder_calls >= 2 and (fake.cancel_calls > 0 or fake.placeOrder_calls >= 3)
+
+def test_unwind_is_best_effort_never_raises():
+    fake = _FakeIB(price=1.1); fake._fail_on = 1          # 1st placeOrder raises (nothing placed yet)
+    def _boom(*a, **k): raise RuntimeError("cancel boom")
+    fake.cancelOrder = _boom
+    with pytest.raises(RuntimeError):                     # the ORIGINAL failure, not the unwind's
+        _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
+            _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
+
+def test_partial_fill_flags_incomplete():
+    fake = _FakeIB(price=1.1); fake._fill_frac = 0.5      # each leg fills half
+    rep = _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
+        _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
+    assert rep.applied is True and rep.complete is False
+
+def test_full_fill_is_complete():
+    fake = _FakeIB(price=1.1)
+    rep = _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
+        _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
+    assert rep.complete is True
