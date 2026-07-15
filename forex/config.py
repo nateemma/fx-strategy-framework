@@ -37,10 +37,15 @@ CURRENCIES: dict[str, Currency] = {
     # Rate IDs are best-guess OECD IR3TIB01 (MX/KR are OECD; ZA/BR/IN are OECD key-partners —
     # validate at download and substitute a policy/interbank proxy if dead). NOT in DEFAULT_CODES
     # (the default universe stays G10); EM is opt-in via --universe. Tested only post-2010, cost-aware.
+    # MXN/ZAR/KRW: OECD 3-month interbank (IR3TIB01), current to 2026.
+    # BRL/INR: OECD central-bank rate (IRSTCB01) — interbank unavailable; NOTE these series are
+    #   discontinued end-2023, so a BRL/INR-inclusive basket is only clean through ~2023.
+    # Rate-type mix is acceptable for cross-sectional ranking (yield dispersion 3–12% >> the
+    #   interbank-vs-policy spread). CNY excluded (managed float + capital controls: not tradeable carry).
     "MXN": Currency("MXN", "DEXMXUS",  True,  "IR3TIB01MXM156N", 0, "RBMXBIS"),
     "ZAR": Currency("ZAR", "DEXSFUS",  True,  "IR3TIB01ZAM156N", 0, "RBZABIS"),
-    "BRL": Currency("BRL", "DEXBZUS",  True,  "IR3TIB01BRM156N", 0, "RBBRBIS"),
-    "INR": Currency("INR", "DEXINUS",  True,  "IR3TIB01INM156N", 0, "RBINBIS"),
+    "BRL": Currency("BRL", "DEXBZUS",  True,  "IRSTCB01BRM156N", 0, "RBBRBIS"),
+    "INR": Currency("INR", "DEXINUS",  True,  "IRSTCB01INM156N", 0, "RBINBIS"),
     "KRW": Currency("KRW", "DEXKOUS",  True,  "IR3TIB01KRM156N", 0, "RBKRBIS"),
 }
 
