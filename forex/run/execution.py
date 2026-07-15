@@ -196,14 +196,18 @@ class LiveExecution:
                 order = make_order("BUY" if units > 0 else "SELL", round(abs(units)))
                 order.tif = self.tif
                 trades.append((pair, ib.placeOrder(c["contract"][pair], order)))
+            TERMINAL = ("Filled", "Cancelled", "ApiCancelled", "Inactive")
+            for _ in range(60):                       # wait for ALL orders to settle (not per-order)
+                if all(tr.orderStatus.status in TERMINAL for _, tr in trades):
+                    break
+                ib.sleep(1)
             fills = {}
             for pair, tr in trades:
-                for _ in range(30):
-                    if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
-                        break
-                    ib.sleep(1)
                 sgn = 1.0 if tr.order.action == "BUY" else -1.0
-                fills[pair] = sgn * float(tr.orderStatus.filled)
+                qty = sum(float(f.execution.shares) for f in getattr(tr, "fills", []))   # actual executions
+                if qty == 0.0:                        # fallback if the fills list lags the status
+                    qty = float(tr.orderStatus.filled)
+                fills[pair] = sgn * qty
             cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
             return RebalanceReport(orders=fills, positions=c["positions"], equity=c["nav"],
                                    turnover=c["turnover"], cost=cost, applied=True)

@@ -30,8 +30,10 @@ class _FakeIB:
     def placeOrder(self, contract, order):
         self.placeOrder_calls += 1
         self.placed.append((getattr(contract, "pair", None), order.action, order.totalQuantity, getattr(order, "tif", None)))
-        return SimpleNamespace(orderStatus=SimpleNamespace(status="Filled", filled=order.totalQuantity,
-                                                           avgFillPrice=self._price), order=order)
+        return SimpleNamespace(
+            orderStatus=SimpleNamespace(status="Filled", filled=order.totalQuantity, avgFillPrice=self._price),
+            order=order,
+            fills=[SimpleNamespace(execution=SimpleNamespace(shares=order.totalQuantity, price=self._price))])
 
 def _w(d): return pd.Series(d)
 
@@ -124,6 +126,9 @@ def test_placement_happy_path_signs_and_tif():
     placed = {p[0]: p for p in fake.placed}
     assert placed["EURUSD"][1] == "BUY" and placed["EURUSD"][3] == "DAY"     # long C.USD -> BUY, TIF set
     assert placed["USDMXN"][1] == "BUY"    # short MXN: w=-0.3, USD.C target=-(w*N)=+, order>0 -> BUY USD.MXN
+    # fill report captures BOTH legs (not under-counted) with BUY-sign, summed from executions
+    assert set(rep.orders) == {"EURUSD", "USDMXN"}
+    assert rep.orders["EURUSD"] > 0 and rep.orders["USDMXN"] > 0
 
 def test_min_order_skipped():
     fake = _FakeIB(price=1.1)
