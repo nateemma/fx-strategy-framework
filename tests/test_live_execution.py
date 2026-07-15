@@ -165,16 +165,19 @@ def test_midloop_failure_triggers_unwind_and_raises():
     with pytest.raises(RuntimeError):
         _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
             _w({"EUR": 0.3, "GBP": 0.3}), pd.Series({"EUR": 1.1, "GBP": 1.1}))
-    # order 1 was placed+filled -> unwind flattens it (a 3rd placeOrder) and/or cancels
-    assert fake.placeOrder_calls >= 2 and (fake.cancel_calls > 0 or fake.placeOrder_calls >= 3)
+    # order 1 placed+filled (BUY), order 2 raises -> unwind flattens order 1 with an opposite SELL
+    assert fake.placeOrder_calls >= 3            # order1, failed order2, flatten
+    assert fake.placed[-1][1] == "SELL"          # the unwind flattened the filled BUY with a SELL
 
 def test_unwind_is_best_effort_never_raises():
-    fake = _FakeIB(price=1.1); fake._fail_on = 1          # 1st placeOrder raises (nothing placed yet)
-    def _boom(*a, **k): raise RuntimeError("cancel boom")
+    # order 1 fills PARTIAL (status Submitted) so unwind tries to CANCEL it; make cancel raise.
+    # The surfaced error must be the ORIGINAL placement failure, not the swallowed "cancel boom".
+    fake = _FakeIB(price=1.1); fake._fail_on = 2; fake._fill_frac = 0.5
+    def _boom(order): raise RuntimeError("cancel boom")
     fake.cancelOrder = _boom
-    with pytest.raises(RuntimeError):                     # the ORIGINAL failure, not the unwind's
+    with pytest.raises(RuntimeError, match="placement failed"):
         _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
-            _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
+            _w({"EUR": 0.3, "GBP": 0.3}), pd.Series({"EUR": 1.1, "GBP": 1.1}))
 
 def test_partial_fill_flags_incomplete():
     fake = _FakeIB(price=1.1); fake._fill_frac = 0.5      # each leg fills half
@@ -187,3 +190,4 @@ def test_full_fill_is_complete():
     rep = _place(fake, confirm=True, max_order_frac=0.5, min_order_units=1).rebalance(
         _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
     assert rep.complete is True
+    assert fake.cancel_calls == 0 and fake.placeOrder_calls == 1   # NO unwind on the success path

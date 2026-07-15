@@ -155,7 +155,13 @@ class LiveExecution:
                 "turnover": turnover}
 
     def _unwind(self, ib, placed):
-        ib.sleep(2)                                    # let statuses settle
+        # Best-effort: cancel unfilled + flatten filled from this batch. NEVER raises (a failure here must
+        # not mask the original placement error). Flattens are fire-and-forget/UNVERIFIED — the operator
+        # MUST verify positions in IBKR after any unwind. Failures are logged, not silent.
+        try:
+            ib.sleep(2)                                # let statuses settle
+        except Exception:
+            pass
         for pair, tr, contract, _intended in placed:
             try:
                 if tr.orderStatus.status not in ("Filled",):
@@ -165,9 +171,12 @@ class LiveExecution:
                     opp = "SELL" if tr.order.action == "BUY" else "BUY"
                     o = self._make_order()(opp, round(abs(filled))); o.tif = self.tif
                     ib.placeOrder(contract, o)         # contract carries exchange=IDEALPRO already
-            except Exception:
-                pass                                   # best-effort: never let unwind raise
-        ib.sleep(3)
+            except Exception as ue:
+                print(f"WARNING: unwind of {pair} FAILED ({ue!r}) — POSITION MAY BE OPEN; verify in IBKR")
+        try:
+            ib.sleep(3)
+        except Exception:
+            pass
 
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
         competing = {"hit": False}
@@ -215,7 +224,8 @@ class LiveExecution:
                     placed.append((pair, tr, c["contract"][pair], units))
             except Exception as e:
                 self._unwind(ib, placed)               # cancel unfilled + flatten filled (best-effort)
-                raise RuntimeError(f"placement failed after {len(placed)} orders; auto-unwound: {e}") from e
+                raise RuntimeError(f"placement failed after {len(placed)} orders; attempted best-effort "
+                                   f"unwind (VERIFY POSITIONS IN IBKR): {e}") from e
             TERMINAL = ("Filled", "Cancelled", "ApiCancelled", "Inactive")
             for _ in range(60):                       # wait for ALL orders to settle (not per-order)
                 if all(tr.orderStatus.status in TERMINAL for _, tr, _, _ in placed): break
