@@ -39,6 +39,8 @@ def build_parser() -> argparse.ArgumentParser:
         if mode == "dryrun":
             sp.add_argument("--preview", action="store_true")
             sp.add_argument("--equity", type=float)
+            sp.add_argument("--broker", choices=["sim", "ib"], default="sim")
+            sp.add_argument("--ib-port", type=int, default=4002, dest="ib_port")
     return p
 
 def resolve(args):
@@ -68,6 +70,12 @@ def resolve(args):
         overrides["tune"] = tune.split(",")
     if getattr(args, "preview", False):
         overrides["preview"] = True
+    broker = getattr(args, "broker", None)
+    if broker is not None:
+        overrides["broker"] = broker
+    ib_port = getattr(args, "ib_port", None)
+    if ib_port is not None:
+        overrides["ib_port"] = ib_port
     overrides["jobs"] = args.jobs if getattr(args, "jobs", None) is not None \
         else max(1, (os.cpu_count() or 1) - 1)
     cfg = cfg.merge(overrides)
@@ -131,13 +139,17 @@ def run(cfg, env, mode) -> dict:
         return {"hyperopt": {**res, "strategy": cfg.strategy, "cost_bps": cfg.cost_bps}}
     if mode == "dryrun":
         import os
-        from forex.run.execution import SimExecution
         from forex.run.live import rebalance_now
-        pf = os.path.join(env.output_dir, "portfolio.json")
-        ex = SimExecution(pf, starting_equity=env.starting_equity, cost_bps=cfg.cost_bps,
-                          preview=cfg.preview)
+        if cfg.broker == "ib":
+            from forex.run.execution import LiveExecution
+            ex = LiveExecution(port=cfg.ib_port, cost_bps=cfg.cost_bps, preview=cfg.preview)
+        else:
+            from forex.run.execution import SimExecution
+            pf = os.path.join(env.output_dir, "portfolio.json")
+            ex = SimExecution(pf, starting_equity=env.starting_equity, cost_bps=cfg.cost_bps,
+                              preview=cfg.preview)
         rep = rebalance_now(build_strategy(cfg.strategy, cfg.strategy_params, "strategies"), view, ex)
-        return {"dryrun": rep}
+        return {"dryrun": rep, "broker": cfg.broker}
     raise ValueError(f"unknown mode {mode}")
 
 def _format(out: dict) -> str:
@@ -166,6 +178,13 @@ def _format(out: dict) -> str:
         return f"downloaded {len(d['series'])} series to {d['cache_dir']}"
     if "dryrun" in out:
         rep = out["dryrun"]
+        if out.get("broker") == "ib":
+            lines = [f"{'PREVIEW ' if not rep.applied else ''}IBKR rebalance -> NAV {rep.equity:,.0f}  "
+                     f"turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}", "orders (base-ccy units):"]
+            for pair, units in sorted(rep.orders.items(), key=lambda kv: -abs(kv[1])):
+                if abs(units) > 1e-6:
+                    lines.append(f"  {pair:8} {'BUY ' if units > 0 else 'SELL'} {abs(units):,.0f}")
+            return "\n".join(lines)
         head = f"{'PREVIEW ' if not rep.applied else ''}rebalance -> equity {rep.equity:.2f}  " \
                f"turnover {rep.turnover:.3f}  cost {rep.cost:.2f}"
         lines = [head, "orders (notional):"]

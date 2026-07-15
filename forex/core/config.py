@@ -15,6 +15,8 @@ class RunConfig:
     objective: str = "sharpe"
     tune: list | None = None
     preview: bool = False
+    broker: str = "sim"
+    ib_port: int = 4002
     jobs: int = 1
 
     @classmethod

@@ -33,3 +33,18 @@ def test_main_dryrun_prints(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
     rc = cli.main(["dryrun", "--strategy", "carry", "--param", "n_long=1", "--param", "n_short=1", "--preview"])
     assert rc == 0 and "rebalance" in capsys.readouterr().out
+
+def test_dryrun_broker_ib_builds_live_execution(monkeypatch):
+    import forex.run.execution as exmod
+    captured = {}
+    class _Fake:
+        def __init__(self, **kw): captured.update(kw)
+        def rebalance(self, tw, px):
+            from forex.run.execution import RebalanceReport
+            return RebalanceReport(orders={"EURUSD": 100.0}, positions={"EURUSD": 100.0},
+                                   equity=1_000_000.0, turnover=0.5, cost=50.0, applied=False)
+    monkeypatch.setattr(exmod, "LiveExecution", _Fake)
+    # assert the parser wires broker/ib-port correctly
+    args = cli.build_parser().parse_args(["dryrun", "--strategy", "carry", "--broker", "ib",
+                                          "--preview", "--ib-port", "4002"])
+    assert args.broker == "ib" and args.ib_port == 4002 and args.preview is True
