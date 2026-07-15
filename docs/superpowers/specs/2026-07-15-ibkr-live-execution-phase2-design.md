@@ -12,13 +12,19 @@ guards, ALL of which must pass before any `placeOrder`:
 1. **`confirm` flag** — placement requires `confirm=True` (CLI `--confirm`). Without it, `rebalance`
    raises `RuntimeError("placement requires confirm=True")` before connecting. Dropping `--preview` alone
    does NOT place.
-2. **Paper-port guard** — refuse unless `port in {4002, 7497}` (paper) OR `allow_live=True` (a separate,
-   deliberately awkward flag we do NOT use yet). Non-paper port without `allow_live` → raise.
+2. **Paper-account guard (primary, ground-truth)** — after connecting, read `ib.managedAccounts()`;
+   refuse to place unless the account ID starts with **`DU`** (IBKR paper prefix; the funded live account
+   is `U…`) OR `allow_live=True` (a separate, deliberately awkward flag we do NOT use yet). The account ID
+   is the ground truth for paper-vs-live, not the port. Port `∈ {4002, 7497}` is a secondary sanity check
+   only. A non-`DU` account without `allow_live` → raise, place nothing.
 3. **Size caps** — reject the WHOLE rebalance (raise, place nothing) if any single order's
-   `|notional|/NAV > max_order_frac` (default **0.25**) or total gross `sum|target_notional|/NAV >
-   max_gross` (default **1.2**). Caps are constructor params / CLI flags. NOTE: a 3/3 carry book has 33%
-   legs and will trip 0.25 on the first (from-flat) rebalance — run 4/4 (25% legs) or pass a higher
-   `--max-order-frac`; this is intended friction, surfaced not silently widened.
+   `|notional|/NAV > max_order_frac` (default **0.25**) or total gross `sum|w| > max_gross`
+   (default **2.5**). Caps are constructor params / CLI flags. NOTES: (a) a dollar-neutral long-short book
+   is inherently ~**2.0× gross** (long 1.0 + short 1.0), so the gross cap must sit ABOVE 2.0 — 2.5 admits
+   the normal book plus vol-target leverage headroom and still catches a price-error blowup; a 1.2× cap
+   would reject every carry rebalance. (b) A 3/3 carry book has **33% legs** and trips the 0.25 per-order
+   cap on the first (from-flat) rebalance — run 4/4 (25% legs) or pass a higher `--max-order-frac` at
+   validation; intended friction, surfaced not silently widened.
 4. **Min-order rounding** — orders with `|units| < min_order_units` (default IDEALPRO ~20k base units,
    configurable) are skipped (rounded to zero), not placed.
 5. **Explicit TIF** — every order carries an explicit TIF (default `"DAY"`) to avoid the Error-10349
@@ -43,9 +49,10 @@ def rebalance(self, target_weights, prices) -> RebalanceReport:
     # ---- placement path ----
     if not self.confirm:
         raise RuntimeError("placement requires confirm=True (pass --confirm)")
-    if self.port not in (4002, 7497) and not self.allow_live:
-        raise RuntimeError(f"refusing to place on non-paper port {self.port} without allow_live")
     ib = connect(readonly=False)
+    acct = (ib.managedAccounts() or [""])[0]
+    if not acct.startswith("DU") and not self.allow_live:
+        raise RuntimeError(f"refusing to place on non-paper account {acct!r} (not DU-prefixed) without allow_live")
     c = self._compute(ib, target_weights)
     # size caps (reject whole rebalance, place nothing)
     gross = sum(abs(c["positions"][p]) * (c["price"][p] if not c["base_usd"][p] else 1) ... )/nav  # use USD-notional = |w*NAV|; simpler: gross = sum|w|
@@ -88,7 +95,8 @@ Fake IB extended with a `placeOrder` that returns a fake Trade whose `orderStatu
 price, and records calls. Inject via `ib_factory` + `order_factory`. Cover:
 - **confirm guard:** `confirm=False`, preview=False ⇒ `RuntimeError`, and fake records **zero**
   `placeOrder` calls.
-- **paper-port guard:** `port=7496` (live), `allow_live=False`, confirm=True ⇒ `RuntimeError`, zero orders.
+- **paper-account guard:** fake `managedAccounts()` returns a live-style `U1234567` with `allow_live=False`,
+  confirm=True ⇒ `RuntimeError`, **zero** `placeOrder` calls; a `DU…` account passes the guard.
 - **size caps:** an order > `max_order_frac` ⇒ raise, zero orders placed (whole rebalance rejected);
   gross > `max_gross` ⇒ raise. A book within caps ⇒ orders placed.
 - **min-order rounding:** an order below `min_order_units` is skipped (not placed).
