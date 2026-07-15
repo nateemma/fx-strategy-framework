@@ -47,7 +47,8 @@ there is no central registry to edit. The framework resolves strategies purely b
 
 ## Strategy library
 
-Thirteen strategies ship as reference implementations. Each is usable by name from every mode.
+Eighteen strategies ship as reference implementations. Each is usable by name from every mode. (The
+carry universe is G10 by default; pass `--universe EUR,JPY,…,MXN,ZAR` to trade the EM-inclusive book.)
 
 | Name | Kind | What it does |
 |---|---|---|
@@ -59,6 +60,8 @@ Thirteen strategies ship as reference implementations. Each is usable by name fr
 | `carry_voltarget_ml` | overlay | Carry with a learned (HAR-RV) vol forecaster driving the leverage. |
 | `carry_trend`, `carry_trend_value` | blend | Risk-parity (inverse-vol) blend of the named factors. |
 | `carry_trend_voltarget`, `carry_trend_value_voltarget` | blend | The blend with the vol-target overlay. |
+| `carry_voltarget_xasset`, `carry_voltarget_xasset_anchored`, `carry_voltarget_xasset_gbm` | overlay | Cross-asset / EWMA-anchored / nonlinear-GBM ML vol forecasters — **documented negatives** (all lose to plain EWMA), kept for reproducibility. |
+| `carry_trend_crash`, `carry_trend_crash_voltarget` | blend | Carry-drawdown-triggered tilt toward trend — **documented negative** (static blend already captures the hedge). |
 
 `forex causal-check --strategy <name>` proves any of them uses only point-in-time data.
 
@@ -89,10 +92,29 @@ rejects it — negative since 2018); cross-sectional **momentum is too weak** (~
 forecaster (HAR / cross-asset macro / nonlinear GBM) **loses to a one-parameter EWMA** — always-on beats
 timed.
 
-*(An earlier version of this table showed ~0.52. That was measured on a stale data cache; the numbers
-here are validated against current FRED data — reproducible and matching FRED to the digit. The next
-question is whether **EM carry** — where rate differentials still exist — or **non-price data** can find
-edge where G10 spot no longer does.)*
+*(An earlier version of this table showed ~0.52 — measured on a stale data cache. The numbers here are
+validated against current FRED data, reproducible and matching FRED to the digit.)*
+
+### Emerging-market carry — the tradeable modern edge
+
+The pre-2010 death is a *G10*-differential-compression story, so the question was whether **EM carry** —
+where rate differentials survived ZIRP — still pays. It does, and it clears the cost/liquidity wall that
+kills most FX edges. Adding the IBKR-tradeable EM (**MXN, ZAR**) to the carry universe lifts the
+modern-era Sharpe from **0.27 (G10-only) to 0.68 (G10+MXN+ZAR), 2018–2026** — cost-modeled at 3 bp,
+current through 2026, and **positive in each modern sub-era**. It's the first fully-tradeable,
+in-regime-positive book in the stack. Caveats kept honest: EM carry is **crash-prone** (fat left tails in
+EM-stress years — a broad basket de-concentrates it); a wider 5-EM set (incl. BRL/INR) scores higher but
+BRL/INR are **NDF-only, not IBKR-deliverable**; and risk overlays (vol-target, trend) *don't* improve it
+in-regime — plain broad carry is the book. Everything here is judged **in the deployment regime**
+(post-2010, era-split), not full history.
+
+### Live execution (IBKR)
+
+`forex dryrun --strategy carry --universe … --broker ib --preview` connects to IBKR (`ib_async`), reads
+account NAV, prices each pair from historical midpoints, and prints the exact IDEALPRO orders to reach the
+target weights — **placing nothing** (preview-only; order placement is a separately-guarded next phase).
+Tradeability of the deployable book is verified first-hand through the API (MXN/ZAR/KRW quotable; BRL/INR
+not).
 
 ---
 
