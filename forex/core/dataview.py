@@ -26,13 +26,13 @@ class DataView:
 
     @classmethod
     def from_fred(cls, cache_dir, loader=None, codes=None) -> "DataView":
-        from forex.config import CURRENCIES, MACRO_SERIES
+        from forex.config import CURRENCIES, MACRO_SERIES, DEFAULT_CODES
         from forex.data.prices import build_spot_panel
         from forex.data.fred import load_series
         if loader is None:
             loader = load_series
         if codes is None:
-            codes = [c for c in CURRENCIES if c != "USD"]
+            codes = DEFAULT_CODES
         spot = build_spot_panel(cache_dir, loader=loader, codes=codes)
         rates = {"USD": loader(CURRENCIES["USD"].rate_fred, cache_dir=cache_dir) / 100.0}
         for c in codes:

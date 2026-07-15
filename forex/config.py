@@ -33,4 +33,18 @@ CURRENCIES: dict[str, Currency] = {
     "CAD": Currency("CAD", "DEXCAUS",  True,  "IR3TIB01CAM156N", 0, "RBCABIS"),
     "NOK": Currency("NOK", "DEXNOUS",  True,  "IR3TIB01NOM156N", 0, "RBNOBIS"),
     "SEK": Currency("SEK", "DEXSDUS",  True,  "IR3TIB01SEM156N", 0, "RBSEBIS"),
+    # Emerging markets — liquid, FRED-available USD spot (DEX__US, FX-per-USD → invert=True).
+    # Rate IDs are best-guess OECD IR3TIB01 (MX/KR are OECD; ZA/BR/IN are OECD key-partners —
+    # validate at download and substitute a policy/interbank proxy if dead). NOT in DEFAULT_CODES
+    # (the default universe stays G10); EM is opt-in via --universe. Tested only post-2010, cost-aware.
+    "MXN": Currency("MXN", "DEXMXUS",  True,  "IR3TIB01MXM156N", 0, "RBMXBIS"),
+    "ZAR": Currency("ZAR", "DEXSFUS",  True,  "IR3TIB01ZAM156N", 0, "RBZABIS"),
+    "BRL": Currency("BRL", "DEXBZUS",  True,  "IR3TIB01BRM156N", 0, "RBBRBIS"),
+    "INR": Currency("INR", "DEXINUS",  True,  "IR3TIB01INM156N", 0, "RBINBIS"),
+    "KRW": Currency("KRW", "DEXKOUS",  True,  "IR3TIB01KRM156N", 0, "RBKRBIS"),
 }
+
+# The default trading universe (G10). EM is available in CURRENCIES but opt-in via --universe.
+G10 = ["EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD", "NOK", "SEK"]
+EM = ["MXN", "ZAR", "BRL", "INR", "KRW"]
+DEFAULT_CODES = G10

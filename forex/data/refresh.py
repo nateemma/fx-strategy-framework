@@ -1,10 +1,10 @@
-from forex.config import CURRENCIES, MACRO_SERIES
+from forex.config import CURRENCIES, MACRO_SERIES, DEFAULT_CODES
 from forex.data.fred import load_series
 
 def refresh_cache(cache_dir, codes=None, loader=load_series, on_step=None) -> list:
     """Force-refetch every FRED series the universe needs, overwriting the cache."""
     if codes is None:
-        codes = [c for c in CURRENCIES if c != "USD"]
+        codes = DEFAULT_CODES
     ids = [CURRENCIES["USD"].rate_fred]
     for c in codes:
         cur = CURRENCIES[c]

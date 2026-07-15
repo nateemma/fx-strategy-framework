@@ -1,8 +1,17 @@
 from forex.config import CURRENCIES
 
 
-def test_universe_is_g10():
-    assert set(CURRENCIES) == {"USD","EUR","JPY","GBP","CHF","AUD","NZD","CAD","NOK","SEK"}
+def test_default_universe_is_g10():
+    from forex.config import DEFAULT_CODES
+    assert set(DEFAULT_CODES) == {"EUR","JPY","GBP","CHF","AUD","NZD","CAD","NOK","SEK"}
+    assert "USD" not in DEFAULT_CODES
+
+
+def test_em_currencies_present_but_opt_in():
+    from forex.config import DEFAULT_CODES, EM
+    assert set(EM) == {"MXN","ZAR","BRL","INR","KRW"}
+    assert all(c in CURRENCIES for c in EM)                 # loadable
+    assert not any(c in DEFAULT_CODES for c in EM)          # but not in the default universe
 
 
 def test_usd_is_base():
