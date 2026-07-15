@@ -80,3 +80,10 @@ def test_format_ib_fills_table():
     s = cli._format({"broker": "ib", "dryrun": RebalanceReport(
         orders={"USDMXN": -20000.0}, positions={}, equity=1e6, turnover=0.6, cost=60.0, applied=True)})
     assert "PLACED" in s and "USDMXN" in s and "SELL" in s
+
+def test_format_ib_incomplete_flagged():
+    from forex.run.execution import RebalanceReport
+    s = cli._format({"broker": "ib", "dryrun": RebalanceReport(
+        orders={"USDMXN": -20000.0}, positions={}, equity=1e6, turnover=0.6, cost=60.0,
+        applied=True, complete=False)})
+    assert "INCOMPLETE" in s

@@ -195,7 +195,10 @@ def _format(out: dict) -> str:
                 header = f"ORDERS PLACED -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
             else:
                 header = f"PREVIEW IBKR rebalance -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
-            lines = [header, "orders (base-ccy units):"]
+            lines = []
+            if rep.applied and not getattr(rep, "complete", True):
+                lines.append("⚠ INCOMPLETE — partial fills; review positions")
+            lines += [header, "orders (base-ccy units):"]
             for pair, units in sorted(rep.orders.items(), key=lambda kv: -abs(kv[1])):
                 if abs(units) > 1e-6:
                     lines.append(f"  {pair:8} {'BUY ' if units > 0 else 'SELL'} {abs(units):,.0f}")
