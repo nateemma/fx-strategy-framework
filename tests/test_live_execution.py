@@ -107,11 +107,13 @@ def test_per_order_cap_rejects_whole_rebalance():
         _place(fake, confirm=True, max_order_frac=0.25).rebalance(_w({"EUR": 0.5}), pd.Series({"EUR": 1.1}))
     assert fake.placeOrder_calls == 0
 
-def test_gross_cap_rejects():
-    fake = _FakeIB(price=1.1)                            # gross sum|w| = 3.0 > 2.5
+def test_gross_cap_rejects_isolated():
+    # 9 legs of 0.3 -> gross 2.7 > 2.5, but each order is 30% < the 50% per-order cap: isolates the gross guard
+    fake = _FakeIB(price=1.1)
+    codes = ["EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD", "NOK", "SEK"]
     with pytest.raises(RuntimeError):
-        _place(fake, confirm=True, max_order_frac=0.9, max_gross=2.5).rebalance(
-            _w({"EUR": 1.0, "GBP": 1.0, "AUD": 1.0}), pd.Series({"EUR": 1.1, "GBP": 1.1, "AUD": 1.1}))
+        _place(fake, confirm=True, max_order_frac=0.5, max_gross=2.5).rebalance(
+            _w({c: 0.3 for c in codes}), pd.Series({c: 1.1 for c in codes}))
     assert fake.placeOrder_calls == 0
 
 def test_placement_happy_path_signs_and_tif():
@@ -128,3 +130,19 @@ def test_min_order_skipped():
     _place(fake, confirm=True, max_order_frac=0.5, min_order_units=10**9).rebalance(
         _w({"EUR": 0.3}), pd.Series({"EUR": 1.1}))
     assert fake.placeOrder_calls == 0      # order below the (absurd) min -> skipped
+
+def test_nan_weight_rejected_before_placement():
+    # NaN would fail the caps OPEN (NaN comparisons are False) -> must be caught up front
+    fake = _FakeIB(price=1.1)
+    with pytest.raises(RuntimeError):
+        _place(fake, confirm=True, max_order_frac=0.9).rebalance(
+            _w({"EUR": float("nan")}), pd.Series({"EUR": 1.1}))
+    assert fake.placeOrder_calls == 0
+
+def test_atomic_reject_before_any_placement():
+    # one leg within cap, one over -> WHOLE rebalance rejected, ZERO orders placed (not just the over one)
+    fake = _FakeIB(price=1.1)
+    with pytest.raises(RuntimeError):
+        _place(fake, confirm=True, max_order_frac=0.25).rebalance(
+            _w({"EUR": 0.2, "MXN": 0.5}), pd.Series({"EUR": 1.1, "MXN": 1 / 18.0}))
+    assert fake.placeOrder_calls == 0

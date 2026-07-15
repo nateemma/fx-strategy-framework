@@ -27,10 +27,16 @@ class RunConfig:
         known = set(cls.__dataclass_fields__)
         return cls(**{k: v for k, v in d.items() if k in known})
 
+    # Arming flags never loaded from a config file — they must be explicit per-invocation CLI intent.
+    _CLI_ONLY = ("confirm", "allow_live")
+
     @classmethod
     def from_toml(cls, path) -> "RunConfig":
         with open(path, "rb") as fh:
-            return cls.from_dict(tomllib.load(fh))
+            d = tomllib.load(fh)
+        for k in cls._CLI_ONLY:
+            d.pop(k, None)
+        return cls.from_dict(d)
 
     def merge(self, overrides: dict) -> "RunConfig":
         d = asdict(self)

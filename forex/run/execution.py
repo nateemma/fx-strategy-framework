@@ -1,4 +1,5 @@
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -81,7 +82,7 @@ class LiveExecution:
         self.host = host; self.port = port; self.client_id = client_id
         self.cost_bps = cost_bps; self.preview = preview
         self._ib_factory = ib_factory; self._contract_factory = contract_factory
-        self.confirm = confirm; self.max_order_frac = max_order_frac; self.max_gross = max_gross
+        self.confirm = confirm; self.max_order_frac = min(float(max_order_frac), 1.0); self.max_gross = max_gross
         self.min_order_units = min_order_units; self.allow_live = allow_live; self.tif = tif
         self._order_factory = order_factory
 
@@ -117,14 +118,16 @@ class LiveExecution:
 
     def _compute(self, ib, target_weights) -> dict:
         nav = next((float(v.value) for v in ib.accountSummary() if v.tag == "NetLiquidation"), None)
-        if nav is None:
-            raise RuntimeError("could not read NetLiquidation (NAV) from IBKR")
+        if nav is None or not math.isfinite(nav) or nav <= 0:
+            raise RuntimeError(f"invalid NAV from IBKR: {nav!r}")
         make_contract = self._make_contract()
         cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
         orders, positions, turnover = {}, {}, 0.0
         base_usd_map, price_map, contract_map = {}, {}, {}
         for code in target_weights.index:
             w = float(target_weights[code])
+            if not math.isfinite(w):                       # NaN/inf weight would fail the caps OPEN
+                raise RuntimeError(f"non-finite target weight for {code}: {w!r}")
             if code == "USD" or abs(w) < 1e-12:
                 continue
             pair, base_usd = self._pair(code)
@@ -135,6 +138,8 @@ class LiveExecution:
             if not bars:
                 raise RuntimeError(f"no historical price for {pair}")
             p = float(bars[-1].close)
+            if not math.isfinite(p) or p <= 0:             # bad price would size orders wrong / fail caps open
+                raise RuntimeError(f"invalid price for {pair}: {p!r}")
             usd_notional = w * nav
             target_units = (-usd_notional) if base_usd else (usd_notional / p)
             current_units = cur_by_conid.get(getattr(c, "conId", None), 0.0)
