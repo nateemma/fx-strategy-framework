@@ -44,10 +44,13 @@ The single most defensible "best" baseline: the three factors are low-correlated
 equal-risk or vol-weighted blend has a much higher Sharpe than any one alone (Baz et al.,
 *Dissecting Investment Strategies*). **Framework:** a meta-`Strategy` that blends sub-strategy weights.
 **ML angle:** factor *timing* (Tier 2) sits on top of this.
-> **Status (2026-07-14): BUILT.** `blend.py` (`carry_trend`, `carry_trend_value`, + vol-targeted
-> variants). Caps ~Sharpe 0.33 on G10 spot. **Deployable book: `carry_trend_voltarget`** (~0.52–0.55,
-> hyperopt'd target_vol=0.062 / cap=1.20). More rank factors are dry — the bar now needs a crash
-> overlay / trend / EM, not more factors.
+> **Status (2026-07-14): BUILT — but the edge is pre-2010.** `blend.py` (`carry_trend`,
+> `carry_trend_value`, + vol-targeted). **Corrected numbers** (an earlier ~0.52 figure was a stale-cache
+> artifact; current data validated against FRED): deployable `carry_trend_voltarget` OOS Sharpe **0.15**
+> (1997+), but era-split shows **0.82 (1997–09) → 0.07 (2010–17) → 0.006 (2018–26)** — G10 carry died
+> with ZIRP-era rate-differential compression; **no modern edge**. Value does NOT robustly help
+> (era-split rejects it, negative since 2018) — deployable stays `carry_trend_voltarget`. More G10 rank
+> factors are dry; the live question is whether **EM carry (#12)** or non-price data revive an edge.
 
 ### 4. Carry crash / vol overlay — finish the ML stage
 The EWMA vol-target overlay exists (Sharpe 0.34 → 0.40 hyperopt'd) — it *is* the deployable book. Vol

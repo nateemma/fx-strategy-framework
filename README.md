@@ -66,24 +66,33 @@ Thirteen strategies ship as reference implementations. Each is usable by name fr
 
 ## Results (research, not advice)
 
-Walk-forward, out-of-sample, over the full G10 history (FRED). The point is the **factor-stack
-narrative**, not any single number.
+Walk-forward, out-of-sample, over the full G10 history (FRED). **Read the caveat below the table — the
+headline is honest, and it isn't flattering.**
 
-| Strategy | OOS Sharpe | Calmar | max DD |
+| Strategy | OOS Sharpe (1997+) | Calmar | max DD |
 |---|---|---|---|
-| `carry` | 0.32 | 0.09 | −27% |
-| `carry_trend` | 0.50 | 0.19 | −12% |
-| **`carry_trend_voltarget`** | **0.52** | **0.20** | −17% |
+| `carry` | 0.10 | 0.03 | −27% |
+| `carry_trend` | 0.17 | 0.07 | −11% |
+| **`carry_trend_voltarget`** (deployable) | **0.15** | 0.06 | −13% |
 
-The story: carry alone runs a Sharpe ~0.3 with deep, sudden drawdowns. **Time-series trend is a real
-~0.3-Sharpe factor negatively correlated to carry**, so a risk-parity carry+trend blend roughly
-*doubles* the risk-adjusted return and *halves* the drawdown; the vol-target overlay lifts it a touch
-further to the deployable `carry_trend_voltarget`. Two honest negatives sit alongside: cross-sectional
-**momentum is too weak** (OOS Sharpe ~0.03) to earn a place, and **value dilutes** the blend under
-equal-risk weighting despite hedging drawdowns — both are kept in the library but out of the deployable
-blend. The learned vol forecaster **ties** EWMA on price-only features (beating it needs non-price
-data). Return scales with leverage: at ~0.5 Sharpe the book is dialled to whatever volatility/drawdown
-budget you choose.
+**The edge is a pre-2010 artifact.** Split by era, `carry_trend_voltarget` runs Sharpe **0.82 (1997–2009)
+→ 0.07 (2010–2017) → 0.006 (2018–2026)**: G10 carry worked until the GFC and has been ~dead since, as
+zero-rate policy compressed the rate differentials the factor feeds on. The pooled 1997+ Sharpe is
+carried entirely by the first era — the book has **no meaningful modern edge**, and live deployment on
+G10 spot is not currently justified.
+
+Within the (historical) stack the relative story still holds: time-series trend is a real diversifier
+negatively correlated to carry — its correlation *deepens* in carry drawdowns (a convex crash hedge) —
+so a risk-parity carry+trend blend beats either leg and roughly halves the drawdown. Honest negatives:
+**value does not robustly add Sharpe** (it wins in a pooled window only via the 2008 crisis; an era-split
+rejects it — negative since 2018); cross-sectional **momentum is too weak** (~0.03); and a learned vol
+forecaster (HAR / cross-asset macro / nonlinear GBM) **loses to a one-parameter EWMA** — always-on beats
+timed.
+
+*(An earlier version of this table showed ~0.52. That was measured on a stale data cache; the numbers
+here are validated against current FRED data — reproducible and matching FRED to the digit. The next
+question is whether **EM carry** — where rate differentials still exist — or **non-price data** can find
+edge where G10 spot no longer does.)*
 
 ---
 

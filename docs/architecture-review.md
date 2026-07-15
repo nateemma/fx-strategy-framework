@@ -91,6 +91,12 @@ staleness.**
   result up top: `carry_trend_voltarget`, **OOS Sharpe 0.52**, not bare carry.
 - Results = the factor-stack narrative (carry 0.32 → +trend 0.50 → vol-targeted 0.52; momentum
   benched; value dilutes), leverage-scaled-to-your-vol-budget framing.
+  > **⚠️ CORRECTION (2026-07-14):** these Sharpe figures (0.32 / 0.50 / 0.52) were measured on a **stale
+  > data cache** and do not reproduce. On current FRED-validated data the numbers are ~3× lower
+  > (carry 0.10 → carry_trend 0.17 → voltarget 0.15, 1997+), and the edge is a **pre-2010 artifact**
+  > (`carry_trend_voltarget` Sharpe 0.82 → 0.07 → 0.006 across 1997–09 / 2010–17 / 2018–26). "value
+  > dilutes" holds (era-split rejects the value leg). See the README Results table and
+  > `docs/strategy-research-backlog.md` #3/#11.
 - Fix facts: six modes (add `download`/`dryrun`), 138 tests, numpy (drop sklearn), full `--strategy`
   list, real date range.
 - Keep the FX-concepts primer + the framework-general vs strategy-specific split.
