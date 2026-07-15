@@ -75,15 +75,24 @@ class LiveExecution:
     weights and returns them with applied=False; places NOTHING. Non-preview raises NotImplementedError.
     Connects readonly=True; prices from historical MIDPOINT bars (competing-session-proof)."""
     def __init__(self, host="127.0.0.1", port=4002, client_id=23, cost_bps: float = 1.0,
-                 preview: bool = True, ib_factory=None):
+                 preview: bool = True, ib_factory=None, contract_factory=None):
         self.host = host; self.port = port; self.client_id = client_id
-        self.cost_bps = cost_bps; self.preview = preview; self._ib_factory = ib_factory
+        self.cost_bps = cost_bps; self.preview = preview
+        self._ib_factory = ib_factory; self._contract_factory = contract_factory
 
     def _make_ib(self):
         if self._ib_factory is not None:
             return self._ib_factory()
         from ib_async import IB
         return IB()
+
+    def _make_contract(self):
+        # returns a callable pair_str -> contract; lazy ib_async import only when not injected,
+        # so the sign-correctness tests run hermetically without ib_async.
+        if self._contract_factory is not None:
+            return self._contract_factory
+        from ib_async import Forex
+        return Forex
 
     @staticmethod
     def _pair(code):
@@ -98,8 +107,8 @@ class LiveExecution:
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
         if not self.preview:
             raise NotImplementedError("live order placement is Phase 2; LiveExecution is preview-only")
-        from ib_async import Forex
-        ib = self._make_ib()
+        make_contract = self._make_contract()   # prices arg (FRED, USD-per-FX) is intentionally
+        ib = self._make_ib()                     # ignored; we re-fetch IBKR's native midpoint below
         competing = {"hit": False}
         def _on_err(reqId, code, msg, contract):
             if code == 10197:
@@ -117,7 +126,9 @@ class LiveExecution:
                 if code == "USD" or abs(w) < 1e-12:
                     continue
                 pair, base_usd = self._pair(code)
-                c = Forex(pair); ib.qualifyContracts(c)
+                c = make_contract(pair); ib.qualifyContracts(c)
+                if not getattr(c, "conId", None):
+                    raise RuntimeError(f"could not qualify {pair} on IBKR IDEALPRO")
                 bars = ib.reqHistoricalData(c, "", "2 D", "1 day", "MIDPOINT", useRTH=False)
                 if not bars:
                     raise RuntimeError(f"no historical price for {pair}")

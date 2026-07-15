@@ -34,17 +34,27 @@ def test_main_dryrun_prints(monkeypatch, capsys):
     rc = cli.main(["dryrun", "--strategy", "carry", "--param", "n_long=1", "--param", "n_short=1", "--preview"])
     assert rc == 0 and "rebalance" in capsys.readouterr().out
 
-def test_dryrun_broker_ib_builds_live_execution(monkeypatch):
+def test_run_dryrun_broker_ib_constructs_live_execution(monkeypatch):
     import forex.run.execution as exmod
+    from forex.run.execution import RebalanceReport
     captured = {}
     class _Fake:
         def __init__(self, **kw): captured.update(kw)
         def rebalance(self, tw, px):
-            from forex.run.execution import RebalanceReport
-            return RebalanceReport(orders={"EURUSD": 100.0}, positions={"EURUSD": 100.0},
+            return RebalanceReport(orders={"USDMXN": -333.0}, positions={"USDMXN": -333.0},
                                    equity=1_000_000.0, turnover=0.5, cost=50.0, applied=False)
     monkeypatch.setattr(exmod, "LiveExecution", _Fake)
-    # assert the parser wires broker/ib-port correctly
-    args = cli.build_parser().parse_args(["dryrun", "--strategy", "carry", "--broker", "ib",
-                                          "--preview", "--ib-port", "4002"])
-    assert args.broker == "ib" and args.ib_port == 4002 and args.preview is True
+    monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
+    out = cli.run(RunConfig(strategy="carry", strategy_params={"n_long": 1, "n_short": 1},
+                            broker="ib", ib_port=4002, preview=True), EnvConfig(), "dryrun")
+    assert captured["port"] == 4002 and captured["preview"] is True      # LiveExecution built with ib params
+    assert out["broker"] == "ib" and out["dryrun"].applied is False
+
+def test_format_ib_dryrun_table():
+    from forex.run.execution import RebalanceReport
+    out = {"broker": "ib", "dryrun": RebalanceReport(
+        orders={"USDMXN": -333333.0, "EURUSD": 100000.0}, positions={},
+        equity=1_000_000.0, turnover=2.0, cost=200.0, applied=False)}
+    s = cli._format(out)
+    assert "PREVIEW" in s and "IBKR" in s
+    assert "USDMXN" in s and "SELL" in s and "EURUSD" in s and "BUY" in s
