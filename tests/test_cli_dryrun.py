@@ -58,3 +58,25 @@ def test_format_ib_dryrun_table():
     s = cli._format(out)
     assert "PREVIEW" in s and "IBKR" in s
     assert "USDMXN" in s and "SELL" in s and "EURUSD" in s and "BUY" in s
+
+def test_dryrun_ib_confirm_threads_placement_params(monkeypatch):
+    import forex.run.execution as exmod
+    captured = {}
+    class _Fake:
+        def __init__(self, **kw): captured.update(kw)
+        def rebalance(self, tw, px):
+            from forex.run.execution import RebalanceReport
+            return RebalanceReport(orders={"USDMXN": -20000.0}, positions={}, equity=1e6,
+                                   turnover=0.6, cost=60.0, applied=True)
+    monkeypatch.setattr(exmod, "LiveExecution", _Fake)
+    monkeypatch.setattr(cli, "_build_view", lambda cfg, env: _view())
+    out = cli.run(RunConfig(strategy="carry", strategy_params={"n_long": 1, "n_short": 1},
+                            broker="ib", ib_port=4002, confirm=True, max_order_frac=0.4), EnvConfig(), "dryrun")
+    assert captured["confirm"] is True and captured["max_order_frac"] == 0.4
+    assert out["dryrun"].applied is True
+
+def test_format_ib_fills_table():
+    from forex.run.execution import RebalanceReport
+    s = cli._format({"broker": "ib", "dryrun": RebalanceReport(
+        orders={"USDMXN": -20000.0}, positions={}, equity=1e6, turnover=0.6, cost=60.0, applied=True)})
+    assert "PLACED" in s and "USDMXN" in s and "SELL" in s

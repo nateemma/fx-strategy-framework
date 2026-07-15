@@ -17,6 +17,9 @@ class RunConfig:
     preview: bool = False
     broker: str = "sim"
     ib_port: int = 4002
+    confirm: bool = False
+    max_order_frac: float | None = None
+    allow_live: bool = False
     jobs: int = 1
 
     @classmethod

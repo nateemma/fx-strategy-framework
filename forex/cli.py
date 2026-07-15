@@ -41,6 +41,9 @@ def build_parser() -> argparse.ArgumentParser:
             sp.add_argument("--equity", type=float)
             sp.add_argument("--broker", choices=["sim", "ib"], default="sim")
             sp.add_argument("--ib-port", type=int, default=4002, dest="ib_port")
+            sp.add_argument("--confirm", action="store_true")
+            sp.add_argument("--max-order-frac", type=float, dest="max_order_frac")
+            sp.add_argument("--allow-live", action="store_true", dest="allow_live")
     return p
 
 def resolve(args):
@@ -70,6 +73,13 @@ def resolve(args):
         overrides["tune"] = tune.split(",")
     if getattr(args, "preview", False):
         overrides["preview"] = True
+    if getattr(args, "confirm", False):
+        overrides["confirm"] = True
+    if getattr(args, "allow_live", False):
+        overrides["allow_live"] = True
+    max_order_frac = getattr(args, "max_order_frac", None)
+    if max_order_frac is not None:
+        overrides["max_order_frac"] = max_order_frac
     broker = getattr(args, "broker", None)
     if broker is not None:
         overrides["broker"] = broker
@@ -142,7 +152,9 @@ def run(cfg, env, mode) -> dict:
         from forex.run.live import rebalance_now
         if cfg.broker == "ib":
             from forex.run.execution import LiveExecution
-            ex = LiveExecution(port=cfg.ib_port, cost_bps=cfg.cost_bps, preview=cfg.preview)
+            ex = LiveExecution(port=cfg.ib_port, cost_bps=cfg.cost_bps, preview=cfg.preview,
+                               confirm=cfg.confirm, allow_live=cfg.allow_live,
+                               **({"max_order_frac": cfg.max_order_frac} if cfg.max_order_frac is not None else {}))
         else:
             from forex.run.execution import SimExecution
             pf = os.path.join(env.output_dir, "portfolio.json")
@@ -179,8 +191,11 @@ def _format(out: dict) -> str:
     if "dryrun" in out:
         rep = out["dryrun"]
         if out.get("broker") == "ib":
-            lines = [f"{'PREVIEW ' if not rep.applied else ''}IBKR rebalance -> NAV {rep.equity:,.0f}  "
-                     f"turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}", "orders (base-ccy units):"]
+            if rep.applied:
+                header = f"ORDERS PLACED -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
+            else:
+                header = f"PREVIEW IBKR rebalance -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
+            lines = [header, "orders (base-ccy units):"]
             for pair, units in sorted(rep.orders.items(), key=lambda kv: -abs(kv[1])):
                 if abs(units) > 1e-6:
                     lines.append(f"  {pair:8} {'BUY ' if units > 0 else 'SELL'} {abs(units):,.0f}")
