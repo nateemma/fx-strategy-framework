@@ -54,11 +54,16 @@ while still intraday. 15-min kept as a secondary/robustness cut.
   1.4–1.7 but cost-dominated at 1h — fast versions net −21 (5796 reb/yr); slowest (24h look / 12–24h
   hold) net only +0.44/+0.49 @1bp and NEGATIVE @2bp. **Always-on cross-sectional reversion is too
   turnover-heavy to survive realistic cost.** → pivot to *selective* reversion (below).
-- **Vol-spike reversion (NEXT):** after a >2 ATR / RSI-extreme bar, is next-hour return reliably
-  reverting, cost-blind? Fires rarely → low turnover → better cost profile; targets the sharpest
-  reversion where always-on was too diffuse.
-- **Cointegration:** major-major spreads (EUR/USD vs GBP/USD, etc.) — ADF + half-life. Only
-  short-half-life mean-reverting spreads proceed. Also selective (trade only spread extremes).
+- **Vol-spike reversion — DONE 2026-07-16 (1h, 2y).** After a standardized extreme move (|z|>2..3
+  over a 48h vol window), forward fade return is tiny: hit-rate 51–54%, mean 0.5–1.7 bp/event. **Every
+  config net-NEGATIVE after 2bp** (best: relative thr=3/h=24 = +1.66bp, −0.34 net). Conditioning on
+  extremes does NOT sharpen the reversion above the spread. Selective reversion FAILS the cost gate too.
+  → two reversion mechanisms now sub-cost at 1h; the 1h dislocation is smaller than the round-trip spread.
+- **Cointegration (NEXT — likely final reversion gate):** major-major spreads (EUR/USD vs GBP/USD,
+  etc.) — ADF + half-life. Different mechanism (spread stationarity, not single-asset reversion); the
+  source's own "considerably more robust" claim. Only short-half-life mean-reverting spreads with a
+  per-cycle amplitude exceeding cost proceed. If this also fails, intraday reversion on majors is
+  cost-dominated (consistent with all prior program evidence) and the line stops.
 
 ### Phase 2 — Cost-aware backtest
 Framework `backtest` with the Phase-0 spread on Phase-1 survivors only.
