@@ -116,6 +116,19 @@ target weights — **placing nothing** (preview-only; order placement is a separ
 Tradeability of the deployable book is verified first-hand through the API (MXN/ZAR/KRW quotable; BRL/INR
 not).
 
+### Intraday — investigated, nothing tradeable
+
+We assessed a broad set of intraday FX ideas (currency-strength ranking, vol-spike mean-reversion,
+cointegration/stat-arb, session breakouts) on IBKR 1h data. **None survives cost on liquid majors.**
+Currency-strength *momentum* is rejected outright (strength reverts intraday, not persists); the reversion
+that exists is real in gross terms (Sharpe ~1.5) but smaller than the round-trip spread — every variant
+(always-on cross-sectional, vol-spike-selective, cointegration) is net-negative once cost is charged. A
+slow (~10-day) CHF-cross reversion surfaced as a lead but was **refuted** out-of-sample (it was an SNB-peg
+statistical artifact, with a Jan-2015 de-peg tail). The consistent conclusion — matching the carry work
+and the earlier crypto research — is that **the only edge here is slow and cross-sectional**; intraday
+directional and reversion on majors are cost-dominated. Full method and results:
+[`docs/intraday-fx-assessment-plan.md`](docs/intraday-fx-assessment-plan.md).
+
 ---
 
 ## Forex concepts
