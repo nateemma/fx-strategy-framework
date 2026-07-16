@@ -98,9 +98,11 @@ feature for #4/#5.
 > **FRAMEWORK STRATEGY BUILT (2026-07-16):** `carry_cot` (`strategies/blend.py`, risk-parity carry +
 > `positioning`), `PositioningStrategy` (`strategies/positioning.py`, contrarian dollar-neutral),
 > `forex/features/positioning.py`, `DataView.positioning`, `build_carry_view` auto-loads COT. Reproduces:
-> `carry_cot` vs `carry` (2018-26, 5bp) Sharpe 0.85→1.03, maxDD −17.8%→−4.1%, Calmar 0.39→0.87. NEXT:
-> walk-forward/hyperopt validate `carry_cot` (window/lag_days) → new deployable book; COT is also the
-> first feature for regime conditioning (#5).
+> `carry_cot` vs `carry` (2018-26, 5bp) Sharpe 0.85→1.03, maxDD −17.8%→−4.1%, Calmar 0.39→0.87.
+> **WALK-FORWARD VALIDATED (clean OOS, fixed params, fit no-op):** train 750d/test 250d, 8 windows —
+> carry_cot Sharpe **0.96 vs carry 0.82**, Calmar **0.84 vs 0.38**, maxDD **−4.1% vs −17.8%**, far more
+> consistent per-window. **`carry_cot` is now the deployable book** — remaining is the live-account switch,
+> not research. COT is also the first feature for regime conditioning (#5).
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
