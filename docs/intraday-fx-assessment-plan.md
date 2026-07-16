@@ -77,8 +77,14 @@ Sharpe 0.11/0.07 (2016-26 / 2018-26), GBP-CHF 0.06/−0.01, all −11..−21% DD
 DF significance was an N-artifact + SNB-floor stationarity (untradeable). **Lead closed** — the entire
 intraday+reversion FX line yields nothing tradeable; only slow cross-sectional carry survives.
 
-**Not pursued:** session-conditioned breakout (low prior given 3/3 reversion + prior trend negative);
-ML meta-layers (deferred — need a base edge first). VWAP (no volume) and news (no feed) remain blocked.
+**Session-conditioned breakout — DONE 2026-07-16 (also failed).** London-open range break (Asian-range
+break → session continuation, 1h, 7 majors): hit-rate 48.7% @+3h (below coin-flip — mild fade) / 51.4%
+to session-end, mean <1bp/event, net-NEGATIVE at every exit. Session-conditioning does not rescue
+breakout; the short-horizon sub-50% hit echoes the reversion result (breakouts fake out). **Plan now
+fully closed — every testable intraday idea run, all negative.**
+
+**Not pursued (by design):** ML meta-layers (deferred — need a base edge first, none found). VWAP (no
+volume) and news (no feed) remain blocked. HTF-trend pullback skipped (trend already negative even gross).
 
 ### Phase 2 — Cost-aware backtest
 Framework `backtest` with the Phase-0 spread on Phase-1 survivors only.
