@@ -1,9 +1,11 @@
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 import pandas as pd
+
+IDEALPRO_MIN_USD = 25_000   # IdealPro FX min order (USD-equiv); below this a leg routes as an odd lot
 
 @dataclass
 class RebalanceReport:
@@ -14,6 +16,7 @@ class RebalanceReport:
     cost: float
     applied: bool
     complete: bool = True
+    odd_lot: dict = field(default_factory=dict)   # pair -> USD notional, for legs below IDEALPRO_MIN_USD
 
 class Execution(Protocol):
     def rebalance(self, target_weights: pd.Series, prices: pd.Series) -> RebalanceReport:
@@ -117,6 +120,15 @@ class LiveExecution:
     def _cexp(units, base_usd, p):        # signed USD-notional exposure to the foreign ccy
         return -units if base_usd else units * p
 
+    @staticmethod
+    def _odd_lot(c) -> dict:              # legs whose USD notional is below the IdealPro min (odd-lot routing)
+        out = {}
+        for pair, units in c["orders"].items():
+            notional = abs(units) * (1.0 if c["base_usd"][pair] else c["price"][pair])
+            if 0 < notional < IDEALPRO_MIN_USD:
+                out[pair] = notional
+        return out
+
     def _compute(self, ib, target_weights) -> dict:
         nav = next((float(v.value) for v in ib.accountSummary() if v.tag == "NetLiquidation"), None)
         if nav is None or not math.isfinite(nav) or nav <= 0:
@@ -197,7 +209,8 @@ class LiveExecution:
                           "(historical prices used here are unaffected).")
                 cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
                 return RebalanceReport(orders=c["orders"], positions=c["positions"], equity=c["nav"],
-                                       turnover=c["turnover"], cost=cost, applied=False)
+                                       turnover=c["turnover"], cost=cost, applied=False,
+                                       odd_lot=self._odd_lot(c))
             finally:
                 ib.disconnect()
         # ---- placement ----
@@ -243,6 +256,7 @@ class LiveExecution:
                     complete = False
             cost = (self.cost_bps / 1e4) * c["turnover"] * c["nav"]
             return RebalanceReport(orders=fills, positions=c["positions"], equity=c["nav"],
-                                   turnover=c["turnover"], cost=cost, applied=True, complete=complete)
+                                   turnover=c["turnover"], cost=cost, applied=True, complete=complete,
+                                   odd_lot=self._odd_lot(c))
         finally:
             ib.disconnect()

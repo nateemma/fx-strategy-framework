@@ -89,6 +89,14 @@ def test_format_ib_incomplete_flagged():
     assert "INCOMPLETE" in s
 
 
+def test_format_ib_odd_lot_warning():
+    from forex.run.execution import RebalanceReport
+    s = cli._format({"broker": "ib", "dryrun": RebalanceReport(
+        orders={"USDPLN": -20000.0}, positions={}, equity=60000.0, turnover=0.3, cost=1.0,
+        applied=False, odd_lot={"USDPLN": 20000.0})})
+    assert "ODD-LOT" in s and "USDPLN" in s and "25,000" in s
+
+
 def test_build_view_routes_ibkr_universe_to_carry_view(monkeypatch):
     # a universe with an IBKR-only ccy (PLN has spot_fred=None) must load via build_carry_view, not from_fred
     import forex.data.ibkr as ibkr

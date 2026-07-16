@@ -88,6 +88,17 @@ def test_current_position_nets_against_target():
     rep = ex.rebalance(_w({"EUR": 0.5}), pd.Series({"EUR": 1.1}))
     assert abs(rep.orders["EURUSD"]) < 1e-6
 
+def test_odd_lot_flagged_below_idealpro_min():
+    # 0.5 * 40k NAV = $20k USD notional < $25k IdealPro min -> flagged as odd-lot
+    fake = _FakeIB(nav=40_000.0, price=18.0)
+    rep = _live(fake).rebalance(_w({"MXN": 0.5}), pd.Series({"MXN": 1 / 18.0}))
+    assert "USDMXN" in rep.odd_lot and round(rep.odd_lot["USDMXN"]) == 20000
+
+def test_no_odd_lot_above_idealpro_min():
+    fake = _FakeIB(nav=1_000_000.0, price=18.0)     # 0.5 * 1e6 = $500k, well above min
+    rep = _live(fake).rebalance(_w({"MXN": 0.5}), pd.Series({"MXN": 1 / 18.0}))
+    assert rep.odd_lot == {}
+
 # ---- Phase 2: placement tests ----
 
 def _fake_order(action, qty):

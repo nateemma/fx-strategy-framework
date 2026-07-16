@@ -207,6 +207,10 @@ def _format(out: dict) -> str:
             lines = []
             if rep.applied and not getattr(rep, "complete", True):
                 lines.append("⚠ INCOMPLETE — partial fills; review positions")
+            if getattr(rep, "odd_lot", None):
+                from forex.run.execution import IDEALPRO_MIN_USD
+                legs = ", ".join(f"{p} ${n:,.0f}" for p, n in sorted(rep.odd_lot.items()))
+                lines.append(f"⚠ ODD-LOT: {legs} below ${IDEALPRO_MIN_USD:,.0f} IdealPro min — routes as odd lots")
             lines += [header, "orders (base-ccy units):"]
             for pair, units in sorted(rep.orders.items(), key=lambda kv: -abs(kv[1])):
                 if abs(units) > 1e-6:
