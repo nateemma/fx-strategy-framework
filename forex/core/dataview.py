@@ -7,6 +7,7 @@ class DataView:
     rates: dict
     reer: dict = field(default_factory=dict)
     macro: dict = field(default_factory=dict)
+    positioning: dict = field(default_factory=dict)   # code -> weekly CFTC net-spec position series
 
     @property
     def codes(self) -> list:
@@ -22,7 +23,8 @@ class DataView:
         rates = {k: v.loc[:asof] for k, v in self.rates.items()}
         reer = {k: v.loc[:asof] for k, v in self.reer.items()}
         macro = {k: v.loc[:asof] for k, v in self.macro.items()}
-        return DataView(spot=spot, rates=rates, reer=reer, macro=macro)
+        positioning = {k: v.loc[:asof] for k, v in self.positioning.items()}
+        return DataView(spot=spot, rates=rates, reer=reer, macro=macro, positioning=positioning)
 
     @classmethod
     def from_fred(cls, cache_dir, loader=None, codes=None) -> "DataView":

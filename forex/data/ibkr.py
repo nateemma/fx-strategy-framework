@@ -54,10 +54,12 @@ def fetch_daily(codes, duration="15 Y", cache_dir="data_cache/ibkr_daily",
     return list(codes)
 
 
-def build_carry_view(codes, spot_cache="data_cache/ibkr_daily", rate_cache="data_cache", rate_loader=None):
+def build_carry_view(codes, spot_cache="data_cache/ibkr_daily", rate_cache="data_cache",
+                     rate_loader=None, cot_loader=None, with_positioning=True):
     """Load cached IBKR daily spot (USD-per-FX) + FRED OECD rates into a carry DataView.
     Spot from IBKR (one consistent, deliverable source); rates from FRED 3-month interbank (percent
-    -> fraction). This is the reproducible loader for the TRADEABLE_CARRY book."""
+    -> fraction). This is the reproducible loader for the TRADEABLE_CARRY book. With with_positioning,
+    also loads weekly CFTC COT net-spec for the covered currencies (for the carry_cot blend)."""
     from forex.core.dataview import DataView
     if rate_loader is None:
         from forex.data.fred import load_series
@@ -71,7 +73,14 @@ def build_carry_view(codes, spot_cache="data_cache/ibkr_daily", rate_cache="data
     rates = {"USD": rate_loader(CURRENCIES["USD"].rate_fred, cache_dir=rate_cache) / 100.0}
     for code in codes:
         rates[code] = rate_loader(CURRENCIES[code].rate_fred, cache_dir=rate_cache) / 100.0
-    return DataView(spot=spot, rates=rates)
+    positioning = {}
+    if with_positioning:
+        from forex.data.cftc import load_cot, COT_CODES
+        loader = cot_loader or load_cot
+        for code in codes:
+            if code in COT_CODES:
+                positioning[code] = loader(COT_CODES[code], cache_dir=rate_cache)
+    return DataView(spot=spot, rates=rates, positioning=positioning)
 
 
 def build_intraday_view(codes, cache_dir="data_cache/ibkr", bar_size="15 mins"):

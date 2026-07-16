@@ -5,6 +5,7 @@ from forex.features.volforecast import ewma_vol
 from strategies.carry import CarryStrategy
 from strategies.trend import TrendStrategy
 from strategies.value import ValueStrategy
+from strategies.positioning import PositioningStrategy
 from strategies.overlay import VolTargetOverlay
 from forex.core.compose import split_prefixed, build_components, split_params
 
@@ -58,6 +59,14 @@ class CarryTrend(BlendStrategy):
     NAME = "carry_trend"
     SPECS = [("carry", CarryStrategy, {"n_long": 3, "n_short": 3}),
              ("trend", TrendStrategy, {"signal_type": "ema", "lookback": 108})]
+    @classmethod
+    def build(cls, params):
+        return cls(build_components(cls.SPECS, params))
+
+class CarryCot(BlendStrategy):
+    NAME = "carry_cot"
+    SPECS = [("carry", CarryStrategy, {"n_long": 3, "n_short": 3}),
+             ("positioning", PositioningStrategy, {})]
     @classmethod
     def build(cls, params):
         return cls(build_components(cls.SPECS, params))
