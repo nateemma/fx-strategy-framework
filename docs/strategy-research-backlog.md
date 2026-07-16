@@ -94,9 +94,13 @@ feature for #4/#5.
 > robust. **BLEND WITH REAL DEPLOYABLE BOOK = DECISIVE WIN (2026-07-16):** carry (real `TRADEABLE_CARRY`)
 > + COT, corr −0.01, equal-risk mix **Sharpe 0.74→1.05 (full) / 0.85→1.06 (2018-26), maxDD −17.8%→−4.8%,
 > Calmar 0.36→0.73** — biggest risk-adjusted improvement to the book in the program (annRet drop is a
-> de-lever artifact; scale-free metrics + re-lever = ~40% more return at same risk, 1/3 the DD). NEXT:
-> build carry+COT as a framework blend `Strategy` (walk-forward validated) → the new deployable book;
-> `DataView` COT integration; COT is also the first feature for regime conditioning (#5).
+> de-lever artifact; scale-free metrics + re-lever = ~40% more return at same risk, 1/3 the DD).
+> **FRAMEWORK STRATEGY BUILT (2026-07-16):** `carry_cot` (`strategies/blend.py`, risk-parity carry +
+> `positioning`), `PositioningStrategy` (`strategies/positioning.py`, contrarian dollar-neutral),
+> `forex/features/positioning.py`, `DataView.positioning`, `build_carry_view` auto-loads COT. Reproduces:
+> `carry_cot` vs `carry` (2018-26, 5bp) Sharpe 0.85→1.03, maxDD −17.8%→−4.1%, Calmar 0.39→0.87. NEXT:
+> walk-forward/hyperopt validate `carry_cot` (window/lag_days) → new deployable book; COT is also the
+> first feature for regime conditioning (#5).
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
