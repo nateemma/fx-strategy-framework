@@ -91,9 +91,12 @@ feature for #4/#5.
 > **Sharpe 0.71 (2018–26, 4bp, −6% DD)**, 0.35–0.42 (2010–26), cost-robust to ~8–15bp (turnover 11×/yr),
 > **uncorrelated to carry (ρ=0.05)** → genuine diversifier. **Caveat:** modern-only — flips NEGATIVE
 > pre-2010 (−0.44 in 2000–09), flat 2010–17; an in-regime (2018+) edge like carry, not multi-decade
-> robust. NEXT: graduate to a framework `Strategy` (+ `DataView` COT loader) and test the COT+real-EM-carry
-> blend on the deployable `TRADEABLE_CARRY` book (uncorrelated → expected additive). Also the first real
-> feature for regime conditioning (#5).
+> robust. **BLEND WITH REAL DEPLOYABLE BOOK = DECISIVE WIN (2026-07-16):** carry (real `TRADEABLE_CARRY`)
+> + COT, corr −0.01, equal-risk mix **Sharpe 0.74→1.05 (full) / 0.85→1.06 (2018-26), maxDD −17.8%→−4.8%,
+> Calmar 0.36→0.73** — biggest risk-adjusted improvement to the book in the program (annRet drop is a
+> de-lever artifact; scale-free metrics + re-lever = ~40% more return at same risk, 1/3 the DD). NEXT:
+> build carry+COT as a framework blend `Strategy` (walk-forward validated) → the new deployable book;
+> `DataView` COT integration; COT is also the first feature for regime conditioning (#5).
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
