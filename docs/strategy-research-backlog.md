@@ -84,6 +84,16 @@ signal orthogonal to price. Modern-ML use case with **free text**. **Data:** cen
 ### 7. Positioning (CFTC COT) as a contrarian signal
 Extreme net-speculative crowding precedes reversals. Free, weekly, lagged. Useful standalone and as a
 feature for #4/#5.
+> **Status (2026-07-16): LOADER BUILT + Phase-1/2 PASS — first non-price edge in the program.**
+> `forex/data/cftc.py` `load_cot` (CFTC Socrata legacy futures-only, net non-commercial = long−short,
+> keyed on stable contract code; `COT_CODES` for EUR/JPY/GBP/CHF/CAD/AUD/NZD/MXN/ZAR; history to 1986).
+> Contrarian signal (fade crowding, 3yr rolling z, release-lagged): modern-era cross-sectional
+> **Sharpe 0.71 (2018–26, 4bp, −6% DD)**, 0.35–0.42 (2010–26), cost-robust to ~8–15bp (turnover 11×/yr),
+> **uncorrelated to carry (ρ=0.05)** → genuine diversifier. **Caveat:** modern-only — flips NEGATIVE
+> pre-2010 (−0.44 in 2000–09), flat 2010–17; an in-regime (2018+) edge like carry, not multi-decade
+> robust. NEXT: graduate to a framework `Strategy` (+ `DataView` COT loader) and test the COT+real-EM-carry
+> blend on the deployable `TRADEABLE_CARRY` book (uncorrelated → expected additive). Also the first real
+> feature for regime conditioning (#5).
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
