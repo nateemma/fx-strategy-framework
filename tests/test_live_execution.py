@@ -24,6 +24,7 @@ class _FakeIB:
     def reqMarketDataType(self, *a): pass
     def accountSummary(self): return [_Val("NetLiquidation", str(self._nav))]
     def positions(self): return self._positions
+    def reqPositions(self): pass
     def qualifyContracts(self, c):
         self._conid += 1; c.conId = self._conid; c.exchange = "IDEALPRO"; return [c]
     def reqHistoricalData(self, *a, **k): return [_Bar(self._price)]

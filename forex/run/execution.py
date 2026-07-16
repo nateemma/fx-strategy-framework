@@ -122,6 +122,10 @@ class LiveExecution:
         if nav is None or not math.isfinite(nav) or nav <= 0:
             raise RuntimeError(f"invalid NAV from IBKR: {nav!r}")
         make_contract = self._make_contract()
+        try:                                  # ensure the position snapshot has populated after connect —
+            ib.reqPositions(); ib.sleep(1.5)  # else a fresh reconnect reads spurious "flat" and OVER-TRADES
+        except Exception:                     # (the reconnect-per-rebalance loop bug found in intraday B)
+            pass
         cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
         orders, positions, turnover = {}, {}, 0.0
         base_usd_map, price_map, contract_map = {}, {}, {}
