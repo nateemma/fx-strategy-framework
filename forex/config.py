@@ -47,9 +47,21 @@ CURRENCIES: dict[str, Currency] = {
     "BRL": Currency("BRL", "DEXBZUS",  True,  "IRSTCB01BRM156N", 0, "RBBRBIS"),
     "INR": Currency("INR", "DEXINUS",  True,  "IRSTCB01INM156N", 0, "RBINBIS"),
     "KRW": Currency("KRW", "DEXKOUS",  True,  "IR3TIB01KRM156N", 0, "RBKRBIS"),
+    # IBKR-deliverable CE-Europe EM. FRED has the OECD 3-month interbank rate (IR3TIB01) but NOT a
+    # USD spot series for these — so spot_fred is None and spot comes from IBKR (forex.data.ibkr
+    # build_carry_view); they must NOT be routed through the FRED spot panel. spot_invert reflects
+    # the IBKR quote (USD.xxx -> FX-per-USD -> invert). Adding these to G10+MXN+ZAR lifts the carry
+    # book (2020-26 Sharpe 0.60->0.81, cost-robust to 15bp). reer best-guess BIS (unused by carry).
+    "PLN": Currency("PLN", None,       True,  "IR3TIB01PLM156N", 0, "RBPLBIS"),
+    "HUF": Currency("HUF", None,       True,  "IR3TIB01HUM156N", 0, "RBHUBIS"),
+    "CZK": Currency("CZK", None,       True,  "IR3TIB01CZM156N", 0, "RBCZBIS"),
+    "ILS": Currency("ILS", None,       True,  "IR3TIB01ILM156N", 0, "RBILBIS"),
 }
 
 # The default trading universe (G10). EM is available in CURRENCIES but opt-in via --universe.
 G10 = ["EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD", "NOK", "SEK"]
 EM = ["MXN", "ZAR", "BRL", "INR", "KRW"]
 DEFAULT_CODES = G10
+# The deployable carry book: G10 + the six IBKR-deliverable EM. All spot from IBKR (one source),
+# rates from FRED. Load via forex.data.ibkr.build_carry_view, NOT DataView.from_fred.
+TRADEABLE_CARRY = G10 + ["MXN", "ZAR", "PLN", "HUF", "CZK", "ILS"]

@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from forex.data.prices import build_spot_panel, spot_returns
 
 def make_loader(data):
@@ -21,3 +22,9 @@ def test_inversion_and_returns():
     rets = spot_returns(panel)
     assert round(rets.loc["2020-01-03", "EUR"], 4) == 0.10      # +10%
     assert round(rets.loc["2020-01-03", "JPY"], 4) == -0.20     # 1/125 vs 1/100 = -20%
+
+
+def test_build_spot_panel_rejects_ibkr_sourced_code():
+    # PLN has no FRED spot (spot_fred=None) -> the FRED panel path must fail loudly, not KeyError/None
+    with pytest.raises(ValueError, match="IBKR-sourced|build_carry_view"):
+        build_spot_panel(cache_dir="unused", loader=make_loader({}), codes=["PLN"])

@@ -30,6 +30,21 @@ def test_reer_fred_set_for_non_usd_none_for_usd():
     assert all(CURRENCIES[c].reer_fred is not None for c in CURRENCIES if c != "USD")
 
 
+def test_tradeable_carry_book():
+    # G10 + the six IBKR-deliverable EM (MXN/ZAR have FRED spot; PLN/HUF/CZK/ILS are IBKR-only)
+    from forex.config import TRADEABLE_CARRY, G10
+    assert TRADEABLE_CARRY == G10 + ["MXN", "ZAR", "PLN", "HUF", "CZK", "ILS"]
+    assert all(c in CURRENCIES for c in TRADEABLE_CARRY)
+
+
+def test_ibkr_sourced_em_have_rates_but_no_fred_spot():
+    # CE-Europe EM: FRED has the OECD rate but not the USD spot -> spot_fred is None (IBKR-sourced)
+    for c in ["PLN", "HUF", "CZK", "ILS"]:
+        assert CURRENCIES[c].spot_fred is None
+        assert CURRENCIES[c].rate_fred.startswith("IR3TIB01")
+        assert CURRENCIES[c].spot_invert is True
+
+
 def test_macro_series():
     from forex.config import MACRO_SERIES
     assert MACRO_SERIES == {"vix": "VIXCLS", "credit": "BAA10Y", "term": "T10Y2Y"}
