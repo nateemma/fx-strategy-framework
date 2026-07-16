@@ -70,10 +70,12 @@ All three reversion mechanisms give NO tradeable intraday edge on majors: (1) al
 cointegration — exists only in CHF crosses, reverts over ~10 days. Fully consistent with the program:
 the only FX edges here are SLOW (monthly carry). Intraday on liquid majors is cost-dominated.
 
-**Lead (non-intraday):** EUR/CHF & GBP/CHF show weak/slow mean-reversion (~10-day half-life, amplitude
-≫ cost) — a candidate for a SLOW swing strategy in the "slow wins" family, NOT intraday. Caveats: CHF-
-concentrated (2 pairs), likely SNB artifact, in-sample β, 2024–26 only → needs distant-era (pre-2024)
-validation + de-concentration scrutiny before it is more than a lead.
+**Lead (non-intraday) — CHASED + REFUTED 2026-07-16.** Built EUR/CHF & GBP/CHF daily from FRED
+(1999–2026); tested raw-cross rolling-z AND rolling-β (no-look-ahead) cointegration reversion, era-split
+across the 2011–15 SNB floor + Jan-2015 de-peg. No tradeable edge in any modern free-float era: EUR-CHF
+Sharpe 0.11/0.07 (2016-26 / 2018-26), GBP-CHF 0.06/−0.01, all −11..−21% DD + de-peg tail. The screen's
+DF significance was an N-artifact + SNB-floor stationarity (untradeable). **Lead closed** — the entire
+intraday+reversion FX line yields nothing tradeable; only slow cross-sectional carry survives.
 
 **Not pursued:** session-conditioned breakout (low prior given 3/3 reversion + prior trend negative);
 ML meta-layers (deferred — need a base edge first). VWAP (no volume) and news (no feed) remain blocked.
