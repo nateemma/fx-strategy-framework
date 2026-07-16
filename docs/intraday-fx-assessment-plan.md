@@ -59,11 +59,24 @@ while still intraday. 15-min kept as a secondary/robustness cut.
   config net-NEGATIVE after 2bp** (best: relative thr=3/h=24 = +1.66bp, −0.34 net). Conditioning on
   extremes does NOT sharpen the reversion above the spread. Selective reversion FAILS the cost gate too.
   → two reversion mechanisms now sub-cost at 1h; the 1h dislocation is smaller than the round-trip spread.
-- **Cointegration (NEXT — likely final reversion gate):** major-major spreads (EUR/USD vs GBP/USD,
-  etc.) — ADF + half-life. Different mechanism (spread stationarity, not single-asset reversion); the
-  source's own "considerably more robust" claim. Only short-half-life mean-reverting spreads with a
-  per-cycle amplitude exceeding cost proceed. If this also fails, intraday reversion on majors is
-  cost-dominated (consistent with all prior program evidence) and the line stops.
+- **Cointegration — DONE 2026-07-16 (1h, 2y, 21 major pairs, Engle-Granger DF + half-life).** Only 2/21
+  pass EG 5%: EUR/CHF (t −4.52) and GBP/CHF (t −3.77) — both CHF crosses (SNB-management artifact), not a
+  general property. Their half-lives are 231h / 299h = **10–12 DAYS, not intraday**. No intraday
+  cointegration edge. (DF significance is largely N=12k; ρ≈−0.003/hr is economically weak.)
+
+## CONCLUSION — intraday reversion line CLOSED (2026-07-16)
+All three reversion mechanisms give NO tradeable intraday edge on majors: (1) always-on cross-sectional
+— gross 1.7 Sharpe, net-negative at cost; (2) vol-spike selective — sub-spread per event; (3)
+cointegration — exists only in CHF crosses, reverts over ~10 days. Fully consistent with the program:
+the only FX edges here are SLOW (monthly carry). Intraday on liquid majors is cost-dominated.
+
+**Lead (non-intraday):** EUR/CHF & GBP/CHF show weak/slow mean-reversion (~10-day half-life, amplitude
+≫ cost) — a candidate for a SLOW swing strategy in the "slow wins" family, NOT intraday. Caveats: CHF-
+concentrated (2 pairs), likely SNB artifact, in-sample β, 2024–26 only → needs distant-era (pre-2024)
+validation + de-concentration scrutiny before it is more than a lead.
+
+**Not pursued:** session-conditioned breakout (low prior given 3/3 reversion + prior trend negative);
+ML meta-layers (deferred — need a base edge first). VWAP (no volume) and news (no feed) remain blocked.
 
 ### Phase 2 — Cost-aware backtest
 Framework `backtest` with the Phase-0 spread on Phase-1 survivors only.
