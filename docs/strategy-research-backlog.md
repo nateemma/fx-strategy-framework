@@ -117,8 +117,29 @@ standalone edge, better as an overlay.
 Bigger carry differentials in liquid EM (MXN, ZAR, PLN…) — but fatter crash tails and the crypto
 "edge-lives-where-you-can't-cheaply-trade" wall. Add only after the G10 machinery + crash overlay are
 proven, and model fills realistically.
+> **Status (2026-07-16): DONE — THIS IS THE DEPLOYABLE BOOK.** EM carry revived the modern edge G10
+> lost to ZIRP. G10+MXN+ZAR Sharpe **0.68 (2018–26)** vs G10-only 0.27; broadened to `TRADEABLE_CARRY`
+> (G10 + MXN/ZAR/PLN/HUF/CZK/ILS, 15 ccy) → **Sharpe 0.69 full / 0.81 recent, cost-robust to 15bp,
+> positive in both eras** — wider universe = better cross-sectional leg selection. Formalized:
+> `config.TRADEABLE_CARRY`, `forex.data.ibkr.build_carry_view`/`fetch_daily` (IBKR spot for the CE-Europe
+> legs FRED lacks + FRED rates), CLI routing, pre-trade odd-lot warning. **Paper-fill-validated on IBKR**
+> (all 4 CE-Europe legs qualify+fill+flatten; USD 25k IdealPro min noted). The liquidity wall does NOT
+> bite these EM. The full Phase 0–3 IBKR execution stack (preview → guarded placement → reconcile →
+> auto-unwind) is built + paper-validated. Docs: README "EM carry" + memory `project_fx_em_carry_edge`.
+> Remaining is deployment (live-account switch), not research.
 
 ---
+
+### 13. Intraday (sub-daily) directional & reversion — CLOSED negative
+Assessed a broad intraday idea set from an external list (currency-strength ranking, vol-spike
+mean-reversion, cointegration/stat-arb, session-conditioned breakout) on IBKR 1h data (7 majors, 2y).
+> **Status (2026-07-16): CLOSED — nothing tradeable.** Every mechanism fails cost on liquid majors:
+> currency-strength *momentum* rejected (strength REVERTS intraday, rank-IC uniformly negative);
+> cross-sectional reversion real in gross (~1.5 Sharpe) but **sub-spread** (net-negative at 2bp);
+> vol-spike selective reversion sub-spread; cointegration only in CHF crosses (~10-day half-life, an
+> SNB-peg artifact, **refuted OOS** with a 2015 de-peg tail); session breakout shows no continuation
+> (hit ~50%). Confirms the price-only ceiling holds *intraday* too — the only edge is slow and
+> cross-sectional. Full method + results: `docs/intraday-fx-assessment-plan.md`.
 
 ## Where ML helps vs where it's a trap
 
@@ -135,16 +156,24 @@ proven, and model fills realistically.
 - **Paid / hard:** FX options vol surfaces (#9), genuine order flow (#10), fast consensus feeds (#8).
 
 ## Suggested order
-**#1–#4 done** (2026-07-14): momentum benched, value = drawdown-halver, blend caps ~0.33 (deployable =
-`carry_trend_voltarget`), and the Stage-B ML vol forecaster is **exhausted — EWMA wins**. Remaining:
-1. **Trend-as-crash-overlay** (#11) — *in progress.* Crash management without new data; the retry after
-   the ML-vol lever closed negative; de-risks the book for imminent live (IBKR approved, awaiting funds).
-2. **CFTC COT positioning** (#7) — opens the **non-price-data frontier** the whole doc points at: free,
-   weekly, works standalone (contrarian crowding) *and* feeds regime conditioning (#5).
-3. **Regime conditioning** (#5) on cross-asset vol + credit + positioning + rate state — factor timing
-   on top of the blend; the ML frontier that isn't price-direction prediction.
-4. **EM carry** (#12) once the crash overlay is proven; NLP (#6) / macro-surprise (#8) need feeds;
-   options VRP (#9) / order flow (#10) remain data-blocked.
+**Every price-based lever is now closed** (2026-07-16). #1–#4 done (momentum benched; value =
+drawdown-halver; G10 blend has no modern edge; ML vol forecaster exhausted — EWMA wins). #11 trend done
+(convex hedge, but static beats a timed crash overlay). #13 intraday done (nothing tradeable). **#12 EM
+carry is DONE and IS the deployable book** (`TRADEABLE_CARRY`, Sharpe 0.69–0.81, paper-validated). So
+the price/factor axis is exhausted — the only research frontier left is **non-price data**:
+
+1. **CFTC COT positioning** (#7) — **NEXT.** The cheapest door into the non-price frontier the whole doc
+   points at: free, weekly, lagged; works standalone (extreme spec-crowding precedes reversals) *and*
+   becomes the first feature for regime conditioning (#5). Natural response now that every price-based
+   edge (G10 factors *and* intraday) is closed. Add as a `DataView` COT loader → a contrarian
+   `Strategy`, era-split OOS. Overlay it on the deployable EM-carry book (positioning-timed carry).
+2. **Regime conditioning** (#5) on cross-asset vol + credit + COT + rate state — factor/exposure timing
+   on top of the carry book; the ML frontier that isn't price-direction prediction.
+3. **Central-bank NLP** (#6) / **macro-surprise nowcast** (#8) — need text/consensus feeds; options VRP
+   (#9) and order flow (#10) remain data-blocked.
+
+*Parallel non-research track:* deploy `TRADEABLE_CARRY` live (execution stack paper-validated; the only
+remaining gate is the deliberate live-account switch — `allow_live` + `U…` account + live port).
 
 ## Key references
 - Lustig, Roussanov, Verdelhan (2011), *Common Risk Factors in Currency Markets*.
