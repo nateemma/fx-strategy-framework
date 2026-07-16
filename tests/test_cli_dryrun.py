@@ -87,3 +87,30 @@ def test_format_ib_incomplete_flagged():
         orders={"USDMXN": -20000.0}, positions={}, equity=1e6, turnover=0.6, cost=60.0,
         applied=True, complete=False)})
     assert "INCOMPLETE" in s
+
+
+def test_build_view_routes_ibkr_universe_to_carry_view(monkeypatch):
+    # a universe with an IBKR-only ccy (PLN has spot_fred=None) must load via build_carry_view, not from_fred
+    import forex.data.ibkr as ibkr
+    called = {}
+    monkeypatch.setattr(ibkr, "build_carry_view",
+                        lambda codes, spot_cache=None, rate_cache=None, rate_loader=None:
+                        (called.update(carry=list(codes), spot_cache=spot_cache, rate_cache=rate_cache) or _view()))
+    monkeypatch.setattr(DataView, "from_fred",
+                        lambda cache_dir, codes=None: (called.update(fred=codes) or _view()))
+    cli._build_view(RunConfig(strategy="carry", universe=["EUR", "PLN"]),
+                    EnvConfig(data_cache_dir="dc"))
+    assert called.get("carry") == ["EUR", "PLN"] and "fred" not in called
+    assert called["spot_cache"].endswith("ibkr_daily") and called["rate_cache"] == "dc"
+
+
+def test_build_view_g10_universe_uses_from_fred(monkeypatch):
+    import forex.data.ibkr as ibkr
+    called = {}
+    monkeypatch.setattr(DataView, "from_fred",
+                        lambda cache_dir, codes=None: (called.update(fred=codes) or _view()))
+    monkeypatch.setattr(ibkr, "build_carry_view",
+                        lambda *a, **k: called.update(carry=True) or _view())
+    cli._build_view(RunConfig(strategy="carry", universe=["EUR", "JPY"]),
+                    EnvConfig(data_cache_dir="dc"))
+    assert called.get("fred") == ["EUR", "JPY"] and "carry" not in called

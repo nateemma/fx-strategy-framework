@@ -99,7 +99,16 @@ def resolve(args):
 
 def _build_view(cfg, env):
     from forex.core.dataview import DataView
-    view = DataView.from_fred(env.data_cache_dir, codes=cfg.universe)
+    from forex.config import CURRENCIES
+    codes = cfg.universe
+    ibkr_sourced = codes is not None and any(
+        c in CURRENCIES and CURRENCIES[c].spot_fred is None for c in codes)
+    if ibkr_sourced:                       # IBKR-only ccy present -> IBKR spot + FRED rates
+        from forex.data.ibkr import build_carry_view
+        view = build_carry_view(codes, spot_cache=os.path.join(env.data_cache_dir, "ibkr_daily"),
+                                rate_cache=env.data_cache_dir)
+    else:
+        view = DataView.from_fred(env.data_cache_dir, codes=codes)
     if cfg.timerange:
         s, e = cfg.timerange
         spot = view.spot.loc[s:e]
