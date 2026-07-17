@@ -38,6 +38,13 @@ Pedersen 2013, *Value and Momentum Everywhere*). **Data:** REER / PPP series (OE
 via FRED). **ML angle:** none for v1; the edge is the slow reversion.
 > **Status (2026-07-14): BUILT.** `value.py`. Adds no standalone Sharpe but **halves carry drawdown**
 > (Calmar lever) — kept in the blend for risk, not return.
+> **Tested on EM/tradeable universe + 3-way blend (2026-07-16): does NOT beat carry_cot.** Value alone on
+> EM is weak (Sharpe 0.34–0.44, same as G10 — EM didn't rescue it). carry+cot+value vs carry+cot: modern
+> 2018-26 Sharpe 0.94 vs 1.01 (value HURTS), full-period Calmar 0.48 vs 0.41 (tiny bump, flat Sharpe).
+> Reason: value is 0.39-correlated with COT and its only role is DD reduction — but COT already fills that
+> slot (always-on diversification, DD −4.6%). Value is redundant now that COT holds the risk-reducer role +
+> dilutes modern Sharpe. **carry_cot (2-way) stays the deployable book; 3-way rejected.** (REER: G10+MXN+ZAR
+> only; PLN/HUF/CZK/ILS lack FRED REER.)
 
 ### 3. Combined factor portfolio (carry + momentum + value)
 The single most defensible "best" baseline: the three factors are low-correlated, so an
