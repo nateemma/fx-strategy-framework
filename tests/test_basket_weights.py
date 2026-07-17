@@ -132,6 +132,24 @@ class TestInverseVolWeights:
         assert weights["sym1"] > 0.8  # lower-vol should be majority
         assert weights["sym2"] < 0.2  # higher-vol should be minority
 
+    def test_short_history_dropped(self):
+        """Symbol with fewer than `lookback` non-NaN returns is dropped."""
+        # Create 70 days with lookback=60
+        # "full": all 70 values (69 returns)
+        # "short": NaN for first 50 rows, then 20 prices (19 returns) — too short
+        dates = pd.date_range("2024-01-01", periods=70, freq="D")
+        prices = pd.DataFrame({
+            "full": [100.0 + 2.0 * math.sin(i / 3.0) for i in range(70)],
+            "short": [float("nan")] * 50 + [100.0 + 1.0 * math.sin(i / 3.0) for i in range(20)],
+        }, index=dates)
+
+        weights = inverse_vol_weights(prices, lookback=60)
+
+        # "short" has only ~19 returns, fewer than lookback=60, so it's dropped
+        assert "full" in weights.index
+        assert abs(weights["full"] - 1.0) < 1e-9
+        assert "short" not in weights.index
+
 
 class TestTargetShares:
     """target_shares: round shares and omit invalid cases."""
