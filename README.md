@@ -134,6 +134,26 @@ carry-flavored factor. Value, yield-curve slope, and skewness were each tested a
 carry-redundant** (they dilute the book). Regime conditioning and central-bank NLP were likewise closed
 (anticipated policy is priced). See [`docs/strategy-research-backlog.md`](docs/strategy-research-backlog.md).
 
+**Where `carry_cot_mom` lives** — blends are **named classes discovered by their `NAME`, not files**, so
+there is no `carry_cot_mom.py`; the blend wires three sleeves defined across the tree:
+
+| Piece | File | Role |
+|---|---|---|
+| `carry_cot_mom` (blend) | `strategies/blend.py` (`CarryCotMom`) | risk-parity of the three sleeves |
+| ├ `carry` | `strategies/carry.py` (`CarryStrategy`) | rate-differential basket |
+| ├ `positioning` | `strategies/positioning.py` (`PositioningStrategy`) | COT contrarian |
+| └ `carry_mom` | `strategies/carrymom.py` (`CarryMomStrategy`) | 12-month differential change |
+| positioning signal | `forex/features/positioning.py` | −z of net-spec, publication-lagged |
+| COT data loader | `forex/data/cftc.py` | weekly net non-commercial (CFTC) |
+| view builder | `forex/data/ibkr.py` (`build_carry_view`) | IBKR spot + FRED rates, auto-loads COT |
+
+Run it (the universe is the deliverable EM-inclusive book):
+
+```bash
+forex backtest --strategy carry_cot_mom \
+  --universe EUR,JPY,GBP,CHF,AUD,NZD,CAD,NOK,SEK,MXN,ZAR,PLN,HUF,CZK,ILS
+```
+
 ### Live execution (IBKR)
 
 `forex dryrun --strategy <name> --universe … --broker ib` connects to IBKR (`ib_async`), reads account
