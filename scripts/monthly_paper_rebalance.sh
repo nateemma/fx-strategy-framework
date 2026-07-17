@@ -29,3 +29,5 @@ STAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   forex dryrun --strategy carry_cot_mom --universe "$UNIVERSE" --broker ib --ib-port "$IB_PORT" --confirm
   echo "--- done $STAMP ---"
 } >> track.log 2>&1
+echo "monthly paper rebalance complete ($STAMP) — details appended to $(pwd)/track.log"
+tail -n 4 track.log
