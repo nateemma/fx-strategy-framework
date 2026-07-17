@@ -72,6 +72,13 @@ equal-risk or vol-weighted blend has a much higher Sharpe than any one alone (Ba
 > largest benefit is 2015-17, which WF puts in-training. Modern-era (2018+) gain is small (+0.05 Sharpe).
 > Legitimate 3-factor book, now first-class; carry_cot vs carry_cot_mom is a marginal call (extra turnover
 > ~6x/yr for +0.05 Sharpe). 242 tests pass.
+> **LOOKBACK ROBUSTNESS (2026-07-16): strong PASS + upgrade.** Swept mom lookback 63-378d in the blend:
+> smooth monotone-then-plateau surface (63d too noisy WF 0.84 < base; 126d 0.98; 189d 1.01; 252d 1.15;
+> 315d 1.05; 378d 1.18) — a broad high plateau (189-378d all WF ~1.0-1.2), NOT a spike → 126d is validated
+> and CONSERVATIVE, not cherry-picked. corr(mom,carry) stays ≈0 (+0.03→−0.02) even at 12-18mo → never
+> redundant. Both sub-periods improve (H1 2015-20: 0.55→1.31 at 252d). UPGRADE: default should be **252d
+> (12mo)** — mid-plateau, WF ~1.15 vs 0.98 at 126d, lower turnover, canonical 12mo momentum horizon
+> (principled, not sweep-chasing).
 > **BLEND-CADENCE INVESTIGATED (2026-07-16) → no change; earlier "gap" was a measurement artifact.** Swept
 > cadence (daily/weekly/monthly) × EWMA lam (0.94–0.99) for both blends: monthly (the default) is best or
 > tied for BOTH; faster cadence does NOT capture more diversification (hypothesis refuted). Measured
