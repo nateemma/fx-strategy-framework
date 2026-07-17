@@ -1,13 +1,13 @@
 import pytest
 from forex.core.discovery import build_strategy, available, load_strategies
 
-def test_available_lists_all_20():
+def test_available_lists_all_22():
     assert set(available("strategies")) == {
         "carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasset", "carry_voltarget_xasset_anchored", "carry_voltarget_xasset_gbm",
         "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget",
-        "carry_trend_crash", "carry_trend_crash_voltarget", "carry_cot", "positioning"}
+        "carry_trend_crash", "carry_trend_crash_voltarget", "carry_cot", "positioning", "carry_mom", "carry_cot_mom"}
 
 def test_build_primitive_and_composed():
     from strategies.carry import CarryStrategy
@@ -29,7 +29,7 @@ _ALL = ["carry", "carry_voltarget", "carry_voltarget_ml", "carry_voltarget_xasse
         "momentum", "momentum_voltarget",
         "value", "value_voltarget", "trend", "trend_voltarget",
         "carry_trend", "carry_trend_value", "carry_trend_voltarget", "carry_trend_value_voltarget",
-        "carry_trend_crash", "carry_trend_crash_voltarget", "carry_cot", "positioning"]
+        "carry_trend_crash", "carry_trend_crash_voltarget", "carry_cot", "positioning", "carry_mom", "carry_cot_mom"]
 
 @pytest.mark.parametrize("name", _ALL)
 def test_every_name_builds_with_defaults(name):
