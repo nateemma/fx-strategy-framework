@@ -117,9 +117,13 @@ feature for #4/#5.
 > percentile are all 0.97–0.99 correlated (same underlying). Percentile transform is more era-robust
 > (2010–26 Sharpe 0.03→0.23) BUT that gain lives in 2010–17, outside the deployable IBKR window (2015+)
 > where raw-level (0.68) is strongest → NO change to carry_cot warranted; current signal confirmed best.
-> Momentum/OI/percentile/commercial retired as documented negatives. **Remaining orthogonal COT angle
-> (untested):** cross-MARKET positioning — commodity (gold/oil/copper) spec positioning → commodity FX
-> (AUD/NZD/CAD/ZAR); the only lever that adds a NEW dimension vs re-parameterizing net-spec.
+> Momentum/OI/percentile/commercial retired as documented negatives. **Cross-MARKET positioning TESTED →
+> NEGATIVE (2026-07-16):** commodity (gold/WTI/copper/silver/platinum) spec positioning → commodity FX
+> (AUD/NZD/CAD/ZAR/MXN) sign-flips WITHIN the modern era (+0.089 12wk-corr 2010-17 → −0.076 2018-26),
+> cross-sectional Sharpe directional −0.32 / contrarian +0.08 (≈0) — economically sensible but positioning
+> doesn't cleanly lead the FX and the beta is unstable. **COT THREAD COMPLETE:** FX-own net-spec contrarian
+> is the singular edge (deployed in carry_cot); all other cuts (momentum/OI/percentile/commercial/
+> cross-market) are redundant, dead, or era-unstable. No more juice in COT.
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
