@@ -47,15 +47,19 @@ there is no central registry to edit. The framework resolves strategies purely b
 
 ## Strategy library
 
-Eighteen strategies ship as reference implementations. Each is usable by name from every mode. (The
-carry universe is G10 by default; pass `--universe EUR,JPY,…,MXN,ZAR` to trade the EM-inclusive book.)
+Twenty-two strategies ship as reference implementations. Each is usable by name from every mode. (The
+carry universe is G10 by default; pass `--universe EUR,JPY,…,MXN,ZAR,PLN,HUF,CZK,ILS` to trade the
+deliverable EM-inclusive book.)
 
 | Name | Kind | What it does |
 |---|---|---|
-| `carry` | factor | Dollar-neutral G10 carry basket: long high-yielders, short low-yielders. |
+| `carry` | factor | Dollar-neutral carry basket: long high-yielders, short low-yielders. |
+| `positioning` | factor | Contrarian CFTC COT: fade crowded speculative positioning (net non-commercial). |
+| `carry_mom` | factor | Carry-momentum: rank by the 12-month change in the rate differential (widening carry). |
 | `momentum` | factor | Cross-sectional momentum: rank by trailing return, long winners / short losers. |
 | `value` | factor | REER mean-reversion: long undervalued / short overvalued vs the trailing real-rate mean. |
 | `trend` | factor | Per-currency directional time-series trend (tsmom / EMA / Donchian; signal chosen by hyperopt). |
+| **`carry_cot`, `carry_cot_mom`** | blend | Risk-parity carry + COT positioning (+ carry-momentum) — **the deployable books**. |
 | `carry_voltarget`, `momentum_voltarget`, `value_voltarget`, `trend_voltarget` | overlay | The factor with an EWMA vol-target leverage overlay. |
 | `carry_voltarget_ml` | overlay | Carry with a learned (HAR-RV) vol forecaster driving the leverage. |
 | `carry_trend`, `carry_trend_value` | blend | Risk-parity (inverse-vol) blend of the named factors. |
@@ -108,13 +112,38 @@ BRL/INR are **NDF-only, not IBKR-deliverable**; and risk overlays (vol-target, t
 in-regime — plain broad carry is the book. Everything here is judged **in the deployment regime**
 (post-2010, era-split), not full history.
 
+### The deployable book: carry + positioning + carry-momentum (`carry_cot_mom`)
+
+Two **non-price** signals extend the tradeable EM-carry book into the best construction in the stack — a
+risk-parity blend of three sleeves, each orthogonal to the others:
+
+- **CFTC COT positioning** (`positioning`) — fade crowded speculative positioning (net non-commercial,
+  free CFTC data). The **first non-price edge in the program**: modern cross-sectional Sharpe ~0.7,
+  uncorrelated to carry (0.09).
+- **Carry-momentum** (`carry_mom`) — rank by the 12-month *change* in the rate differential (is the carry
+  *widening*?). Orthogonal to both carry (0.03) and positioning; robustness-validated across lookbacks.
+
+Blended over the broadened deliverable universe (**G10 + MXN/ZAR/PLN/HUF/CZK/ILS**, IBKR spot + FRED
+rates), **`carry_cot_mom`** walk-forwards to **Sharpe 1.15, Calmar 1.03, maxDD −2.9%** — versus
+single-factor carry (0.82 / 0.38 / −18%). Run it with `--strategy carry_cot_mom`; `build_carry_view`
+auto-loads the COT positioning.
+
+**The factor-search rule this converged on:** carry is the dominant axis, and additional edge comes *only*
+from signals **orthogonal** to carry (positioning, rate-differential-change) — never from another
+carry-flavored factor. Value, yield-curve slope, and skewness were each tested and **rejected as
+carry-redundant** (they dilute the book). Regime conditioning and central-bank NLP were likewise closed
+(anticipated policy is priced). See [`docs/strategy-research-backlog.md`](docs/strategy-research-backlog.md).
+
 ### Live execution (IBKR)
 
-`forex dryrun --strategy carry --universe … --broker ib --preview` connects to IBKR (`ib_async`), reads
-account NAV, prices each pair from historical midpoints, and prints the exact IDEALPRO orders to reach the
-target weights — **placing nothing** (preview-only; order placement is a separately-guarded next phase).
-Tradeability of the deployable book is verified first-hand through the API (MXN/ZAR/KRW quotable; BRL/INR
-not).
+`forex dryrun --strategy <name> --universe … --broker ib` connects to IBKR (`ib_async`), reads account
+NAV, prices each pair from historical midpoints, and rebalances to the target weights. `--preview` places
+nothing; `--confirm` places, behind five guards (paper-account check, per-order and gross caps, min-order
+size, explicit TIF) with auto-unwind on partial failure and a pre-trade odd-lot warning below the IdealPro
+$25k minimum. The full preview → guarded placement → reconcile → rollback path is **paper-validated** on
+IBKR (all deliverable legs qualify, fill, and flatten clean); the **live** gate (`allow_live` + a `U…`
+account + live port) is a separate, deliberate decision. Tradeability verified first-hand through the API
+(G10 + MXN/ZAR/PLN/HUF/CZK/ILS deliverable; BRL/INR NDF-only, not).
 
 ### Intraday — investigated, nothing tradeable
 

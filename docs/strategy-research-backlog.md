@@ -262,7 +262,8 @@ mean-reversion, cointegration/stat-arb, session-conditioned breakout) on IBKR 1h
 |---|---|
 | Vol *sizing* via EWMA (deployed) | A *learned* vol forecaster beating EWMA — tested end-to-end, lost (#4) |
 | Regime / factor-timing conditioning (#5) | Deep nets on OHLCV windows (info-ceiling) |
-| Extracting non-price signals: NLP (#6), positioning (#7), macro nowcast (#8) | More features / bigger models on a low-SNR target (overfits) |
+| Extracting non-price signals: **positioning (#7 — WON, in the book)** | More features / bigger models on a low-SNR target (overfits) |
+| — | **Anticipated policy as a signal: central-bank NLP (#6) — tone is priced (tested, null)** |
 | Cross-sectional ranking over a *feature-rich* factor set (gradient-boosted), OOS-validated | Complex models judged on in-sample fit |
 
 ## Data availability
@@ -270,25 +271,30 @@ mean-reversion, cointegration/stat-arb, session-conditioned breakout) on IBKR 1h
   (OECD/BIS via FRED), central-bank text.
 - **Paid / hard:** FX options vol surfaces (#9), genuine order flow (#10), fast consensus feeds (#8).
 
-## Suggested order
-**Every price-based lever is now closed** (2026-07-16). #1–#4 done (momentum benched; value =
-drawdown-halver; G10 blend has no modern edge; ML vol forecaster exhausted — EWMA wins). #11 trend done
-(convex hedge, but static beats a timed crash overlay). #13 intraday done (nothing tradeable). **#12 EM
-carry is DONE and IS the deployable book** (`TRADEABLE_CARRY`, Sharpe 0.69–0.81, paper-validated). So
-the price/factor axis is exhausted — the only research frontier left is **non-price data**:
+## Status — factor search converged (2026-07-17)
 
-1. **CFTC COT positioning** (#7) — **NEXT.** The cheapest door into the non-price frontier the whole doc
-   points at: free, weekly, lagged; works standalone (extreme spec-crowding precedes reversals) *and*
-   becomes the first feature for regime conditioning (#5). Natural response now that every price-based
-   edge (G10 factors *and* intraday) is closed. Add as a `DataView` COT loader → a contrarian
-   `Strategy`, era-split OOS. Overlay it on the deployable EM-carry book (positioning-timed carry).
-2. **Regime conditioning** (#5) on cross-asset vol + credit + COT + rate state — factor/exposure timing
-   on top of the carry book; the ML frontier that isn't price-direction prediction.
-3. **Central-bank NLP** (#6) / **macro-surprise nowcast** (#8) — need text/consensus feeds; options VRP
-   (#9) and order flow (#10) remain data-blocked.
+**Deployable book = `carry_cot_mom`** — risk-parity blend of carry + COT positioning + carry-momentum over
+the deliverable universe (G10 + MXN/ZAR/PLN/HUF/CZK/ILS). Walk-forward **Sharpe 1.15, Calmar 1.03, maxDD
+−2.9%**, up from single-factor carry (0.82 / 0.38 / −18%). Two of its three sleeves were found in this
+research arc.
 
-*Parallel non-research track:* deploy `TRADEABLE_CARRY` live (execution stack paper-validated; the only
-remaining gate is the deliberate live-account switch — `allow_live` + `U…` account + live port).
+**The converged rule — additive factors are ORTHOGONAL to carry:**
+- **WORKED (in the book):** COT positioning (corr vs carry 0.09, #7), carry-momentum (0.03, 12-mo
+  differential change, robustness-validated).
+- **REJECTED as carry-redundant:** value (0.39 vs COT, #2), yield-curve slope (#4b), skewness (0.41, #4c)
+  — all carry in disguise; each dilutes the book.
+- **REJECTED as priced / efficient-market:** regime conditioning (#5, de-risk cuts carry's best periods),
+  central-bank NLP (#6, tone is priced), intraday everything (#13).
+- Carry is the dominant axis; extra edge comes only from genuinely orthogonal dimensions. **Filter for any
+  future factor: check its return-correlation to carry first.**
+
+**Remaining (data-gated, not started):** macro-surprise (#8, needs consensus feed), FX options VRP (#9,
+IBKR options history too thin to backtest), order flow (#10, no retail source); one untested orthogonal
+candidate is cross-currency basis / FX funding (data hard to source). Absent a new data feed, the
+backtestable factor search is complete.
+
+*Non-research track:* deploy `carry_cot_mom` live — execution stack paper-validated; the only remaining
+gate is the deliberate live-account switch (`allow_live` + `U…` account + live port).
 
 ## Key references
 - Lustig, Roussanov, Verdelhan (2011), *Common Risk Factors in Currency Markets*.
