@@ -119,6 +119,15 @@ FRED risk proxies + COT. **Guard:** distant-window validation; report IS–OOS g
 ### 6. Central-bank communication NLP
 Hawkish/dovish scoring of FOMC/BOJ/ECB/SNB/BoE statements & minutes → a rate-differential-expectations
 signal orthogonal to price. Modern-ML use case with **free text**. **Data:** central-bank text.
+> **Status (2026-07-16): FEASIBILITY SPIKE → RED light (build not justified).** Fetched 8 FOMC statements
+> (2021 dovish → 2022-23 hawkish → 2024 cuts) via WebFetch, lexicon-scored. (a) SCORER VALID — net-hawkish
+> orders the tone cycle correctly (mean hawkish +130 vs dovish −57); the reproducible lexicon works. (b) NO
+> FX SIGNAL — tone LEVEL vs USD move corr −0.13/−0.15 (wrong sign), tone CHANGE (surprise proxy) +0.10/
+> −0.08 (~0). Anticipated CB communication is PRICED (post-statement drift is a fade / sell-the-news) —
+> the program's efficient-market wall again. Caveat: n=8, Fed-only, USD numeraire (low power); a full
+> multi-bank tone-SURPRISE build (tone vs a model of expected tone) is the only remaining hope but is a
+> large speculative build against a low prior. Not pursued. Lexicon scorer kept as reusable infra if ever
+> revisited. Spike code: /tmp/fomc_spike.py.
 
 ### 7. Positioning (CFTC COT) as a contrarian signal
 Extreme net-speculative crowding precedes reversals. Free, weekly, lagged. Useful standalone and as a
