@@ -1,9 +1,13 @@
 # Scheduled Forward Paper Track
 
-Run the deployable carry book (`carry` on `G10 + MXN + ZAR`) forward on the **IBKR paper account** on a
-monthly cadence, to accrue an out-of-sample, real-execution track you compare against the backtest. Uses
-`scripts/monthly_paper_rebalance.sh` (the validated CLI placement path — it reconciles, so a repeat run
-with an unchanged target trades nothing; validated 2026-07-16: cycle 1 established, cycle 2 turnover 0).
+Run the deployable book (`carry_cot_mom` on the deliverable EM-inclusive universe) forward on the **IBKR
+paper account** on a monthly cadence, to accrue an out-of-sample, real-execution track you compare against
+the backtest. Uses `scripts/monthly_paper_rebalance.sh` (the validated CLI placement path — it reconciles,
+so a repeat run with an unchanged target trades nothing; validated 2026-07-17: `carry_cot_mom` placed on
+paper, reconcile turnover 0.756→0.015). It first runs `scripts/refresh_track_data.py` to refresh all three
+data sources the book needs (IBKR daily spot + FRED rates + CFTC COT). Note the diffuse 3-sleeve book has a
+few small legs that skip below the 20k-unit min-order / route as odd lots (NZD, ZAR at ~$1M NAV) — the
+pre-trade odd-lot warning logs exactly which.
 
 ## Cadence & why monthly
 Carry's signal is monthly (interbank rates), so the book only changes ~monthly — a faster schedule would
