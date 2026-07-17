@@ -10,7 +10,7 @@ class _Contract:
 class _Pos:
     def __init__(self, conId, position): self.contract, self.position = _Contract(conId), position
 class _Bar:
-    def __init__(self, close): self.close = close
+    def __init__(self, close, date): self.close, self.date = close, date
 class _Event:
     def __iadd__(self, fn): return self
 
@@ -33,7 +33,7 @@ class _FakeIB:
         self._conid += 1; c.conId = self._conid; return [c]
     def reqHistoricalData(self, c, *a, **k):
         base = self._prices[c.sym]
-        return [_Bar(base + 0.5 * math.sin(i / 5.0)) for i in range(65)]
+        return [_Bar(base + 0.5 * math.sin(i / 5.0), i) for i in range(65)]
     def managedAccounts(self): return [self._acct]
     def sleep(self, secs): pass
     def cancelOrder(self, order): self.cancel_calls += 1
@@ -89,11 +89,15 @@ def test_non_paper_account_blocked_without_allow_live():
         _ex(fake, symbols=("SPY",), preview=False, confirm=True).rebalance(100_000.0)
     assert fake.placeOrder_calls == 0
 
-def test_per_order_cap_raises():
-    fake = _FakeIB(prices={"SPY": 400.0})
+def test_per_order_cap_raises_as_a_prepass_before_any_placement():
+    # TLT (low price -> high relative vol -> small weight, within cap) then SPY (high price -> low
+    # relative vol -> large weight, breaches cap): the LATER symbol breaches, proving the cap check
+    # is a pre-pass over ALL orders (mirrors execution.py) rather than checked inside the placement
+    # loop -- if it weren't, TLT would already be placed before SPY's breach is discovered.
+    fake = _FakeIB(prices={"TLT": 50.0, "SPY": 400.0})
     with pytest.raises(RuntimeError):
-        _ex(fake, symbols=("SPY",), preview=False, confirm=True,
-            min_order_usd=1.0, max_order_frac=0.0001).rebalance(100_000.0)
+        _ex(fake, symbols=("TLT", "SPY"), preview=False, confirm=True,
+            min_order_usd=1.0, max_order_frac=0.5).rebalance(100_000.0)
     assert fake.placeOrder_calls == 0
 
 def test_sub_min_order_skipped_and_recorded():

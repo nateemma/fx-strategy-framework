@@ -84,10 +84,10 @@ class BasketExecution:
             p = float(bars[-1].close)
             if not math.isfinite(p) or p <= 0:
                 raise RuntimeError(f"invalid last price for {sym}: {p!r}")
-            history[sym] = [float(b.close) for b in bars]
+            history[sym] = pd.Series({b.date: float(b.close) for b in bars})
             last_price[sym] = p
             contracts[sym] = c
-        weights = inverse_vol_weights(pd.DataFrame(history), self.lookback)
+        weights = inverse_vol_weights(pd.concat(history, axis=1), self.lookback)
         target = target_shares(weights, allocation_usd, pd.Series(last_price))
         try:                                  # ensure the position snapshot has populated after connect
             ib.reqPositions(); ib.sleep(1.5)
@@ -124,13 +124,15 @@ class BasketExecution:
             if not acct.startswith("DU") and not self.allow_live:
                 raise RuntimeError(f"refusing to place on non-paper account {acct!r} without allow_live")
             c = self._compute(ib, allocation_usd)
+            for sym, d in c["orders"].items():
+                notional = abs(d) * c["price"][sym]
+                if notional / allocation_usd > self.max_order_frac:
+                    raise RuntimeError(f"order {sym} {notional / allocation_usd:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
             placed, skipped = [], {}
             try:
                 make_order = self._make_order()
                 for sym, d in c["orders"].items():
                     notional = abs(d) * c["price"][sym]
-                    if notional / allocation_usd > self.max_order_frac:
-                        raise RuntimeError(f"order {sym} {notional / allocation_usd:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
                     if notional < self.min_order_usd:
                         skipped[sym] = notional
                         continue
