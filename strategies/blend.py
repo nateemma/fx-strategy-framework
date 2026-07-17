@@ -76,7 +76,7 @@ class CarryCotMom(BlendStrategy):
     NAME = "carry_cot_mom"
     SPECS = [("carry", CarryStrategy, {"n_long": 3, "n_short": 3}),
              ("positioning", PositioningStrategy, {}),
-             ("carrymom", CarryMomStrategy, {"lookback": 126, "n_long": 3, "n_short": 3})]
+             ("carrymom", CarryMomStrategy, {"lookback": 252, "n_long": 3, "n_short": 3})]
     @classmethod
     def build(cls, params):
         return cls(build_components(cls.SPECS, params))

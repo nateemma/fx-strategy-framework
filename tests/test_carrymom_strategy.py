@@ -24,4 +24,4 @@ def test_carry_cot_mom_blend_registered():
     from forex.core.discovery import build_strategy
     s = build_strategy("carry_cot_mom", {}, "strategies")
     assert set(s.components) == {"carry", "positioning", "carrymom"}
-    assert s.components["carrymom"].lookback == 126
+    assert s.components["carrymom"].lookback == 252
