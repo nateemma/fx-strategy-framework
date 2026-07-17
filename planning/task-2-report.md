@@ -116,5 +116,5 @@ Also updated the fake `_Bar`/`reqHistoricalData` in `tests/test_basket_execution
 - `pytest -q` (full suite) → **267 passed**, no regressions.
 
 ### Commit (round 2)
-`<filled in after commit>` — "fix: basket per-order cap as atomic pre-pass + date-aligned history
+`fd07cb3` — "fix: basket per-order cap as atomic pre-pass + date-aligned history
 assembly" (`forex/run/basket.py`, `tests/test_basket_execution.py`).
