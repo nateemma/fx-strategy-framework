@@ -13,13 +13,14 @@ class BasketReport:
     applied: bool
     complete: bool = True
     skipped: dict = field(default_factory=dict)   # symbol -> USD notional, for legs below min_order_usd
+    account: str = ""                             # real traded account (placement only; "" on preview)
 
 class BasketExecution:
     """ib_async IBKR adapter for a long-only Stock/SMART risk-parity basket. Mirrors LiveExecution
     (FX) but simpler: no FX inversion, no odd-lot."""
     def __init__(self, symbols=("SPY", "TLT", "IEF", "GLD", "DBC"), host="127.0.0.1", port=4002,
                  client_id=24, preview=True, confirm=False, allow_live=False, lookback=60,
-                 min_order_usd=500.0, max_order_frac=0.5, tif="DAY",
+                 min_order_usd=500.0, max_order_frac=0.6, tif="DAY",
                  ib_factory=None, contract_factory=None, order_factory=None):
         self.symbols = symbols; self.host = host; self.port = port; self.client_id = client_id
         self.preview = preview; self.confirm = confirm; self.allow_live = allow_live
@@ -155,6 +156,7 @@ class BasketExecution:
                 if abs(qty) < abs(intended) - 1.0:  # under-filled (1-unit tolerance)
                     complete = False
             return BasketReport(orders=fills, positions=c["positions"], weights=c["weights"], equity=c["nav"],
-                                allocation=allocation_usd, applied=True, complete=complete, skipped=skipped)
+                                allocation=allocation_usd, applied=True, complete=complete, skipped=skipped,
+                                account=acct)
         finally:
             ib.disconnect()

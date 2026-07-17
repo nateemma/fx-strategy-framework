@@ -107,6 +107,17 @@ def test_sub_min_order_skipped_and_recorded():
     assert fake.placeOrder_calls == 0
     assert "SPY" in rep.skipped
 
+def test_partial_fill_marks_incomplete():
+    fake = _FakeIB(prices={"SPY": 400.0, "TLT": 90.0})
+    fake._fill_frac = 0.5
+    rep = _ex(fake, symbols=("SPY", "TLT"), preview=False, confirm=True,
+              min_order_usd=1.0, max_order_frac=0.9).rebalance(100_000.0)
+    assert rep.applied is True
+    assert rep.complete is False
+    for sym, intended in rep.positions.items():
+        if sym in rep.orders:
+            assert abs(rep.orders[sym]) < intended
+
 def test_midbatch_failure_triggers_unwind_and_raises():
     fake = _FakeIB(prices={"SPY": 400.0, "TLT": 400.0})  # equal prices/vol shape -> both legs sizable
     fake._fail_on = 2

@@ -150,6 +150,35 @@ class TestInverseVolWeights:
         assert abs(weights["full"] - 1.0) < 1e-9
         assert "short" not in weights.index
 
+    def test_few_missing_bars_kept(self):
+        """A symbol missing a FEW bars (holiday misalignment) within the window is still KEPT
+        (>=90% of lookback present), not evicted."""
+        dates = pd.date_range("2024-01-01", periods=65, freq="D")
+        full = [100.0 + 2.0 * math.sin(i / 3.0) for i in range(65)]
+        gappy = list(full)
+        for i in (20, 40, 60):        # 3 isolated missing bars -> 6 NaN returns in the 60-window
+            gappy[i] = float("nan")
+        prices = pd.DataFrame({"full": full, "gappy": gappy}, index=dates)
+
+        weights = inverse_vol_weights(prices, lookback=60)
+
+        assert "full" in weights.index
+        assert "gappy" in weights.index
+
+    def test_many_missing_bars_still_dropped(self):
+        """A symbol missing MANY bars (only 19 of 60 present) is still DROPPED even with the
+        90%-of-window tolerance."""
+        dates = pd.date_range("2024-01-01", periods=70, freq="D")
+        prices = pd.DataFrame({
+            "full": [100.0 + 2.0 * math.sin(i / 3.0) for i in range(70)],
+            "sparse": [float("nan")] * 50 + [100.0 + 1.0 * math.sin(i / 3.0) for i in range(20)],
+        }, index=dates)
+
+        weights = inverse_vol_weights(prices, lookback=60)
+
+        assert "full" in weights.index
+        assert "sparse" not in weights.index
+
 
 class TestTargetShares:
     """target_shares: round shares and omit invalid cases."""

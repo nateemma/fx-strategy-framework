@@ -10,8 +10,8 @@ def inverse_vol_weights(prices: pd.DataFrame, lookback: int = 60) -> pd.Series:
     vols = recent_returns.std()
     counts = recent_returns.count()
 
-    # Drop: NaN std, zero vol, or insufficient non-NaN returns
-    valid = vols[(~vols.isna()) & (vols > 0.0) & (counts >= lookback)]
+    # Drop: NaN std, zero vol, or insufficient non-NaN returns (tolerate small gaps: >=90% of window)
+    valid = vols[(~vols.isna()) & (vols > 0.0) & (counts >= lookback * 0.9)]
 
     if len(valid) == 0:
         n = len(prices.columns)

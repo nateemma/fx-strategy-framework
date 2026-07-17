@@ -60,7 +60,7 @@ def main():
     # Log to CSV if applied
     if report.applied:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        log_basket_positions(report, args.csv, timestamp, args.account)
+        log_basket_positions(report, args.csv, timestamp, report.account or args.account)
         print(f"  Position snapshot logged to {args.csv}")
 
 

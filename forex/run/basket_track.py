@@ -5,14 +5,14 @@ from pathlib import Path
 def log_basket_positions(report, path, timestamp: str, account: str) -> None:
     """Append one row per symbol in report.positions to CSV at path.
 
-    Columns: timestamp, account, symbol, shares, weight, allocation, applied
+    Columns: timestamp, account, symbol, shares, weight, allocation, applied, complete
     Creates parent dir + header if needed.
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     file_exists = path.exists()
-    fieldnames = ["timestamp", "account", "symbol", "shares", "weight", "allocation", "applied"]
+    fieldnames = ["timestamp", "account", "symbol", "shares", "weight", "allocation", "applied", "complete"]
 
     with open(path, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -30,5 +30,6 @@ def log_basket_positions(report, path, timestamp: str, account: str) -> None:
                 "weight": weight,
                 "allocation": report.allocation,
                 "applied": report.applied,
+                "complete": report.complete,
             }
             writer.writerow(row)

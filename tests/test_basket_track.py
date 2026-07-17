@@ -13,6 +13,8 @@ def test_log_basket_positions_creates_header(tmp_path):
         weights={"SPY": 0.5},
         allocation=1000.0,
         applied=True,
+        complete=True,
+        account="DU123456",
     )
     log_basket_positions(report, str(csv_file), "2026-01-01T12:00:00Z", "DU123456")
 
@@ -27,6 +29,7 @@ def test_log_basket_positions_creates_header(tmp_path):
     assert rows[0]["weight"] == "0.5"
     assert rows[0]["allocation"] == "1000.0"
     assert rows[0]["applied"] == "True"
+    assert rows[0]["complete"] == "True"
 
 
 def test_log_basket_positions_appends(tmp_path):
@@ -37,12 +40,16 @@ def test_log_basket_positions_appends(tmp_path):
         weights={"SPY": 0.5},
         allocation=1000.0,
         applied=True,
+        complete=True,
+        account="DU123456",
     )
     report2 = SimpleNamespace(
         positions={"SPY": 110, "TLT": 50},
         weights={"SPY": 0.6, "TLT": 0.4},
         allocation=1500.0,
         applied=True,
+        complete=False,
+        account="DU123456",
     )
 
     log_basket_positions(report1, str(csv_file), "2026-01-01T12:00:00Z", "DU123456")
@@ -57,6 +64,8 @@ def test_log_basket_positions_appends(tmp_path):
     assert rows[2]["symbol"] == "TLT"
     assert rows[1]["timestamp"] == "2026-01-02T12:00:00Z"
     assert rows[2]["timestamp"] == "2026-01-02T12:00:00Z"
+    assert rows[0]["complete"] == "True"
+    assert rows[1]["complete"] == "False"
 
 
 def test_log_basket_positions_missing_weight(tmp_path):
@@ -67,6 +76,8 @@ def test_log_basket_positions_missing_weight(tmp_path):
         weights={"SPY": 0.5},  # TLT missing
         allocation=1000.0,
         applied=True,
+        complete=True,
+        account="DU123456",
     )
     log_basket_positions(report, str(csv_file), "2026-01-01T12:00:00Z", "DU123456")
 
@@ -88,6 +99,8 @@ def test_log_basket_positions_creates_parent_dir(tmp_path):
         weights={"SPY": 0.5},
         allocation=1000.0,
         applied=True,
+        complete=True,
+        account="DU123456",
     )
     log_basket_positions(report, str(csv_file), "2026-01-01T12:00:00Z", "DU123456")
 
