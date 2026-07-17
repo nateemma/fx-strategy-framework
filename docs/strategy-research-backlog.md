@@ -121,6 +121,22 @@ dovish idea. FRED-backtestable (yields to ~1997-2001 for EM, longer for G10).
 > carry + carry-momentum. Caveat: 10y-3m term-spread (2y unavailable cross-country); a pure near-term
 > measure might differ but low prior. carry_cot_mom (3-factor) stands.
 
+### 4c. FX skewness / crash-risk premium — REJECTED
+Rank by trailing return skewness; long negative-skew (crash-prone) currencies for the tail premium
+(Rafferty). Backtestable from spot returns (no new data).
+> **Status (2026-07-17): TESTED → REJECTED (carry-redundant).** Rank-IC weak + era-UNSTABLE (positive
+> 2010-17, negative 2000-09 and 126d-2018-26, full ~0). Skew sleeve 0.41-correlated with CARRY (high-carry
+> currencies ARE the crash-prone ones), weak alone (0.31/0.34), and adding it HURTS the blend
+> (carry+cot+mom 2018-26 1.22→1.12, DD −3.0%→−3.9%). Same failure mode as value + slope.
+
+### SYNTHESIS: additive factors are ORTHOGONAL-to-carry; carry-correlated factors are redundant
+The full factor search converges on a structural rule. **WORKED (added to the book):** COT positioning
+(corr vs carry **0.09**), carry-momentum (**0.03**) — both orthogonal to carry. **FAILED (redundant,
+dilutive):** value (0.39 vs COT), yield-slope (carry-corr), skewness (0.41 vs carry) — all carry in
+disguise. Carry is the dominant axis; extra edge comes ONLY from genuinely orthogonal dimensions
+(positioning, rate-differential-change), never from another carry-flavored factor. **Rule for any future
+factor idea: check its return-correlation to carry FIRST.** Deployable book = `carry_cot_mom` (3-factor).
+
 ### 5. Regime / risk-on–risk-off conditioning
 An ML classifier on **cross-asset vol + credit spreads + positioning + rate state** that scales factor
 exposure (lean into carry in calm regimes, into value/defensive in stress). This is the
