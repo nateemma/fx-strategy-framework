@@ -14,6 +14,21 @@ Carry's signal is monthly (interbank rates), so the book only changes ~monthly �
 just re-confirm the same target and trade nothing. One meaningful rebalance per month; the track builds
 slowly (that's inherent to forward paper trading vs a backtest).
 
+## Tracking performance
+Two records accrue:
+- **`track.log`** — one block per rebalance (orders placed, turnover, cost). The *activity* log.
+- **`nav.csv`** — the *equity curve*. `scripts/snapshot_nav.py` appends a dated row (NAV, unrealized P&L,
+  open-leg count). **Run it DAILY** (its own cron/launchd, separate from the monthly rebalance) so the
+  curve has enough points to measure. FX shows as multi-currency *cash* (so IBKR `GrossPositionValue`
+  reads 0); the equity that matters is **NetLiquidation (NAV)**, which revalues those balances into USD —
+  that is the strategy's P&L.
+
+`scripts/track_report.py` reads `nav.csv` on demand and prints since-inception total/annualized return,
+vol, Sharpe, and max drawdown, against the backtest expectation (walk-forward Sharpe ~1.15; ~8–10%/yr
+levered to 10% vol). Judge on **Sharpe vs 1.15** once the sample is months, not days — a paper track needs
+real elapsed time before its stats mean anything. (`track.log` and `nav.csv` are git-ignored — they're
+your local forward record; back them up separately if you want history preserved.)
+
 ## Prerequisites (the operational reality)
 1. **IB Gateway, always-on, auto-restart + auto-login** — NOT TWS. TWS auto-restarts daily and needs a
    re-login, so a monthly cron will usually find it down (we hit exactly this). Gateway paper port = 4002.
