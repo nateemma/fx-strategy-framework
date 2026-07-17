@@ -36,8 +36,17 @@ your local forward record; back them up separately if you want history preserved
 3. The project venv at `.venv`.
 The script fails loudly (non-zero, logged to `track.log`) if Gateway is down or the key is missing.
 
-## Install — macOS launchd (runs 1st of each month, 09:00 local)
-`~/Library/LaunchAgents/com.fx.paper-rebalance.plist`:
+## Install — one command (recommended)
+```bash
+./scripts/install_schedules.sh            # run from a normal terminal (reads $FRED_API_KEY from your env)
+```
+Generates both launchd plists into `~/Library/LaunchAgents` with this repo's absolute paths and your
+`$FRED_API_KEY` baked into the monthly job (chmod 600), and loads them. Re-run to update; `install_schedules.sh
+uninstall` removes both. Verify with `launchctl list | grep com.fx`. Override the port with `IB_PORT=… ./scripts/install_schedules.sh`.
+The raw plists below are what it generates — for reference or manual install.
+
+## Install — macOS launchd (the generated plists, for reference)
+Monthly rebalance — `~/Library/LaunchAgents/com.fx.paper-rebalance.plist`:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
