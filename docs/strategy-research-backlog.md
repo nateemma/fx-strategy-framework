@@ -76,6 +76,15 @@ An ML classifier on **cross-asset vol + credit spreads + positioning + rate stat
 exposure (lean into carry in calm regimes, into value/defensive in stress). This is the
 "conditioning, not prediction" pattern that actually worked in crypto (the regime filter). **Data:**
 FRED risk proxies + COT. **Guard:** distant-window validation; report IS–OOS gap.
+> **Status (2026-07-16): DIAGNOSED → REJECTED as a de-risking gate.** The regime→carry relationship
+> FLIPS across regime: on the long G10 history (has crashes) risk-off = where carry CRASHES (2008 −20%
+> is all risk-off days) so a gate helps; on the deployable EM window (2015-26, no crash) risk-off = carry's
+> BEST returns (Sharpe risk-OFF 1.19 vs risk-ON 0.45; carry_cot 1.67 vs 0.23) so a gate CUTS the best
+> periods. A de-risking gate is thus (1) return-harmful in-regime (vol-target failure again — "always-on
+> beats timed", nth confirmation); (2) tail-protective only vs crashes this window can't validate; (3)
+> REDUNDANT — carry_cot's always-on positioning diversification already cut DD −17.8%→−4.1%; (4) built on
+> an era/universe-UNSTABLE (sign-flipping) relationship → ML classifier would overfit. Crash protection
+> comes from diversification, not a timed gate. Don't build the conditioning overlay.
 
 ### 6. Central-bank communication NLP
 Hawkish/dovish scoring of FOMC/BOJ/ECB/SNB/BoE statements & minutes → a rate-differential-expectations
