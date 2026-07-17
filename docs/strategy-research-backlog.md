@@ -58,6 +58,13 @@ equal-risk or vol-weighted blend has a much higher Sharpe than any one alone (Ba
 > with ZIRP-era rate-differential compression; **no modern edge**. Value does NOT robustly help
 > (era-split rejects it, negative since 2018) — deployable stays `carry_trend_voltarget`. More G10 rank
 > factors are dry; the live question is whether **EM carry (#12)** or non-price data revive an edge.
+> **CARRY-MOMENTUM refinement = ADDITIVE (2026-07-16).** Ranking by the 6-month CHANGE in the rate
+> differential (is the carry WIDENING?) is a genuine 3rd diversifying sleeve: corr 0.04 vs carry, −0.16
+> vs COT (orthogonal to BOTH, unlike value's 0.39-with-COT). Weak alone (Sharpe 0.24–0.35) but the blend
+> `carry+cot+mom` beats `carry_cot` CAUSALLY (trailing-vol risk-parity): full 2015-26 Sharpe 0.73→0.94,
+> 2018-26 1.00→1.07, maxDD −4.6%→−3.9%; helps 6/10 years (gives up upside only in carry's strongest years,
+> e.g. 2022). Lookback 6mo (mom6 > mom12; level+mom combos worse — keep them SEPARATE sleeves). NEXT:
+> formalize `carry_cot_mom` (CarryMom sub-strategy + 3-way blend) + walk-forward → new deployable book.
 
 ### 4. Carry crash / vol overlay — finish the ML stage
 The EWMA vol-target overlay exists (Sharpe 0.34 → 0.40 hyperopt'd) — it *is* the deployable book. Vol
