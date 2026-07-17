@@ -112,6 +112,14 @@ feature for #4/#5.
 > carry_cot Sharpe **0.96 vs carry 0.82**, Calmar **0.84 vs 0.38**, maxDD **−4.1% vs −17.8%**, far more
 > consistent per-window. **`carry_cot` is now the deployable book** — remaining is the live-account switch,
 > not research. COT is also the first feature for regime conditioning (#5).
+> **DEEPENED (2026-07-16): FX-native COT is ONE-DIMENSIONAL.** Tested richer cuts vs net-spec level —
+> positioning MOMENTUM is dead (chg_mom −0.94 Sharpe), OI-normalization no help, and level/commercial/
+> percentile are all 0.97–0.99 correlated (same underlying). Percentile transform is more era-robust
+> (2010–26 Sharpe 0.03→0.23) BUT that gain lives in 2010–17, outside the deployable IBKR window (2015+)
+> where raw-level (0.68) is strongest → NO change to carry_cot warranted; current signal confirmed best.
+> Momentum/OI/percentile/commercial retired as documented negatives. **Remaining orthogonal COT angle
+> (untested):** cross-MARKET positioning — commodity (gold/oil/copper) spec positioning → commodity FX
+> (AUD/NZD/CAD/ZAR); the only lever that adds a NEW dimension vs re-parameterizing net-spec.
 
 ### 8. Macro-surprise nowcasting
 Economic-surprise (actual − consensus) drives short-horizon FX; an ML nowcast of the surprise vector
