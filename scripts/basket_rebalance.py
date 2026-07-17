@@ -15,10 +15,8 @@ def main():
     )
     parser.add_argument("--allocation", type=float, default=400000.0,
                         help="Allocation in USD (default 400000)")
-    parser.add_argument("--preview", action="store_true", default=True,
-                        help="Preview mode (default: True unless --confirm)")
     parser.add_argument("--confirm", action="store_true",
-                        help="Confirm and place orders")
+                        help="Confirm and place orders (default: preview mode)")
     parser.add_argument("--port", type=int, default=4002,
                         help="IB Gateway port (default 4002)")
     parser.add_argument("--client-id", type=int, default=24,
@@ -33,21 +31,19 @@ def main():
 
     args = parser.parse_args()
 
-    # If --confirm, disable preview
-    if args.confirm:
-        args.preview = False
+    preview = not args.confirm  # Default to preview; --confirm arms placement
 
     exec_obj = BasketExecution(
         host="127.0.0.1",
         port=args.port,
         client_id=args.client_id,
-        preview=args.preview,
+        preview=preview,
         confirm=args.confirm,
         allow_live=args.allow_live,
     )
 
     print(f"Rebalancing basket: allocation=${args.allocation:,.0f} "
-          f"(account {args.account}, {'PREVIEW' if args.preview else 'PLACEMENT'})")
+          f"(account {args.account}, {'PREVIEW' if preview else 'PLACEMENT'})")
 
     report = exec_obj.rebalance(args.allocation)
 

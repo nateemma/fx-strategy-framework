@@ -17,4 +17,4 @@ source .venv/bin/activate
 IB_PORT="${IB_PORT:-4002}"
 export IB_PORT
 
-python scripts/basket_rebalance.py "$@"
+python scripts/basket_rebalance.py --port "${IB_PORT}" "$@"

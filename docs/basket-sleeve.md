@@ -18,13 +18,13 @@ Deployed on the IBKR PAPER account alongside the FX book (carry_cot_mom):
 
 ## Usage
 
-### Preview (dry-run, read-only)
+### Preview (dry-run, read-only, default)
 
 ```bash
-python scripts/basket_rebalance.py --preview
+python scripts/basket_rebalance.py
 ```
 
-Prints:
+Prints (read-only, no orders placed):
 - Current NAV
 - Proposed weights (inverse-vol computed from historical prices)
 - Target share counts
@@ -37,7 +37,7 @@ Prints:
 python scripts/basket_rebalance.py --confirm
 ```
 
-- **Arms placement**: `--confirm` is required to place real orders.
+- **Arms placement**: `--confirm` is **required** to place real orders (default is safe preview mode).
 - **Safety gates**:
   - Paper-account check: refuses non-DU accounts unless `--allow-live`.
   - Per-order cap: no single leg > 50% of allocation.
