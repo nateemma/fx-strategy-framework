@@ -63,8 +63,15 @@ equal-risk or vol-weighted blend has a much higher Sharpe than any one alone (Ba
 > vs COT (orthogonal to BOTH, unlike value's 0.39-with-COT). Weak alone (Sharpe 0.24–0.35) but the blend
 > `carry+cot+mom` beats `carry_cot` CAUSALLY (trailing-vol risk-parity): full 2015-26 Sharpe 0.73→0.94,
 > 2018-26 1.00→1.07, maxDD −4.6%→−3.9%; helps 6/10 years (gives up upside only in carry's strongest years,
-> e.g. 2022). Lookback 6mo (mom6 > mom12; level+mom combos worse — keep them SEPARATE sleeves). NEXT:
-> formalize `carry_cot_mom` (CarryMom sub-strategy + 3-way blend) + walk-forward → new deployable book.
+> e.g. 2022). Lookback 6mo (mom6 > mom12; level+mom combos worse — keep them SEPARATE sleeves).
+> **FORMALIZED + WALK-FORWARD-VALIDATED (2026-07-16, commit 7566df6):** `strategies/carrymom.py`
+> CarryMomStrategy (`carry_mom`), `CarryCotMom` blend (`carry_cot_mom`). WF (750/250, 5bp): carry_cot_mom
+> Sharpe **0.98 vs carry_cot 0.96**, 2018-26 **1.08 vs 1.03**, maxDD −3.9% vs −4.1% — real but MODEST. The
+> big full-period gain (0.73→0.94 in a daily-trailing-vol blend) shrinks in the framework because (a)
+> BlendStrategy uses monthly-EWMA risk-parity (captures less momentum diversification) and (b) momentum's
+> largest benefit is 2015-17, which WF puts in-training. Modern-era (2018+) gain is small (+0.05 Sharpe).
+> Legitimate 3-factor book, now first-class; carry_cot vs carry_cot_mom is a marginal call (extra turnover
+> ~6x/yr for +0.05 Sharpe). 242 tests pass.
 
 ### 4. Carry crash / vol overlay — finish the ML stage
 The EWMA vol-target overlay exists (Sharpe 0.34 → 0.40 hyperopt'd) — it *is* the deployable book. Vol
