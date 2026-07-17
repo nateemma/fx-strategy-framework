@@ -55,12 +55,37 @@ The script fails loudly (non-zero, logged to `track.log`) if Gateway is down or 
 (Prefer not to put the key in the plist? Point the job at a wrapper that `source`s it from a 600-perm
 file outside the repo. Never commit the key.)
 
+## Install — daily NAV snapshot (launchd, runs 21:00 local every day)
+Builds the equity curve (`nav.csv`) — read-only, no FRED key needed.
+`~/Library/LaunchAgents/com.fx.nav-snapshot.plist`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.fx.nav-snapshot</string>
+  <key>WorkingDirectory</key><string>/Users/philprice95/Documents/forex</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/philprice95/Documents/forex/.venv/bin/python</string><string>scripts/snapshot_nav.py</string></array>
+  <key>EnvironmentVariables</key><dict><key>IB_PORT</key><string>4002</string></dict>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/Users/philprice95/Documents/forex/snapshot.log</string>
+  <key>StandardErrorPath</key><string>/Users/philprice95/Documents/forex/snapshot.log</string>
+</dict></plist>
+```
+`launchctl load ~/Library/LaunchAgents/com.fx.nav-snapshot.plist` to enable. (Requires Gateway up at
+21:00; a missed day just leaves a gap in the curve — harmless.)
+
 ## Install — cron (alternative)
 ```
 0 9 1 * *  FRED_API_KEY=__YOUR_KEY__ IB_PORT=4002 /Users/philprice95/Documents/forex/scripts/monthly_paper_rebalance.sh
+0 21 * * * IB_PORT=4002 /Users/philprice95/Documents/forex/.venv/bin/python /Users/philprice95/Documents/forex/scripts/snapshot_nav.py >> /Users/philprice95/Documents/forex/snapshot.log 2>&1
 ```
 
 ## Reading the track
-`track.log` records each run's placed orders / NAV; the **IBKR paper account statements** are the P&L
-curve. Compare realized fills/turnover against the backtest's expectations — the point of the forward
-track is catching real-execution drift (spreads, fills, data), not re-deriving the edge.
+- **`track.log`** — each rebalance's placed orders / turnover / cost (the activity log).
+- **`nav.csv`** — the equity curve (daily NAV + open-leg count from the snapshot job).
+- **`python scripts/track_report.py`** — since-inception return / vol / Sharpe / max-drawdown vs the
+  backtest expectation (WF Sharpe ~1.15). Judge on **Sharpe vs 1.15 once the sample is months**, not days.
+
+The point of the forward track is catching real-execution drift (spreads, fills, data staleness, the
+diffuse book's marginal-leg churn) that a backtest can't show — not re-deriving the edge.
