@@ -30,9 +30,15 @@ Fed cuts (then a short 1/3/6/12-month T-bill ladder, ~$115k/rung, rolled at each
 leaving cash at IBKR is small (~0.2-0.4% + the state-tax exemption) — this is *tax/rate optimization*, not
 new return.
 
-**Implement:** buy SGOV for the cash-buffer dollar amount in the account (testable on paper today; it just
-tracks the ETF). No code needed. If a manual ladder is chosen instead, it's a periodic manual bond-desk
-purchase; a small roller script could be added later but is not worth building for a handful of rungs.
+**Implement:** `scripts/cash_sleeve.py` parks a target dollar amount in SGOV, reusing `BasketExecution`
+(a single symbol gets weight 1.0, so the same DU-account/cap/min-order/reconcile/rollback guards apply).
+Default is PREVIEW; `--confirm` arms placement:
+```
+python scripts/cash_sleeve.py --allocation 500000            # preview
+python scripts/cash_sleeve.py --allocation 500000 --confirm  # place (paper: places SGOV, income simulated)
+```
+Testable on paper today (it just holds the ETF); real yield accrues only on a real account. If a manual
+ladder is chosen instead, it's a periodic manual bond-desk purchase — not worth automating for a few rungs.
 
 ## 2. Securities lending — Stock Yield Enhancement Program (SYEP)
 
