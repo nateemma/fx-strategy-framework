@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 import pandas as pd
+from forex.run.ibconnect import connect_with_retry
 
 IDEALPRO_MIN_USD = 25_000   # IdealPro FX min order (USD-equiv); below this a leg routes as an odd lot
 
@@ -201,7 +202,7 @@ class LiveExecution:
         if self.preview:
             ib = self._make_ib(); ib.errorEvent += _on_err
             try:
-                ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=True)
+                connect_with_retry(ib, self.host, self.port, self.client_id, readonly=True)
                 c = self._compute(ib, target_weights)
                 if competing["hit"]:
                     print("WARNING: competing live session (Error 10197) — another IBKR login holds the "
@@ -218,7 +219,7 @@ class LiveExecution:
             raise RuntimeError("placement requires confirm=True (pass --confirm)")
         ib = self._make_ib()
         try:
-            ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=False)
+            connect_with_retry(ib, self.host, self.port, self.client_id, readonly=False)
             acct = (ib.managedAccounts() or [""])[0]
             if not acct.startswith("DU") and not self.allow_live:
                 raise RuntimeError(f"refusing to place on non-paper account {acct!r} without allow_live")

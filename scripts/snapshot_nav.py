@@ -4,10 +4,11 @@ import csv, os
 from pathlib import Path
 from datetime import datetime, timezone
 from ib_async import IB
+from forex.run.ibconnect import connect_with_retry
 
 port = int(os.environ.get("IB_PORT", "4002"))
 ib = IB()
-ib.connect("127.0.0.1", port, clientId=94, timeout=20, readonly=True)
+connect_with_retry(ib, "127.0.0.1", port, 94, readonly=True, timeout=20)
 try:
     summ = {v.tag: v.value for v in ib.accountSummary()}
     acct = (ib.managedAccounts() or [""])[0]

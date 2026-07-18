@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass, field
 import pandas as pd
+from forex.run.ibconnect import connect_with_retry
 from forex.run.basket_weights import inverse_vol_weights, target_shares
 
 @dataclass
@@ -109,7 +110,7 @@ class BasketExecution:
         if self.preview:
             ib = self._make_ib()
             try:
-                ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=True)
+                connect_with_retry(ib, self.host, self.port, self.client_id, readonly=True)
                 c = self._compute(ib, allocation_usd)
                 return BasketReport(orders=c["orders"], positions=c["positions"], weights=c["weights"],
                                     equity=c["nav"], allocation=allocation_usd, applied=False)
@@ -120,7 +121,7 @@ class BasketExecution:
             raise RuntimeError("placement requires confirm=True (pass --confirm)")
         ib = self._make_ib()
         try:
-            ib.connect(self.host, self.port, clientId=self.client_id, timeout=15, readonly=False)
+            connect_with_retry(ib, self.host, self.port, self.client_id, readonly=False)
             acct = (ib.managedAccounts() or [""])[0]
             if not acct.startswith("DU") and not self.allow_live:
                 raise RuntimeError(f"refusing to place on non-paper account {acct!r} without allow_live")
