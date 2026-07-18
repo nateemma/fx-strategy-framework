@@ -13,8 +13,11 @@ It carries the methodology of a prior crypto ML program — **walk-forward + dis
 point-in-time causality, and judging on realised P&L rather than model fit**. All data is free (FRED),
 the stack is pandas + numpy + stdlib, and the whole test suite runs offline with no API key.
 
-> **Status:** research-grade, not deploy-ready. Live/paper execution is designed but not yet built.
-> Results are on a long but survivor-biased G10 sample — see *Caveats*.
+> **Status:** the deployable book **`carry_cot_mom`** is **live on an IBKR *paper* account** with a
+> self-tracking forward record, and a **multi-sleeve ETF track** (a risk-parity basket, a cash sleeve, and
+> a Treasury bond ladder) runs alongside it on the same guarded execution engine — see *Live execution*.
+> Real-money (`allow_live` + a `U…` account) remains a separate, deliberate gate. Research results are on a
+> long but survivor-biased sample — see *Caveats*.
 
 ---
 
@@ -160,10 +163,34 @@ forex backtest --strategy carry_cot_mom \
 NAV, prices each pair from historical midpoints, and rebalances to the target weights. `--preview` places
 nothing; `--confirm` places, behind five guards (paper-account check, per-order and gross caps, min-order
 size, explicit TIF) with auto-unwind on partial failure and a pre-trade odd-lot warning below the IdealPro
-$25k minimum. The full preview → guarded placement → reconcile → rollback path is **paper-validated** on
-IBKR (all deliverable legs qualify, fill, and flatten clean); the **live** gate (`allow_live` + a `U…`
-account + live port) is a separate, deliberate decision. Tradeability verified first-hand through the API
-(G10 + MXN/ZAR/PLN/HUF/CZK/ILS deliverable; BRL/INR NDF-only, not).
+$25k minimum. Tradeability was verified first-hand through the API (G10 + MXN/ZAR/PLN/HUF/CZK/ILS
+deliverable; BRL/INR NDF-only, not). **`carry_cot_mom` is now placed and running on a paper account** with a
+self-tracking forward record: `scripts/monthly_paper_rebalance.sh` (refresh IBKR spot + FRED rates + CFTC COT,
+then reconcile-place), `scripts/snapshot_nav.py` → `nav.csv` (daily equity curve), and
+`scripts/track_report.py` (realised Sharpe/DD vs the ~1.15 walk-forward).
+
+**Multi-sleeve ETF track.** The same guard/reconcile/rollback pattern is generalised to a long-only
+`Stock`/SMART executor (`forex/run/basket.py`, `BasketExecution`) so **ETF sleeves run alongside the FX
+book** on one account. Each sleeve is a thin runner over that engine:
+
+| Sleeve | Runner | Holds |
+|---|---|---|
+| Risk-parity basket | `scripts/basket_rebalance.py` | SPY/TLT/IEF/GLD/DBC, inverse-vol |
+| Cash sleeve | `scripts/cash_sleeve.py` | SGOV (park the cash buffer) |
+| Treasury bond ladder | `scripts/bond_ladder.py` | equal-weight SHY/IEI/IEF, or defined-maturity iBonds |
+
+`BasketExecution` reconciles **by conId against the whole account** (safe re-runs, no over-trade), with a
+per-order-cap pre-pass, min-order skip, and never-raises rollback. **Keep each sleeve's symbols disjoint** —
+the reconcile can't tell one sleeve's IEF from another's. The rationale for the sleeves (the FX book + a
+diversified basket blend to ~10% at controlled drawdown; income and bond-ladder performance and after-tax
+munis) is in [`docs/ibkr-alternative-strategies-findings.md`](docs/ibkr-alternative-strategies-findings.md)
+and [`docs/income-enhancements.md`](docs/income-enhancements.md).
+
+**Unattended operation.** `scripts/install_schedules.sh` installs launchd agents (monthly FX rebalance,
+quarterly basket rebalance, daily NAV snapshot). IB Gateway is kept up via **IBC** (auto-login/restart), and
+every broker connection uses `forex/run/ibconnect.connect_with_retry` to ride through the Gateway's daily
+auto-restart window. The **live** gate (`allow_live` + a `U…` account + live port) remains a separate,
+deliberate decision — everything above is paper.
 
 ### Intraday — investigated, nothing tradeable
 
@@ -274,7 +301,7 @@ worked examples. The framework never assumes carry, G10, or any particular unive
 | Credential | Needed for | Required? | Cost |
 |---|---|---|---|
 | **FRED API key** | Downloading FX & interest-rate data | **Yes** (to fetch; cached runs & tests need nothing) | Free |
-| **Interactive Brokers account** | Paper/live execution | Not yet — arrives with the live plan | Free to open |
+| **Interactive Brokers account** | Paper/live execution | For the paper track (research modes need nothing) | Free to open |
 
 **FRED** (Federal Reserve Economic Data) — the free source for spot rates (H.10), short rates (OECD),
 and real effective exchange rates (BIS). Request a key at
@@ -282,9 +309,10 @@ and real effective exchange rates (BIS). Request a key at
 needed to *fetch*; once `data_cache/` is populated the whole framework — including the test suite —
 runs offline with no key.
 
-**Interactive Brokers** *(planned)* — the broker for execution. No research mode needs it. When the
-live plan lands you'll need an IBKR account (paper first) with TWS/IB Gateway; the connection settings
-are `EnvConfig` fields supplied via environment variables, never a versioned config file.
+**Interactive Brokers** — the broker for execution. No research mode needs it; it's used for the **paper
+track** (the FX book + ETF sleeves) via TWS/IB Gateway. Connection settings are `EnvConfig` fields supplied
+via environment variables, never a versioned config file. Real-money (`allow_live` + a `U…` account) is a
+separate future decision.
 
 ---
 
@@ -296,7 +324,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"          # installs both packages + the `forex` command + pytest
 export FRED_API_KEY="your_key"    # from https://fred.stlouisfed.org/docs/api/api_key.html
 forex download                    # populate data_cache/ (spot H.10, OECD rates, BIS REER)
-pytest -q                         # ~148 tests, offline (no network/API key needed)
+pytest -q                         # 280+ tests, offline (no network/API key needed)
 ```
 
 Example end-to-end report scripts live in `strategies/research/`
