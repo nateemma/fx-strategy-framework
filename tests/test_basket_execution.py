@@ -126,3 +126,13 @@ def test_midbatch_failure_triggers_unwind_and_raises():
             min_order_usd=1.0, max_order_frac=0.9).rebalance(100_000.0)
     assert fake.placeOrder_calls >= 3           # order1 placed, order2 fails, unwind flattens order1
     assert fake.placed[-1][1] == "SELL"         # unwind flattened the filled BUY with a SELL
+
+
+def test_equal_weight_mode_ignores_vol():
+    # equal_weight=True must give 1/N regardless of per-symbol vol (a bond ladder wants equal rung exposure)
+    fake = _FakeIB(prices={"SHY": 84.0, "IEI": 118.0, "IEF": 95.0})
+    rep = _ex(fake, symbols=("SHY", "IEI", "IEF"), preview=True, equal_weight=True).rebalance(300_000.0)
+    assert rep.weights == pytest.approx({"SHY": 1/3, "IEI": 1/3, "IEF": 1/3})
+    # each rung gets an equal DOLLAR third (shares * price ~= $100k), not a vol-tilted amount
+    for sym, base in {"SHY": 84.0, "IEI": 118.0, "IEF": 95.0}.items():
+        assert abs(rep.positions[sym] * base - 100_000) < 200   # within ~one share of $100k

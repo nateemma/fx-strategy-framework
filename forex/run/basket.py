@@ -21,12 +21,12 @@ class BasketExecution:
     (FX) but simpler: no FX inversion, no odd-lot."""
     def __init__(self, symbols=("SPY", "TLT", "IEF", "GLD", "DBC"), host="127.0.0.1", port=4002,
                  client_id=24, preview=True, confirm=False, allow_live=False, lookback=60,
-                 min_order_usd=500.0, max_order_frac=0.6, tif="DAY",
+                 min_order_usd=500.0, max_order_frac=0.6, tif="DAY", equal_weight=False,
                  ib_factory=None, contract_factory=None, order_factory=None):
         self.symbols = symbols; self.host = host; self.port = port; self.client_id = client_id
         self.preview = preview; self.confirm = confirm; self.allow_live = allow_live
         self.lookback = lookback; self.min_order_usd = min_order_usd; self.max_order_frac = max_order_frac
-        self.tif = tif
+        self.tif = tif; self.equal_weight = equal_weight
         self._ib_factory = ib_factory; self._contract_factory = contract_factory; self._order_factory = order_factory
 
     def _make_ib(self):
@@ -89,7 +89,11 @@ class BasketExecution:
             history[sym] = pd.Series({b.date: float(b.close) for b in bars})
             last_price[sym] = p
             contracts[sym] = c
-        weights = inverse_vol_weights(pd.concat(history, axis=1), self.lookback)
+        if self.equal_weight:                 # ladder: equal rung exposure, not inverse-vol
+            cols = list(history)
+            weights = pd.Series(1.0 / len(cols), index=cols)
+        else:
+            weights = inverse_vol_weights(pd.concat(history, axis=1), self.lookback)
         target = target_shares(weights, allocation_usd, pd.Series(last_price))
         try:                                  # ensure the position snapshot has populated after connect
             ib.reqPositions(); ib.sleep(1.5)
