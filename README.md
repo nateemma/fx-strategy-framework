@@ -14,8 +14,9 @@ point-in-time causality, and judging on realised P&L rather than model fit**. Al
 the stack is pandas + numpy + stdlib, and the whole test suite runs offline with no API key.
 
 > **Status:** the deployable book **`carry_cot_mom`** is **live on an IBKR *paper* account** with a
-> self-tracking forward record, and a **multi-sleeve ETF track** (a risk-parity basket, a cash sleeve, and
-> a Treasury bond ladder) runs alongside it on the same guarded execution engine — see *Live execution*.
+> self-tracking forward record, and a **multi-sleeve ETF track** (a risk-parity basket, a cash sleeve, a
+> Treasury bond ladder, and a BDC/covered-call income sleeve — composed into a diversified income book) runs
+> alongside it on the same guarded execution engine — see *Live execution*.
 > Real-money (`allow_live` + a `U…` account) remains a separate, deliberate gate. Research results are on a
 > long but survivor-biased sample — see *Caveats*.
 
@@ -178,6 +179,13 @@ book** on one account. Each sleeve is a thin runner over that engine:
 | Risk-parity basket | `scripts/basket_rebalance.py` | SPY/TLT/IEF/GLD/DBC, inverse-vol |
 | Cash sleeve | `scripts/cash_sleeve.py` | SGOV (park the cash buffer) |
 | Treasury bond ladder | `scripts/bond_ladder.py` | equal-weight SHY/IEI/IEF, or defined-maturity iBonds |
+| Income sleeve | `scripts/income_sleeve.py` | equal-weight BIZD (BDC) + JEPI (covered-call) |
+
+Composed, these form a **diversified income book**: the FX carry (≈0 equity-correlation) + basket
+(Treasuries/gold) anchor the higher-yielding income sleeve, so its equity/credit crash risk is cushioned — a
+smaller *cash* yield than a pure high-yield portfolio, but a far smaller drawdown. The sizing study and the
+"the yield *is* the risk" analysis are in
+[`docs/ibkr-alternative-strategies-findings.md`](docs/ibkr-alternative-strategies-findings.md).
 
 `BasketExecution` reconciles **by conId against the whole account** (safe re-runs, no over-trade), with a
 per-order-cap pre-pass, min-order skip, and never-raises rollback. **Keep each sleeve's symbols disjoint** —
