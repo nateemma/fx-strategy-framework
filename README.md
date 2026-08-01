@@ -327,9 +327,9 @@ separate future decision.
 ## Setup
 
 ```bash
-cd ~/Documents/forex
+cd ~/projects/forex
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"          # installs both packages + the `forex` command + pytest
+pip install -e ".[dev,probe,live]"   # both packages + `forex` CLI + pytest + scikit-learn (probe) + ib_async (live/broker)
 export FRED_API_KEY="your_key"    # from https://fred.stlouisfed.org/docs/api/api_key.html
 forex download                    # populate data_cache/ (spot H.10, OECD rates, BIS REER)
 pytest -q                         # 280+ tests, offline (no network/API key needed)
