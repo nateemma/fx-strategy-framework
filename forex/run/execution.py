@@ -142,6 +142,9 @@ class LiveExecution:
         # settled FX = per-ccy CASH BALANCE, not a Position; ib.positions() is EMPTY for it (T+2),
         # so reading positions saw the book as flat and re-placed the full target (DOUBLING exposure).
         cash_by_ccy = {v.currency: float(v.value) for v in ib.accountValues() if v.tag == "CashBalance"}
+        if not cash_by_ccy:                   # account-value snapshot not populated (cold-connect race);
+            raise RuntimeError(               # reading it as flat would re-place the full book and OVER-TRADE.
+                "no CashBalance from IBKR — account snapshot not populated; refusing to reconcile")
         orders, positions, turnover = {}, {}, 0.0
         base_usd_map, price_map, contract_map = {}, {}, {}
         for code in target_weights.index:

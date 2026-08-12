@@ -16,7 +16,7 @@ class _FakeIB:
     """Records calls; provides deterministic account/positions/prices. Any order call would be logged."""
     def __init__(self, nav=1_000_000.0, positions=None, price=2.0, balances=None, prices=None):
         self._nav, self._positions, self._price = nav, positions or [], price
-        self._balances = balances or {}
+        self._balances = {"USD": nav} if balances is None else balances   # real accounts always carry base cash
         self._prices = prices or {}  # dict of pair -> price (overrides self._price per-pair)
         self.errorEvent = _Event(); self.placeOrder_calls = 0; self._conid = 100
         self.placed = []; self._acct = "DU123456"
@@ -137,6 +137,14 @@ def test_half_balance_produces_half_order():
     mxn_target_units = -(0.5 * nav)  # inverted: negative USD units
     assert abs(rep.orders["EURUSD"] - eur_target_units * 0.5) < 1e-6, f"EURUSD order should be half target"
     assert abs(rep.orders["USDMXN"] - mxn_target_units * 0.5) < 1e-6, f"USDMXN order should be half target"
+
+def test_empty_account_snapshot_refuses_to_reconcile():
+    # cold-connect race: the account-value snapshot hasn't arrived -> accountValues() is empty.
+    # Reading that as a flat book would re-place the full target and DOUBLE the book, so refuse.
+    # (A real account always carries at least a USD CashBalance once the snapshot has loaded.)
+    fake = _FakeIB(nav=1_000_000.0, price=1.1, balances={})
+    with pytest.raises(RuntimeError, match="snapshot"):
+        _live(fake).rebalance(_w({"EUR": 0.5}), pd.Series({"EUR": 1.1}))
 
 def test_odd_lot_flagged_below_idealpro_min():
     # 0.5 * 40k NAV = $20k USD notional < $25k IdealPro min -> flagged as odd-lot
