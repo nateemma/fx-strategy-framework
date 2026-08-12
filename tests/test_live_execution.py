@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from forex.run.execution import LiveExecution
 
 class _Val:
-    def __init__(self, tag, value): self.tag, self.value = tag, value
+    def __init__(self, tag, value, currency=""): self.tag, self.value, self.currency = tag, value, currency
 class _Contract:
     def __init__(self, conId): self.conId = conId
 class _Pos:
@@ -14,8 +14,10 @@ class _Event:
     def __iadd__(self, fn): return self
 class _FakeIB:
     """Records calls; provides deterministic account/positions/prices. Any order call would be logged."""
-    def __init__(self, nav=1_000_000.0, positions=None, price=2.0):
+    def __init__(self, nav=1_000_000.0, positions=None, price=2.0, balances=None, prices=None):
         self._nav, self._positions, self._price = nav, positions or [], price
+        self._balances = balances or {}
+        self._prices = prices or {}  # dict of pair -> price (overrides self._price per-pair)
         self.errorEvent = _Event(); self.placeOrder_calls = 0; self._conid = 100
         self.placed = []; self._acct = "DU123456"
         self.cancel_calls = 0; self._fail_on = None; self._fill_frac = 1.0
@@ -23,11 +25,16 @@ class _FakeIB:
     def disconnect(self): self.connected = False
     def reqMarketDataType(self, *a): pass
     def accountSummary(self): return [_Val("NetLiquidation", str(self._nav))]
+    def accountValues(self):
+        return [_Val("CashBalance", str(amt), ccy) for ccy, amt in self._balances.items()]
     def positions(self): return self._positions
     def reqPositions(self): pass
     def qualifyContracts(self, c):
         self._conid += 1; c.conId = self._conid; c.exchange = "IDEALPRO"; return [c]
-    def reqHistoricalData(self, *a, **k): return [_Bar(self._price)]
+    def reqHistoricalData(self, contract, *a, **k):
+        pair = getattr(contract, "pair", None)
+        price = self._prices.get(pair, self._price) if pair else self._price
+        return [_Bar(price)]
     def managedAccounts(self): return [getattr(self, "_acct", "DU123456")]
     def sleep(self, secs): pass
     def cancelOrder(self, order): self.cancel_calls += 1
@@ -80,13 +87,56 @@ def test_preview_false_raises_and_never_places_order():
 
 def test_current_position_nets_against_target():
     # already hold the exact target EUR units -> order ~0
-    fake = _FakeIB(nav=1_000_000.0, price=1.1)
-    target_units = 0.5 * 1_000_000 / 1.1
-    # qualifyContracts assigns conId 101 to the first (only) pair
-    fake._positions = [_Pos(101, target_units)]
+    # settled FX = cash balance, not a Position; read from CashBalance now
+    fake = _FakeIB(nav=1_000_000.0, price=1.1, balances={"EUR": 0.5*1_000_000/1.1})
     ex = _live(fake)
     rep = ex.rebalance(_w({"EUR": 0.5}), pd.Series({"EUR": 1.1}))
     assert abs(rep.orders["EURUSD"]) < 1e-6
+
+def test_settled_fx_reconciles_from_cash_balance():
+    # core regression: settled FX at T+2 has no Position entry, only a CashBalance.
+    # Balances hold BOTH EUR and MXN at exact target.
+    # EUR is non-inverted (EURUSD, base_usd=False), MXN is inverted (USDMXN, base_usd=True).
+    nav = 1_000_000.0
+    eur_price = 1.1
+    mxn_price = 18.0
+    eur_target = 0.5 * nav / eur_price
+    mxn_target = 0.5 * nav * mxn_price
+    fake = _FakeIB(
+        nav=nav,
+        price=2.0,  # default, overridden per-pair
+        balances={"EUR": eur_target, "MXN": mxn_target},
+        prices={"EURUSD": eur_price, "USDMXN": mxn_price}
+    )
+    ex = _live(fake)
+    # Prices are per-currency, not per-pair (they get inverted internally for USD-base pairs)
+    rep = ex.rebalance(_w({"EUR": 0.5, "MXN": 0.5}), pd.Series({"EUR": eur_price, "MXN": 1.0/mxn_price}))
+    # Both should net to ~0 (no order needed)
+    assert abs(rep.orders["EURUSD"]) < 1e-6, f"EURUSD order should be ~0, got {rep.orders['EURUSD']}"
+    assert abs(rep.orders["USDMXN"]) < 1e-6, f"USDMXN order should be ~0, got {rep.orders['USDMXN']}"
+
+def test_half_balance_produces_half_order():
+    # with balance = HALF the target for both EUR and MXN, order should equal the remaining half.
+    nav = 1_000_000.0
+    eur_price = 1.1
+    mxn_price = 18.0
+    eur_target = 0.5 * nav / eur_price
+    mxn_target = 0.5 * nav * mxn_price
+    # Half the target amounts
+    fake = _FakeIB(
+        nav=nav,
+        price=2.0,  # default, overridden per-pair
+        balances={"EUR": eur_target * 0.5, "MXN": mxn_target * 0.5},
+        prices={"EURUSD": eur_price, "USDMXN": mxn_price}
+    )
+    ex = _live(fake)
+    rep = ex.rebalance(_w({"EUR": 0.5, "MXN": 0.5}), pd.Series({"EUR": eur_price, "MXN": 1.0/mxn_price}))
+    # Each order should be half the target (the remaining half to reach target)
+    # EUR: target_units = 0.5*nav/eur_price, current = half of that, order = half of target
+    eur_target_units = 0.5 * nav / eur_price
+    mxn_target_units = -(0.5 * nav)  # inverted: negative USD units
+    assert abs(rep.orders["EURUSD"] - eur_target_units * 0.5) < 1e-6, f"EURUSD order should be half target"
+    assert abs(rep.orders["USDMXN"] - mxn_target_units * 0.5) < 1e-6, f"USDMXN order should be half target"
 
 def test_odd_lot_flagged_below_idealpro_min():
     # 0.5 * 40k NAV = $20k USD notional < $25k IdealPro min -> flagged as odd-lot

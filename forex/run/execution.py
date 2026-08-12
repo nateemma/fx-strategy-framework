@@ -135,11 +135,13 @@ class LiveExecution:
         if nav is None or not math.isfinite(nav) or nav <= 0:
             raise RuntimeError(f"invalid NAV from IBKR: {nav!r}")
         make_contract = self._make_contract()
-        try:                                  # ensure the position snapshot has populated after connect —
-            ib.reqPositions(); ib.sleep(1.5)  # else a fresh reconnect reads spurious "flat" and OVER-TRADES
+        try:                                  # ensure the position snapshot (and NAV + cash balances) has populated
+            ib.reqPositions(); ib.sleep(1.5)  # after connect, else a fresh reconnect reads spurious "flat" and OVER-TRADES
         except Exception:                     # (the reconnect-per-rebalance loop bug found in intraday B)
             pass
-        cur_by_conid = {p.contract.conId: float(p.position) for p in ib.positions()}
+        # settled FX = per-ccy CASH BALANCE, not a Position; ib.positions() is EMPTY for it (T+2),
+        # so reading positions saw the book as flat and re-placed the full target (DOUBLING exposure).
+        cash_by_ccy = {v.currency: float(v.value) for v in ib.accountValues() if v.tag == "CashBalance"}
         orders, positions, turnover = {}, {}, 0.0
         base_usd_map, price_map, contract_map = {}, {}, {}
         for code in target_weights.index:
@@ -160,7 +162,8 @@ class LiveExecution:
                 raise RuntimeError(f"invalid price for {pair}: {p!r}")
             usd_notional = w * nav
             target_units = (-usd_notional) if base_usd else (usd_notional / p)
-            current_units = cur_by_conid.get(getattr(c, "conId", None), 0.0)
+            bal = cash_by_ccy.get(code, 0.0)
+            current_units = (-bal / p) if base_usd else bal
             orders[pair] = target_units - current_units
             positions[pair] = target_units
             turnover += abs(usd_notional - self._cexp(current_units, base_usd, p)) / nav
