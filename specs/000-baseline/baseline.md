@@ -69,6 +69,7 @@ Do not relitigate these without new *data*; a better model on the same inputs wa
 | Weights | `forex/run/basket_weights.py` | Done, pure + unit-tested. |
 | Per-sleeve tracking | `forex/run/basket_track.py` | Done. |
 | FX book value | `forex/run/fxbook.py` | Done (2026-08-16). Reads legs + P&L from cash, not positions. |
+| FX-only reporting | `forex/run/fxtrack.py` | Done (2026-08-16). Spec `001-fx-only-reporting`; 25 tests. |
 | Connect-with-retry | `forex/run/ibconnect.py` | Done. Rides through Gateway auto-restart. |
 | Scheduling | `scripts/install_schedules.sh` | Partially done — see In flight. |
 
@@ -84,16 +85,18 @@ Running since **2026-07-17**. NAV ~1,005k from 994k at inception.
 | Income sleeve | `scripts/income_sleeve.py` | Yes | BIZD/JEPI, ~298k |
 | Cash sleeve (SGOV) | `scripts/cash_sleeve.py` | **No** | — built, never run |
 
-**The ETF sleeves are ~90% of NAV.** Headline track-record numbers therefore measure the sleeves,
-not `carry_cot_mom`. FX-only P&L is now recorded (`fx_net_base` in `nav.csv`) but not yet reported.
+**The ETF sleeves are ~90% of NAV**, so whole-account numbers measure the sleeves rather than
+`carry_cot_mom`. `scripts/track_report.py` now reports the two separately — but FX statistics are
+gated until 20 observations accumulate, and there is currently one.
 
 ---
 
 ## In flight
 
-1. **FX-only performance reporting.** `snapshot_nav.py` now records `fx_legs`, `fx_net_base`,
-   `fx_gross_base`, `fx_accrued_base`. `scripts/track_report.py` still reports whole-account NAV
-   only, so the forward track cannot yet be judged against the ~1.15 walk-forward expectation.
+1. **FX-only performance reporting — BUILT 2026-08-16, awaiting data.**
+   `scripts/track_report.py` now reports the FX book separately (spec `001-fx-only-reporting`).
+   Statistics are gated at 20 observations and only one FX-bearing snapshot exists, so the report
+   currently runs in levels-only mode. First meaningful reading is several weeks out.
 2. **Scheduling is partial.** launchd runs the monthly FX rebalance, the quarterly basket rebalance,
    and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule.
 3. **The 2026-08-01 monthly rebalance silently failed** on a stale `~/Documents/forex` path after the
@@ -109,20 +112,20 @@ when starting it; do not pre-write specs.
 
 | # | Item | Size | Priority | Notes |
 |---|---|---|---|---|
-| 1 | FX-only P&L in `track_report.py` — Sharpe/DD on `fx_net_base`, separating carry accrual from spot | S | High | Data already recorded. Makes the forward track measure the strategy. |
-| 2 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Nothing alerts on a missed rebalance; `launchd.err` is gitignored and written only on failure. |
-| 3 | Alert on a missed/failed scheduled job | S | High | Why the 2026-08-01 failure (In flight #3) went unnoticed for 11 days. |
-| 4 | Investigate negative carry accrual (−841 base) | M | High | The book net-*pays* carry. Paper-account rate spreads on both legs is the hypothesis; must be understood before real money. |
-| 5 | Deploy the cash sleeve (SGOV) | S | Medium | Built, documented, never run; ~96k sits unparked. Keep symbols disjoint from other sleeves. |
-| 6 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |
-| 7 | Move the FRED API key out of the launchd plist | S | Medium | Cleartext in `com.fx.paper-rebalance.plist` (mode 0600). Violates the EnvConfig-secrets rule. |
-| 8 | Fix 21 pre-existing ruff violations | S | Medium | 8 unused imports, 11 over-long lines, 2 empty f-strings. Constitution III mandates the gate. |
-| 9 | Refresh `docs/scheduled-paper-track.md` | S | Medium | Still documents `~/Documents/forex` paths throughout. |
-| 10 | CI (pytest + ruff on push) | M | Medium | No CI exists; both gates are hand-run. |
-| 11 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 12 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 13 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 14 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 1 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Nothing alerts on a missed rebalance; `launchd.err` is gitignored and written only on failure. |
+| 2 | Alert on a missed/failed scheduled job | S | High | Why the 2026-08-01 failure (In flight #3) went unnoticed for 11 days. |
+| 3 | Investigate negative carry accrual (−841 base) | M | High | The book net-*pays* carry. Paper-account rate spreads on both legs is the hypothesis; must be understood before real money. |
+| 4 | Deploy the cash sleeve (SGOV) | S | Medium | Built, documented, never run; ~96k sits unparked. Keep symbols disjoint from other sleeves. |
+| 5 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |
+| 6 | Move the FRED API key out of the launchd plist | S | Medium | Cleartext in `com.fx.paper-rebalance.plist` (mode 0600). Violates the EnvConfig-secrets rule. |
+| 7 | Fix 21 pre-existing ruff violations | S | Medium | 8 unused imports, 11 over-long lines, 2 empty f-strings. Constitution III mandates the gate. |
+| 8 | Refresh `docs/scheduled-paper-track.md` | S | Medium | Still documents `~/Documents/forex` paths throughout. |
+| 9 | CI (pytest + ruff on push) | M | Medium | No CI exists; both gates are hand-run. |
+| 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 12 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 13 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 14 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
 | 15 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is

@@ -27,7 +27,7 @@ Single project, two packages. Pure logic in `forex/run/`, thin driver in `script
 
 **Purpose**: The one shared piece every later test needs.
 
-- [ ] T001 Add a `history()` test helper that builds `nav.csv` content from a list of daily rows, supporting rows with missing FX columns and multiple rows per day, in `tests/test_fxtrack.py`
+- [X] T001 Add a `history()` test helper that builds `nav.csv` content from a list of daily rows, supporting rows with missing FX columns and multiple rows per day, in `tests/test_fxtrack.py`
 
 ---
 
@@ -37,10 +37,10 @@ Single project, two packages. Pure logic in `forex/run/`, thin driver in `script
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write failing tests for snapshot loading — FX-bearing filter, day-last collapse, timestamp ordering, and that non-FX rows survive for whole-account use — in `tests/test_fxtrack.py`
-- [ ] T003 Implement snapshot loading and the FX-bearing filter returning a daily-collapsed sequence in `forex/run/fxtrack.py`
-- [ ] T004 [P] Write failing tests for per-observation derivation — `pnl`, `carry_pnl`, the `spot_pnl` residual identity, `ret` against **prior** `gross_base`, and `gap_days` — in `tests/test_fxtrack.py`
-- [ ] T005 Implement the `FxObservation` derivation per [data-model.md](./data-model.md) in `forex/run/fxtrack.py`
+- [X] T002 Write failing tests for snapshot loading — FX-bearing filter, day-last collapse, timestamp ordering, and that non-FX rows survive for whole-account use — in `tests/test_fxtrack.py`
+- [X] T003 Implement snapshot loading and the FX-bearing filter returning a daily-collapsed sequence in `forex/run/fxtrack.py`
+- [X] T004 [P] Write failing tests for per-observation derivation — `pnl`, `carry_pnl`, the `spot_pnl` residual identity, `ret` against **prior** `gross_base`, and `gap_days` — in `tests/test_fxtrack.py`
+- [X] T005 Implement the `FxObservation` derivation per [data-model.md](./data-model.md) in `forex/run/fxtrack.py`
 
 **Checkpoint**: A clean daily FX P&L series exists. User stories can now proceed.
 
@@ -54,12 +54,12 @@ account, with the walk-forward expectation attached to the FX figures only.
 **Independent Test**: Run the report against a constructed FX-bearing history and confirm the FX
 statistics differ from the whole-account statistics and are hand-traceable to the recorded values.
 
-- [ ] T006 [P] [US1] Write failing tests for the aggregate — total return, annualised return, annualised vol, Sharpe, max drawdown over a constructed 25-observation history — in `tests/test_fxtrack.py`
-- [ ] T007 [US1] Implement `fx_performance()` returning the aggregate per [data-model.md](./data-model.md), annualising on 252 days, in `forex/run/fxtrack.py`
-- [ ] T008 [P] [US1] Write a failing test proving FX figures are invariant to `nav` — two histories identical in FX columns, one with `nav` flat and one up 20%, must yield identical FX output (SC-002, quickstart Scenario 1) — in `tests/test_fxtrack.py`
-- [ ] T009 [US1] Add a labelled `FX BOOK ONLY (carry_cot_mom)` section to `scripts/track_report.py`, sourcing every figure from `fxtrack` and never from `nav`
-- [ ] T010 [US1] Label the existing output `WHOLE ACCOUNT (FX book + ETF sleeves)` and add the sleeve-share note in `scripts/track_report.py`
-- [ ] T011 [US1] Move the `~1.15` walk-forward expectation so it appears only in the FX section (C-02, FR-004) in `scripts/track_report.py`
+- [X] T006 [P] [US1] Write failing tests for the aggregate — total return, annualised return, annualised vol, Sharpe, max drawdown over a constructed 25-observation history — in `tests/test_fxtrack.py`
+- [X] T007 [US1] Implement `fx_performance()` returning the aggregate per [data-model.md](./data-model.md), annualising on 252 days, in `forex/run/fxtrack.py`
+- [X] T008 [P] [US1] Write a failing test proving FX figures are invariant to `nav` — two histories identical in FX columns, one with `nav` flat and one up 20%, must yield identical FX output (SC-002, quickstart Scenario 1) — in `tests/test_fxtrack.py`
+- [X] T009 [US1] Add a labelled `FX BOOK ONLY (carry_cot_mom)` section to `scripts/track_report.py`, sourcing every figure from `fxtrack` and never from `nav`
+- [X] T010 [US1] Label the existing output `WHOLE ACCOUNT (FX book + ETF sleeves)` and add the sleeve-share note in `scripts/track_report.py`
+- [X] T011 [US1] Move the `~1.15` walk-forward expectation so it appears only in the FX section (C-02, FR-004) in `scripts/track_report.py`
 
 **Checkpoint**: The report answers the question it exists to answer. See Implementation Strategy
 before trusting live output.
@@ -73,9 +73,9 @@ before trusting live output.
 **Independent Test**: Run against a history where accrual falls while net rises and confirm both
 components appear and sum to the total.
 
-- [ ] T012 [P] [US2] Write failing tests for the decomposition — components sum to total exactly, and a negative carry is reported rather than netted away (SC-003, C-05, quickstart Scenario 2) — in `tests/test_fxtrack.py`
-- [ ] T013 [US2] Surface cumulative `carry_pnl` and `spot_pnl` on the aggregate in `forex/run/fxtrack.py`
-- [ ] T014 [US2] Print the `P&L: <total> (carry <c> + spot <s>)` line per the output contract in `scripts/track_report.py`
+- [X] T012 [P] [US2] Write failing tests for the decomposition — components sum to total exactly, and a negative carry is reported rather than netted away (SC-003, C-05, quickstart Scenario 2) — in `tests/test_fxtrack.py`
+- [X] T013 [US2] Surface cumulative `carry_pnl` and `spot_pnl` on the aggregate in `forex/run/fxtrack.py`
+- [X] T014 [US2] Print the `P&L: <total> (carry <c> + spot <s>)` line per the output contract in `scripts/track_report.py`
 
 **Checkpoint**: Backlog #4 (negative carry accrual) becomes observable over time.
 
@@ -89,14 +89,14 @@ clean.
 **Independent Test**: Run against 1-, 4-, and 25-observation histories and a rebalance-containing
 history, and confirm the report withholds or flags exactly as specified.
 
-- [ ] T015 [P] [US3] Write failing tests for rebalance detection — the real `13 → 20 → 20 → 13` pattern from [research.md R1](./research.md), plus a rotation that leaves `fx_legs` unchanged — in `tests/test_fxtrack.py`
-- [ ] T016 [US3] Implement rebalance flagging via a trailing-window ETF baseline and unsettled-trade count, including the T+2 trailing observation, in `forex/run/fxtrack.py`
-- [ ] T017 [US3] Exclude contaminated observations from ratio statistics while retaining and exposing the excluded count, in `forex/run/fxtrack.py`
-- [ ] T018 [P] [US3] Write failing tests for the sample gate — 1, 4, and 25 observations produce levels-only, P&L-only, and full statistics respectively, with no `nan`/`inf`/`0` stand-ins (C-07, quickstart Scenario 4) — in `tests/test_fxtrack.py`
-- [ ] T019 [US3] Implement the 2-observation and 20-observation thresholds with explanatory messages in `forex/run/fxtrack.py`
-- [ ] T020 [P] [US3] Write a failing test that an FX-less legacy history preserves the whole-account output and reports the FX section unavailable (C-08, quickstart Scenario 5) — in `tests/test_fxtrack.py`
-- [ ] T021 [US3] Implement the degraded-mode FX section for FX-less histories in `scripts/track_report.py`
-- [ ] T022 [US3] Print the FX period, observation count, excluded count with reason, and the gross-exposure return basis (C-03, C-04, C-06) in `scripts/track_report.py`
+- [X] T015 [P] [US3] Write failing tests for rebalance detection — the real `13 → 20 → 20 → 13` pattern from [research.md R1](./research.md), plus a rotation that leaves `fx_legs` unchanged — in `tests/test_fxtrack.py`
+- [X] T016 [US3] Implement rebalance flagging via a trailing-window ETF baseline and unsettled-trade count, including the T+2 trailing observation, in `forex/run/fxtrack.py`
+- [X] T017 [US3] Exclude contaminated observations from ratio statistics while retaining and exposing the excluded count, in `forex/run/fxtrack.py`
+- [X] T018 [P] [US3] Write failing tests for the sample gate — 1, 4, and 25 observations produce levels-only, P&L-only, and full statistics respectively, with no `nan`/`inf`/`0` stand-ins (C-07, quickstart Scenario 4) — in `tests/test_fxtrack.py`
+- [X] T019 [US3] Implement the 2-observation and 20-observation thresholds with explanatory messages in `forex/run/fxtrack.py`
+- [X] T020 [P] [US3] Write a failing test that an FX-less legacy history preserves the whole-account output and reports the FX section unavailable (C-08, quickstart Scenario 5) — in `tests/test_fxtrack.py`
+- [X] T021 [US3] Implement the degraded-mode FX section for FX-less histories in `scripts/track_report.py`
+- [X] T022 [US3] Print the FX period, observation count, excluded count with reason, and the gross-exposure return basis (C-03, C-04, C-06) in `scripts/track_report.py`
 
 **Checkpoint**: Output is safe to act on — or says why it is not.
 
@@ -104,12 +104,12 @@ history, and confirm the report withholds or flags exactly as specified.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T023 [P] Write failing guard tests — zero `fx_gross_base`, a multi-day curve gap not annualised as one day, and two snapshots on one day (quickstart Scenario 6) — in `tests/test_fxtrack.py`
-- [ ] T024 Implement the degenerate-input guards in `forex/run/fxtrack.py`
-- [ ] T025 Run the live smoke test `.venv/bin/python scripts/track_report.py` and confirm single-observation mode against the real `nav.csv` (net 129, gross 996,532, accrued −841, no Sharpe)
-- [ ] T026 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm all green and **no new** violations beyond the 21 pre-existing (Backlog #8)
-- [ ] T027 Move Backlog #1 to Completed and update In-flight item 1 in `specs/000-baseline/baseline.md`
-- [ ] T028 Add a backlog entry for the explicit rebalance marker written at trade time (the robust alternative deferred in [research.md R1](./research.md)) in `specs/000-baseline/baseline.md`
+- [X] T023 [P] Write failing guard tests — zero `fx_gross_base`, a multi-day curve gap not annualised as one day, and two snapshots on one day (quickstart Scenario 6) — in `tests/test_fxtrack.py`
+- [X] T024 Implement the degenerate-input guards in `forex/run/fxtrack.py`
+- [X] T025 Run the live smoke test `.venv/bin/python scripts/track_report.py` and confirm single-observation mode against the real `nav.csv` (net 129, gross 996,532, accrued −841, no Sharpe)
+- [X] T026 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm all green and **no new** violations beyond the 21 pre-existing (Backlog #8)
+- [X] T027 Move Backlog #1 to Completed and update In-flight item 1 in `specs/000-baseline/baseline.md`
+- [X] T028 Add a backlog entry for the explicit rebalance marker written at trade time (the robust alternative deferred in [research.md R1](./research.md)) in `specs/000-baseline/baseline.md`
 
 ---
 

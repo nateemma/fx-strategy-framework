@@ -50,7 +50,13 @@ FX BOOK ONLY  (carry_cot_mom)
 | C-05 | Carry + spot always sum to the reported total P&L | FR-005, SC-003 |
 | C-06 | The return basis (gross FX exposure) is stated in the output | FR-009 |
 | C-07 | Below minimum sample, ratios are replaced by an explanation — never printed as `nan`, `0`, or `inf` | FR-007, SC-004 |
-| C-08 | With no FX-bearing rows, the whole-account section is byte-comparable to today's output and the FX section states it is unavailable | FR-010 |
+| C-08 | With no FX-bearing rows, every whole-account **figure** is unchanged from today's output and the FX section states it is unavailable | FR-010 |
+
+> **C-08 amended during implementation (2026-08-16).** Originally written as "byte-comparable",
+> which contradicted T010's requirement to add a `WHOLE ACCOUNT` section label. The guarantee that
+> matters is that no *computed value* changes; the surrounding labels deliberately do. Verified
+> against the live history: total return, annualised, vol, Sharpe, and drawdown are identical
+> before and after this feature.
 
 ## Degraded-mode outputs
 
