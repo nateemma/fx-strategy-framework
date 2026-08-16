@@ -12,6 +12,7 @@ briefly appearing in the broker's position count.
 from collections import Counter
 from datetime import date
 from math import sqrt
+from statistics import median
 from typing import NamedTuple
 
 TRADING_DAYS = 252
@@ -19,6 +20,9 @@ MIN_OBS_PNL = 2       # two levels to difference
 MIN_OBS_STATS = 20    # ~one month; below this a Sharpe is noise with a decimal point
 MAX_GAP_DAYS = 4      # Fri->Mon is 3; beyond this the curve has a hole
 BASELINE_WINDOW = 10  # trailing days used to infer the quiet ETF position count
+POSTING_DROP = 0.5    # accrued collapsing below half its prior size means interest was posted
+POSTING_FLOOR = 10.0  # ...but only once accrued is big enough that a collapse is not noise
+CARRY_WINDOW = 5      # trailing measured increments used to estimate a posting day's carry
 
 _FX_FIELDS = ("fx_net_base", "fx_gross_base", "fx_accrued_base")
 
@@ -35,6 +39,7 @@ class FxObservation(NamedTuple):
     gap_days: int
     contaminated: bool      # carries rebalance flow, not pure P&L
     excluded_gap: bool      # spans a hole in the daily curve
+    carry_estimated: bool   # interest posted here, so carry is estimated rather than measured
 
 
 class FxPerformance(NamedTuple):
@@ -50,6 +55,7 @@ class FxPerformance(NamedTuple):
     total_return: float | None
     n_obs: int              # observations behind the ratio statistics
     n_excluded: int         # dropped for rebalance flow or a curve gap
+    n_carry_estimated: int  # observations where interest posted, so carry was estimated
     ann_return: float | None
     ann_vol: float | None
     sharpe: float | None
@@ -102,7 +108,7 @@ def fx_observations(rows):
         base = _baseline(counts, i)
         unsettled.append(c is not None and base is not None and c > base)
 
-    obs = []
+    obs, measured = [], []
     for i in range(1, len(days)):
         prev, cur = days[i - 1], days[i]
         net, prev_net = _num(cur["fx_net_base"]), _num(prev["fx_net_base"])
@@ -110,7 +116,18 @@ def fx_observations(rows):
         prev_gross = _num(prev["fx_gross_base"])
 
         pnl = net - prev_net
-        carry = accrued - prev_accrued
+        # IBKR posts accrued interest to cash monthly, resetting accrued toward zero while net book
+        # value stays continuous. Differencing across that reads the whole month's accrual as a
+        # windfall, so estimate the day's carry from recent measured days instead.
+        posted = (abs(prev_accrued) >= POSTING_FLOOR
+                  and abs(accrued) < POSTING_DROP * abs(prev_accrued))
+        if posted:
+            recent = measured[-CARRY_WINDOW:]
+            carry = median(recent) if recent else 0.0
+        else:
+            carry = accrued - prev_accrued
+            measured.append(carry)
+
         gap = (date.fromisoformat(cur["timestamp"][:10])
                - date.fromisoformat(prev["timestamp"][:10])).days
         obs.append(FxObservation(
@@ -122,6 +139,7 @@ def fx_observations(rows):
             # either endpoint holding an unsettled trade means this move carries flow
             contaminated=unsettled[i] or unsettled[i - 1],
             excluded_gap=gap > MAX_GAP_DAYS,
+            carry_estimated=posted,
         ))
     return obs
 
@@ -139,7 +157,7 @@ def fx_performance(rows):
     """Summarise the FX book. Ratio statistics are withheld below MIN_OBS_STATS."""
     days = _fx_days(rows)
     empty = FxPerformance(0, None, None, None, None, None, None, None, None, None,
-                          0, 0, None, None, None, None)
+                          0, 0, 0, None, None, None, None)
     if not days:
         return empty
 
@@ -157,12 +175,13 @@ def fx_performance(rows):
 
     # Cumulative P&L comes from the endpoints — they are levels, so exclusions must not clip them.
     total_pnl = _num(last["fx_net_base"]) - _num(first["fx_net_base"])
-    carry_pnl = _num(last["fx_accrued_base"]) - _num(first["fx_accrued_base"])
+    carry_pnl = sum(o.carry_pnl for o in obs)
     first_gross = _num(first["fx_gross_base"])
     perf = empty._replace(
         **levels,
         total_pnl=total_pnl, carry_pnl=carry_pnl, spot_pnl=total_pnl - carry_pnl,
         total_return=(total_pnl / first_gross) if first_gross else None,
+        n_carry_estimated=sum(1 for o in obs if o.carry_estimated),
     )
 
     usable = [o for o in obs if o.ret is not None and not o.contaminated and not o.excluded_gap]

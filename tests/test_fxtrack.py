@@ -266,3 +266,57 @@ def test_weekend_gap_is_not_excluded():
     obs = fx_observations(rows)
     assert obs[0].gap_days == 3
     assert not obs[0].excluded_gap
+
+
+# ---------------------------------------------------------------- 002 US2: interest posting
+
+def posting_history(n=25, daily_carry=-30.0, daily_spot=100.0, post_on=None):
+    """A book accruing negative carry daily. On `post_on`, accrued resets to ~0 as IBKR posts it
+    to cash — net value is continuous across the reset, because the cash absorbs it."""
+    days, net, accrued = [], 0.0, 0.0
+    for i in range(1, n + 1):
+        if i > 1:
+            net += daily_spot + daily_carry
+            accrued = 0.0 if i == post_on else accrued + daily_carry
+        days.append((f"2026-08-{i:02d}", net, 1_000_000.0, accrued))
+    return days
+
+
+def test_interest_posting_is_not_credited_as_carry():
+    """Accrued resetting -690 -> 0 must not read as +690 of carry earned."""
+    days = posting_history(post_on=24)
+    obs = {o.date: o for o in fx_observations(history(days))}
+    post = obs["2026-08-24"]
+    assert post.carry_estimated is True
+    assert post.carry_pnl < 0            # still accruing negative, not a windfall
+    assert post.carry_pnl == pytest.approx(-30.0, abs=1.0)
+
+
+def test_carry_and_spot_still_reconcile_across_a_posting():
+    perf = fx_performance(history(posting_history(post_on=24)))
+    assert perf.carry_pnl + perf.spot_pnl == pytest.approx(perf.total_pnl)
+
+
+def test_cumulative_carry_is_not_inflated_by_the_posting():
+    """Without the fix, cumulative carry would be near zero instead of ~-700."""
+    perf = fx_performance(history(posting_history(n=25, daily_carry=-30.0, post_on=24)))
+    assert perf.carry_pnl == pytest.approx(-30.0 * 24, abs=60.0)
+    assert perf.spot_pnl > 0
+
+
+def test_estimated_observations_are_counted():
+    perf = fx_performance(history(posting_history(post_on=24)))
+    assert perf.n_carry_estimated == 1
+
+
+def test_a_history_with_no_posting_estimates_nothing():
+    perf = fx_performance(history(posting_history(post_on=None)))
+    assert perf.n_carry_estimated == 0
+    assert all(not o.carry_estimated for o in fx_observations(history(posting_history(post_on=None))))
+
+
+def test_small_accrual_wobble_is_not_mistaken_for_a_posting():
+    """Early in a month accrued is tiny; noise there must not trip the detector."""
+    days = [("2026-08-01", 0.0, 1e6, -0.4), ("2026-08-02", 100.0, 1e6, -0.1),
+            ("2026-08-03", 200.0, 1e6, -0.9)]
+    assert all(not o.carry_estimated for o in fx_observations(history(days)))

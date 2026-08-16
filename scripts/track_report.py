@@ -61,6 +61,9 @@ elif fx.n_fx_days > 1:
     print(f"  P&L          : {fx.total_pnl:+,.0f}   (carry {fx.carry_pnl:+,.0f}  +  spot {fx.spot_pnl:+,.0f})")
     if fx.n_excluded:
         print(f"  excluded     : {fx.n_excluded} observation(s) carrying rebalance flow or spanning a curve gap")
+    if fx.n_carry_estimated:
+        print(f"  estimated    : {fx.n_carry_estimated} observation(s) where interest posted — "
+              f"carry estimated from recent days, not measured")
     if fx.sharpe is None:
         if fx.n_obs < MIN_OBS_STATS:
             print(f"  return / vol / Sharpe / drawdown need >= {MIN_OBS_STATS} observations "
