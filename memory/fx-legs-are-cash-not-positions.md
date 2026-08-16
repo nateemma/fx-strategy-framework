@@ -1,6 +1,6 @@
 ---
 name: fx-legs-are-cash-not-positions
-description: "IBKR reports settled FX spot as CashBalance, never in positions() — so nav.csv's open_legs column counts ETFs, not FX legs"
+description: "IBKR reports settled FX spot as CashBalance and holds the carry in a separate AccruedCash tag — read the FX book via forex.run.fxbook, never from positions()"
 metadata: 
   node_type: memory
   type: project
@@ -8,23 +8,31 @@ metadata:
   modified: 2026-08-16T21:28:19.159Z
 ---
 
-At IBKR, **settled FX spot does not appear in `ib.positions()`** — it lands in `CashBalance` per
-currency. Positions only shows FX transiently, between trade and settlement.
+Two IBKR reporting facts that together decide how the FX book must be measured:
 
-Consequence found on 2026-08-16: `scripts/snapshot_nav.py` computes
-`n_pos = sum(1 for p in ib.positions() ...)` and writes it to `nav.csv` as **`open_legs`**, with the
-inline comment "open FX legs (FX = cash, so gross=0)". That comment is wrong about what the line
-does. The number is really **the 13 ETF stock positions**, plus any unsettled FX trades. That is why
-`open_legs` reads 13 on quiet days, spiked to 20 on 2026-08-12/13 (13 ETFs + 7 unsettled FX orders
-from that day's rebalance), and fell back to 13 by 2026-08-14 once they settled.
+1. **Settled FX spot never appears in `ib.positions()`** — it lands in `CashBalance` per currency.
+   positions() carries an FX trade only between execution and settlement.
+2. **`CashBalance` excludes accrued interest**, which sits in a separate `AccruedCash` tag. For a
+   carry book the interest differential *is* the return, so cash alone omits the strategy's P&L
+   until it settles.
 
-Commit `e95699b` ("read settled FX from CashBalance instead of positions()") fixed this in the
-reconcile path. **`snapshot_nav.py` was never fixed** and still carries the misleading name and
-comment.
+`forex/run/fxbook.py` (`fx_book`, added 2026-08-16) encapsulates both: it values
+`CashBalance + AccruedCash` at each currency's `ExchangeRate`, excluding USD and IBKR's synthetic
+`BASE` row. **Use it rather than re-deriving the arithmetic.** Its `net_base` reproduces IBKR's own
+`NetLiquidationByCurrency` aggregation exactly — a useful cross-check if it is ever changed.
 
-**Why:** `open_legs` looks like an FX-book health metric and isn't one. Reading it as "the FX book has
-13 legs open" is wrong in both directions — it would keep reading 13 even if every FX leg were closed.
+`net_base` is the FX P&L level: ETF trades move only USD cash, so they leave it untouched, and its
+change between snapshots is FX-only P&L (plus that day's net flow on a rebalance day).
 
-**How to apply:** to count real FX legs, read non-zero non-USD `CashBalance` entries from
-`ib.accountValues()`. Treat any `open_legs` spike in `nav.csv` as unsettled-trade noise, not a
-position change. See [[paper-track-live-state]].
+**Reconciliation gotcha:** the cash part of `net_base` will *not* equal IBKR's `BASE` minus `USD`
+CashBalance to the cent. IBKR aggregates BASE on its own rate snapshot, which drifts from the
+`ExchangeRate` rows by a small fraction of the ~1M gross book (~225 base, 0.025%, on 2026-08-16).
+Don't chase that gap — it is rate drift, not a maths error.
+
+**Historical note:** `nav.csv` had an `open_legs` column until 2026-08-16 that actually counted ETF
+stock positions, not FX legs (13 on quiet days; 20 on 2026-08-12/13 = 13 ETFs + 7 unsettled FX
+orders). It is now `stock_positions`, with real FX legs in `fx_legs`. Rows before 2026-08-16 have
+empty FX columns — that history cannot be reconstructed.
+
+**How to apply:** never infer FX-book state from `positions()` or from NAV. See
+[[paper-track-live-state]] for why NAV mostly measures the ETF sleeves.
