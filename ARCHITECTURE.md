@@ -1,14 +1,16 @@
 # Architecture
 
 The living architecture reference for the **framework** (`forex/`). It supersedes the original design
-spec (`docs/superpowers/specs/2026-07-11-framework-architecture-design.md`), which is kept as the
-historical record.
+spec (`docs/archive/superpowers/specs/2026-07-11-framework-architecture-design.md`), which is kept as
+the historical record.
 
 > **Keep this current.** Update this file whenever the *framework* changes — a new core abstraction, a
 > new driver/mode, a change to the `Strategy` contract, the config tiers, the P&L model, or the data
 > layer. **Do not** document individual strategies here; strategies live in the sibling `strategies/`
-> package and are described by their own specs under `docs/superpowers/specs/`. If a change would make a
-> sentence below false, fix the sentence in the same commit.
+> package. New strategies are specified under `specs/NNN-<feature>/` via Spec Kit; the specs for
+> strategies built before that migration are archived under
+> `docs/archive/superpowers/specs/`. If a change would make a sentence below false, fix the sentence
+> in the same commit.
 
 ---
 

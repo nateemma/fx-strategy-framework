@@ -5,8 +5,15 @@ __pycache__/
 .pytest_cache/
 .obsidian/
 runs/
+# Runtime forward-record artifacts — local records, not versioned.
+# Back these up deliberately if you want the history (Constitution: Execution & Data Safety).
 track.log
 nav.csv
 snapshot.log
 launchd.err
+*_positions.csv
 .superpowers/
+
+# Machine-local Claude Code settings. .claude/skills/ and .specify/ ARE tracked,
+# so the Spec Kit workflow works on any clone.
+.claude/settings.local.json

@@ -10,7 +10,7 @@ dependencies = ["pandas>=2.0", "numpy>=1.26", "pyarrow>=14", "fredapi>=0.5"]
 forex = "forex.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.6"]
 probe = ["scikit-learn>=1.4"]
 live = ["ib_async>=2.0"]
 
@@ -23,3 +23,12 @@ include = ["forex*", "strategies*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# Pyflakes (real bugs: unused/undefined names) + syntax errors + line length.
+# Deliberately NOT E4/E7: the repo's terse house style uses `import csv, os` and
+# `ib.reqPositions(); ib.sleep(1.0)` on purpose, and isort would reformat every module.
+select = ["F", "E9", "E501"]
