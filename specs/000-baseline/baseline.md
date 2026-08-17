@@ -135,7 +135,7 @@ when starting it; do not pre-write specs.
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
 | 5 | VIX carry as a ≤10% satellite sleeve | M | Medium | **Gated 2026-08-17: conditional pass.** Signal real (contango 92% of days, gate helps every era) and financing-clean (long-only cash ETF). But Sharpe 0.61 / −34% DD on the current instrument, +0.58 to SPY, and it loses on the basket's worst days — return enhancement, not diversification. Adding 10% lifts the ETF book 0.88 → 0.97 Sharpe. `docs/vix-carry-findings.md`. |
-| 6 | Cross-asset managed futures (bonds + equity index + FX + commodities) | L | High | Tier A2. Only the commodity leg was tested and found decayed; the cross-asset risk-parity version was never run, and a second uncorrelated sleeve is this program's proven value mechanism. |
+| 6 | Build the cross-asset trend sleeve **in futures** | L | **High** | **Gated 2026-08-17: PASS** — the equity-uncorrelated sleeve the book lacks. Every era positive, −0.08 to SPY, flat on the basket's worst days; a 20% sleeve cuts book drawdown −17.7% → −12.2%. Viable ONLY in futures: levered ETFs and unlevered ETFs both lose to cash. Needs a market-data subscription + a futures executor. `docs/cross-asset-trend-findings.md`. |
 | 7 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
 | 8 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
 | 9 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
@@ -194,6 +194,7 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/investable-universe-survey.md` | **Live.** What the account can trade, what has been investigated, and what is worth doing next. |
 | `docs/financing-spread-findings.md` | **Live.** Why the FX book needs institutional financing. |
 | `docs/vix-carry-findings.md` | **Live.** A1 gate: VIX carry is real but is equity beta, not a diversifier. |
+| `docs/cross-asset-trend-findings.md` | **Live.** A2 gate: cross-asset trend passes, but only in futures. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |
