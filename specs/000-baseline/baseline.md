@@ -134,12 +134,16 @@ when starting it; do not pre-write specs.
 | 2 | Re-run the factor search with `--financing` on | L | **Medium** | Downgraded from High: financing is now known to be the binding constraint, so this is for correctness of the record, not to find a better book. A pre-financing Sharpe of 1.3 would still only reach ~0.3 at retail. |
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
-| 5 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 6 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 7 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 8 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
-| 9 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
-| 10 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 5 | VIX futures term-structure carry | M | High | Tier A1 of `docs/investable-universe-survey.md`. Documented contango roll-down; futures leverage is ~risk-free so it sidesteps the financing constraint. Gate the CBOE settlement history first. |
+| 6 | Cross-asset managed futures (bonds + equity index + FX + commodities) | L | High | Tier A2. Only the commodity leg was tested and found decayed; the cross-asset risk-parity version was never run, and a second uncorrelated sleeve is this program's proven value mechanism. |
+| 7 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
+| 8 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
+| 9 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 10 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 11 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 12 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 13 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
+| 14 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
 paper-validated; going live is a decision, not an engineering item, and is gated by Constitution
@@ -187,6 +191,8 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/ibkr-alternative-strategies-findings.md` | **Live.** Why the FX+basket combination is the answer. |
 | `docs/income-enhancements.md` | **Live.** Cash-sleeve + securities-lending analysis (Backlog #5, #15). |
 | `docs/intraday-fx-assessment-plan.md` | **Live.** Closed-negative intraday record. |
+| `docs/investable-universe-survey.md` | **Live.** What the account can trade, what has been investigated, and what is worth doing next. |
+| `docs/financing-spread-findings.md` | **Live.** Why the FX book needs institutional financing. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |
