@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 
 def simulate(weights: pd.DataFrame, spot_rets: pd.DataFrame,
-             carry: pd.DataFrame, cost_bps: float = 1.0) -> pd.Series:
+             carry: pd.DataFrame, cost_bps: float = 1.0, financing=None) -> pd.Series:
+    """Daily strategy returns. `financing`, if given, is the (long, short) spread pair from
+    forex.backtest.financing — the cost of HOLDING a position, charged as |weight| * spread/252 on
+    both sides. Omitted by default so results predating the financing model still reproduce."""
     cols = weights.columns
     idx = weights.index
     spot = spot_rets.reindex(index=idx, columns=cols).fillna(0.0)
@@ -11,6 +14,10 @@ def simulate(weights: pd.DataFrame, spot_rets: pd.DataFrame,
     gross = (held * (spot + car)).sum(axis=1)
     turnover = weights.diff().abs().sum(axis=1, min_count=1).fillna(weights.abs().sum(axis=1))
     cost = (cost_bps / 1e4) * turnover
+    if financing is not None:
+        lon, sho = (f.reindex(index=idx, columns=cols).ffill().fillna(0.0) for f in financing)
+        spread = lon.where(held > 0, sho)                    # side follows the position held
+        cost = cost + (held.abs() * spread).sum(axis=1) / 252.0
     ret = (gross - cost).rename("ret")
     ret.index.name = "date"
     return ret

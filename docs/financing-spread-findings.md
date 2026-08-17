@@ -194,3 +194,91 @@ tier.
 - `specs/002-financing-spread/` — spec, plan, tasks for this work.
 - `forex/run/financing.py` — the measurement; `scripts/financing_report.py` — the diagnostic.
 - Backlog #14 (explicit rebalance marker) would also make posting events unambiguous.
+
+
+---
+
+# Part 2 — Modelled in the backtest (2026-08-16)
+
+Backlog #3 put the financing cost into the simulator
+(`forex/backtest/financing.py`, spec `003-financing-in-backtest`) and re-ran the deployable book.
+
+Run: `carry_cot_mom`, deliverable universe (G10 + MXN/ZAR/PLN/HUF/CZK/ILS), walk-forward 750/250,
+5bp per-trade cost, 2015-10 → 2026-08.
+
+| | Sharpe | ann return | vol | max DD | Calmar |
+|---|---|---|---|---|---|
+| Without financing | **1.15** | +3.03% | 2.64% | −2.94% | 1.03 |
+| **With financing** | **0.17** | **+0.44%** | 2.64% | −6.87% | 0.06 |
+| delta | **−0.98** | **−2.59%** | — | −3.93pp | — |
+
+The unfinanced row reproduces the published figures exactly, which is the check that the flag is a
+true no-op when off.
+
+## The book does not clear its own financing cost
+
+**Sharpe 1.15 → 0.17. Annual return +3.03% → +0.44%.**
+
+Three things make this worse than it first looks:
+
+1. **You cannot lever out of it.** The drag scales with gross exposure, and so does the return —
+   Sharpe is scale-invariant. Targeting 10% vol multiplies both. A 0.17 Sharpe book is a 0.17 Sharpe
+   book at any size.
+2. **+0.44%/yr loses to cash.** SGOV yields ~4.3% for no risk and no work. The deployed cash sleeve
+   (Backlog #5) would out-earn the FX strategy by roughly 10x.
+3. **The drawdown more than doubles**, −2.94% → −6.87%, because a constant cost turns shallow
+   drawdowns into long ones that no longer recover.
+
+## Cross-check against the live account
+
+| | of gross, per year |
+|---|---|
+| Modelled by the backtest | **−2.75%** |
+| Independently measured on the live account | **−2.18%** |
+
+Same direction, same order, ~26% apart. The gap is explained and is not a defect: the backtest reads
+FRED interbank rates while the account is charged against IBKR's own benchmark, and FRED currently
+runs higher for several currencies (NZD 2.68% vs 2.10%, NOK 4.57% vs 4.06%). A higher rate raises the
+floored credit shortfall. Two independent routes to the same conclusion is the point; the second
+decimal is not.
+
+## What this does and does not kill
+
+**It does not say the edge is fake.** In benchmark terms the book still earns +3.03%/yr at Sharpe
+1.15 — the signal research stands, and the orthogonality conclusions in
+`docs/strategy-research-backlog.md` are untouched. What it says is that **at IBKR retail financing
+terms, a dollar-neutral FX carry book cannot keep what it earns.** The edge is real and someone
+else's cost structure captures it.
+
+**A different cost structure changes the answer.** Institutional prime-broker financing runs a small
+fraction of retail spreads. The same book at, say, a quarter of these spreads would retain most of
+its Sharpe. That is a real route, not a consolation — it just is not available at a retail account.
+
+**Narrowing the universe is not the fix.** The obvious response is to drop the expensively-financed
+legs. Tested:
+
+| G10 only | Sharpe | ann return |
+|---|---|---|
+| Without financing | 0.33 | +0.86% |
+| With financing | **−0.37** | **−0.96%** |
+
+Dropping EM makes it *worse*, because EM is where the carry edge lives — the whole reason the
+deliverable universe was broadened. The expensive legs and the profitable legs are the same legs.
+Backlog item "filter the universe on financing terms" should be re-scoped or closed on this evidence.
+
+## Recommendation
+
+**Do not deploy `carry_cot_mom` with real money at IBKR retail terms.** The paper track can continue —
+it costs nothing and now measures the right thing — but the live gate should stay shut on economics,
+not just on caution.
+
+Worth pursuing, in order:
+
+1. **Price the alternative.** What financing terms would the book need to clear a Sharpe of ~0.8?
+   Invert the model: it now runs both ways.
+2. **Re-run the factor search with financing on.** Every comparison in the research arc was made
+   without this cost. It penalises gross exposure, so it may reorder conclusions that were close —
+   the vol-target overlay and the wide-universe choice are the obvious candidates.
+3. **Reconsider what the account is for.** The ETF sleeves are financed completely differently
+   (long-only, cash) and are unaffected by any of this. The diversified income book stands; it is the
+   FX overlay specifically that does not pay for itself here.

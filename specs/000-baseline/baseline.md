@@ -70,7 +70,8 @@ Do not relitigate these without new *data*; a better model on the same inputs wa
 | Per-sleeve tracking | `forex/run/basket_track.py` | Done. |
 | FX book value | `forex/run/fxbook.py` | Done (2026-08-16). Reads legs + P&L from cash, not positions. |
 | FX-only reporting | `forex/run/fxtrack.py` | Done (2026-08-16). Spec `001-fx-only-reporting`; 32 tests. |
-| Financing diagnosis | `forex/run/financing.py` | Done (2026-08-16). Spec `002-financing-spread`; 17 tests. |
+| Financing diagnosis | `forex/run/financing.py` | Done (2026-08-16). Spec `002-financing-spread`; 21 tests. |
+| Financing in the backtest | `forex/backtest/financing.py` | Done (2026-08-16). Spec `003-financing-in-backtest`; `--financing`; 20 tests. |
 | Connect-with-retry | `forex/run/ibconnect.py` | Done. Rides through Gateway auto-restart. |
 | Scheduling | `scripts/install_schedules.sh` | Partially done — see In flight. |
 
@@ -100,13 +101,19 @@ gated until 20 observations accumulate, and there is currently one.
    currently runs in levels-only mode. First meaningful reading is several weeks out.
 2. **Scheduling is partial.** launchd runs the monthly FX rebalance, the quarterly basket rebalance,
    and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule.
-3. **Financing drag — CONFIRMED against IBKR's published rates.** The book pays its carry rather than
+3. **The FX book does not clear its own financing cost.** Charging IBKR's published spreads in the
+   backtest takes `carry_cot_mom` from **Sharpe 1.15 / +3.03%/yr** to **Sharpe 0.17 / +0.44%/yr** —
+   below cash, and unfixable by leverage since the drag scales with gross. G10-only is worse (−0.37):
+   the expensive legs and the profitable legs are the same legs. **Real-money deployment is not
+   justified on these economics.** Full analysis:
+   [`docs/financing-spread-findings.md`](../../docs/financing-spread-findings.md).
+4. **Financing drag — CONFIRMED against IBKR's published rates.** The book pays its carry rather than
    earning it. Verified 2026-08-16 against IBKR's published tiers: every leg untouched by the recent
    rebalance agrees on a ~13-day accrual window to within 10%, so the paper account reproduces the real
    schedule rather than simulating something cruder. Benchmark carry **+0.21%/yr** becomes a realised
    **−1.96%/yr**; financing costs **−2.18% of gross per year** against a ~3%/yr unlevered expectation.
    Full record: [`docs/financing-spread-findings.md`](../../docs/financing-spread-findings.md).
-4. **The 2026-08-01 monthly rebalance silently failed** on a stale `~/Documents/forex` path after the
+5. **The 2026-08-01 monthly rebalance silently failed** on a stale `~/Documents/forex` path after the
    repo moved to `~/projects/forex`. The plists were fixed the same day but **the fix has not been
    exercised by launchd** — the 2026-08-12 run was manual. First real test: **2026-09-01**.
 
@@ -121,9 +128,9 @@ when starting it; do not pre-write specs.
 |---|---|---|---|---|
 | 1 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Nothing alerts on a missed rebalance; `launchd.err` is gitignored and written only on failure. |
 | 2 | Alert on a missed/failed scheduled job | S | High | Why the 2026-08-01 failure (In flight #3) went unnoticed for 11 days. |
-| 3 | Add a financing-spread term to the backtest | M | **Highest** | No longer conditional — the drag is confirmed contractual. The model charges 3–5bp per trade and nothing for holding, while the real cost is ~2%/yr on gross, so every walk-forward number overstates the edge — including the 1.15 Sharpe the book was selected on. |
-| 4 | Re-check universe sizing now that gross exposure has a carrying cost | M | High | A financing term penalises breadth. The EM-inclusive universe was chosen partly for cross-sectional selection; that trade-off now has a cost on the other side. Reopens sizing, not the factor question. |
-| 5 | Filter the universe on financing terms, not just rate differential | S | High | NZD publishes 0% credit (spread exceeds benchmark, floored at zero) and ILS 0% on all balances with BM+5% debit — both can only ever cost. Cheap, concrete. |
+| 3 | Price the financing terms the book would need to be viable | S | High | Invert the model: what spreads clear a Sharpe of ~0.8? Decides whether an institutional prime relationship is worth pursuing or the book is dead. |
+| 4 | Re-run the factor search with `--financing` on | L | High | Every comparison in the research arc was made without this cost. It penalises gross exposure, so close calls may reorder — the vol-target overlay and the wide-universe choice are the candidates. |
+| 5 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
 | 6 | Deploy the cash sleeve (SGOV) | S | Medium | Built, documented, never run; ~96k sits unparked. Keep symbols disjoint from other sleeves. |
 | 7 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |
 | 8 | Move the FRED API key out of the launchd plist | S | Medium | Cleartext in `com.fx.paper-rebalance.plist` (mode 0600). Violates the EnvConfig-secrets rule. |

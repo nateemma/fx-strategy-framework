@@ -13,12 +13,17 @@ It carries the methodology of a prior crypto ML program — **walk-forward + dis
 point-in-time causality, and judging on realised P&L rather than model fit**. All data is free (FRED),
 the stack is pandas + numpy + stdlib, and the whole test suite runs offline with no API key.
 
-> **Status:** the deployable book **`carry_cot_mom`** is **live on an IBKR *paper* account** with a
-> self-tracking forward record, and a **multi-sleeve ETF track** (a risk-parity basket, a cash sleeve, a
-> Treasury bond ladder, and a BDC/covered-call income sleeve — composed into a diversified income book) runs
-> alongside it on the same guarded execution engine — see *Live execution*.
-> Real-money (`allow_live` + a `U…` account) remains a separate, deliberate gate. Research results are on a
-> long but survivor-biased sample — see *Caveats*.
+> **Status:** the book **`carry_cot_mom`** runs on an IBKR *paper* account with a self-tracking forward
+> record, and a **multi-sleeve ETF track** (a risk-parity basket, a cash sleeve, a Treasury bond ladder,
+> and a BDC/covered-call income sleeve — composed into a diversified income book) runs alongside it on the
+> same guarded execution engine — see *Live execution*.
+>
+> **⚠️ The FX book does not survive retail financing costs (2026-08-16).** Charging IBKR's published
+> credit/debit spreads on held positions takes the walk-forward Sharpe from **1.15 to 0.17** and the annual
+> return from **+3.03% to +0.44%** — below cash. The signal research stands; what fails is keeping the
+> return at retail financing terms. Real-money deployment is not justified on these economics. Full
+> analysis: [`docs/financing-spread-findings.md`](docs/financing-spread-findings.md). Every Sharpe quoted
+> below is **pre-financing** unless stated; add `--financing` to charge it.
 
 ---
 
@@ -129,7 +134,8 @@ risk-parity blend of three sleeves, each orthogonal to the others:
 
 Blended over the broadened deliverable universe (**G10 + MXN/ZAR/PLN/HUF/CZK/ILS**, IBKR spot + FRED
 rates), **`carry_cot_mom`** walk-forwards to **Sharpe 1.15, Calmar 1.03, maxDD −2.9%** — versus
-single-factor carry (0.82 / 0.38 / −18%). Run it with `--strategy carry_cot_mom`; `build_carry_view`
+single-factor carry (0.82 / 0.38 / −18%). **Those figures are pre-financing**; charging IBKR's published
+spreads on held positions cuts them to **Sharpe 0.17 / +0.44%/yr** (see the status note above). Run it with `--strategy carry_cot_mom`; `build_carry_view`
 auto-loads the COT positioning.
 
 **The factor-search rule this converged on:** carry is the dominant axis, and additional edge comes *only*

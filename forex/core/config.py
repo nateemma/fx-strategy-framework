@@ -8,6 +8,7 @@ class RunConfig:
     universe: list | None = None
     timerange: list | None = None
     cost_bps: float = 1.0
+    financing: bool = False
     train_days: int = 1000
     test_days: int = 500
     n_samples: int = 200
@@ -58,7 +59,8 @@ class RunConfig:
             if isinstance(v, list):
                 return "[" + ", ".join(fmt(x) for x in v) + "]"
             return str(v)
-        lines = [f"strategy = {fmt(self.strategy)}", f"cost_bps = {fmt(self.cost_bps)}"]
+        lines = [f"strategy = {fmt(self.strategy)}", f"cost_bps = {fmt(self.cost_bps)}",
+                 f"financing = {fmt(self.financing)}"]
         if self.universe is not None:
             lines.append(f"universe = {fmt(self.universe)}")
         if self.strategy_params:

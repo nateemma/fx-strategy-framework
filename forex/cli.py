@@ -25,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--universe")
         sp.add_argument("--timerange")
         sp.add_argument("--cost-bps", type=float, dest="cost_bps")
+        sp.add_argument("--financing", action="store_true", default=None,
+                        help="charge broker financing on held positions (IBKR schedule)")
         sp.add_argument("--param", action="append", default=[], dest="params")
         sp.add_argument("--cache-dir", dest="cache_dir")
         if mode in ("walkforward", "hyperopt"):
@@ -58,6 +60,8 @@ def resolve(args):
         overrides["timerange"] = [a or None, b or None]
     if args.cost_bps is not None:
         overrides["cost_bps"] = args.cost_bps
+    if getattr(args, "financing", None):
+        overrides["financing"] = True
     if args.params:
         sp = {}
         for kv in args.params:
@@ -132,11 +136,13 @@ def run(cfg, env, mode) -> dict:
     from forex.diagnostics.causal import assert_causal
     view = _build_view(cfg, env)
     if mode == "backtest":
-        r = backtest(build_strategy(cfg.strategy, cfg.strategy_params, "strategies"), view, cfg.cost_bps)
+        r = backtest(build_strategy(cfg.strategy, cfg.strategy_params, "strategies"), view,
+                     cfg.cost_bps, financing=cfg.financing)
         return {"metrics": r.metrics}
     if mode == "walkforward":
         r = walk_forward(lambda: build_strategy(cfg.strategy, cfg.strategy_params, "strategies"),
-                         view, cfg.train_days, cfg.test_days, cfg.cost_bps)
+                         view, cfg.train_days, cfg.test_days, cfg.cost_bps,
+                         financing=cfg.financing)
         return {"metrics": r.metrics}
     if mode == "causal-check":
         strat = build_strategy(cfg.strategy, cfg.strategy_params, "strategies")
