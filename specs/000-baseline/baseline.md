@@ -86,7 +86,7 @@ Running since **2026-07-17**. NAV ~1,005k from 994k at inception.
 | Risk-parity basket | `scripts/basket_rebalance.py` | Yes | SPY/TLT/IEF/GLD/DBC, ~298k |
 | Treasury bond ladder | `scripts/bond_ladder.py` | Yes | IBTG–IBTL, ~300k |
 | Income sleeve | `scripts/income_sleeve.py` | Yes | BIZD/JEPI, ~298k |
-| Cash sleeve (SGOV) | `scripts/cash_sleeve.py` | **No** | — built, never run |
+| Cash sleeve (SGOV) | `scripts/cash_sleeve.py` | Yes | SGOV 845 (~85k), placed 2026-08-16 |
 
 **The ETF sleeves are ~90% of NAV**, so whole-account numbers measure the sleeves rather than
 `carry_cot_mom`. `scripts/track_report.py` now reports the two separately — but FX statistics are
@@ -100,9 +100,9 @@ gated until 20 observations accumulate, and there is currently one.
    `scripts/track_report.py` now reports the FX book separately (spec `001-fx-only-reporting`).
    Statistics are gated at 20 observations and only one FX-bearing snapshot exists, so the report
    currently runs in levels-only mode. First meaningful reading is several weeks out.
-2. **Scheduling is partial.** launchd runs the monthly FX rebalance, the quarterly basket rebalance,
-   and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule. A
-   healthcheck agent is installed and verified running under launchd (2026-08-16).
+2. **Scheduling is complete.** launchd runs the monthly FX rebalance, one quarterly job covering all
+   four ETF sleeves, the daily NAV snapshot, and a daily healthcheck — all installed and verified
+   running under launchd (2026-08-16).
 3. **The FX book is viable at institutional financing and dead at retail.** Charging IBKR's published
    spreads takes `carry_cot_mom` from **Sharpe 1.15 / +3.03%/yr** to **0.17 / +0.44%/yr**. Inverting
    the model: it needs **~95bp all-in** (a third of retail's 289bp) to clear Sharpe 0.8; at 50bp it
@@ -134,17 +134,12 @@ when starting it; do not pre-write specs.
 | 2 | Re-run the factor search with `--financing` on | L | **Medium** | Downgraded from High: financing is now known to be the binding constraint, so this is for correctness of the record, not to find a better book. A pre-financing Sharpe of 1.3 would still only reach ~0.3 at retail. |
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
-| 5 | Deploy the cash sleeve (SGOV) | S | Medium | Built, documented, never run; ~96k sits unparked. Keep symbols disjoint from other sleeves. |
-| 6 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |
-| 7 | Move the FRED API key out of the launchd plist | S | Medium | Cleartext in `com.fx.paper-rebalance.plist` (mode 0600). Violates the EnvConfig-secrets rule. |
-| 8 | Fix 21 pre-existing ruff violations | S | Medium | 8 unused imports, 11 over-long lines, 2 empty f-strings. Constitution III mandates the gate. |
-| 9 | CI (pytest + ruff on push) | M | Medium | No CI exists; both gates are hand-run. |
-| 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 12 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 13 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
-| 14 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
-| 15 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 5 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 6 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 7 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 8 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 9 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
+| 10 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
 paper-validated; going live is a decision, not an engineering item, and is gated by Constitution

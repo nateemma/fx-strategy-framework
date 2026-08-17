@@ -81,6 +81,29 @@ manual run satisfies the check exactly as a scheduled one does. That is why the 
 rebalance leaves the current status healthy even though the scheduled job has still never been
 exercised since the fix.
 
+## The quarterly sleeve job (`com.fx.basket-rebalance`)
+
+All four ETF sleeves rebalance from one quarterly job, `scripts/quarterly_sleeves.sh`
+(1st Jan/Apr/Jul/Oct, 09:30). Each writes its own `*_positions.csv`, so a single sleeve failing
+mid-run is visible rather than masked by the others succeeding, and the healthcheck watches all four
+independently. A failing sleeve does not stop the rest; the script exits non-zero.
+
+| Sleeve | Symbols | Allocation | Client |
+|---|---|---|---|
+| basket | SPY/TLT/IEF/GLD/DBC, inverse-vol | $298,000 | 24 |
+| ladder | IBTG…IBTL, equal-weight | $300,000 | 27 |
+| income | BIZD/JEPI, equal-weight | $298,000 | 28 |
+| cash | SGOV — runs **last**, it is the residual | $85,000 | 26 |
+
+**The allocations are what is actually deployed, not what was once aspired to.** They total ~$981k
+against ~$1,006k NAV, leaving a small USD buffer. Until 2026-08-16 the job defaulted to a $400k
+basket while $298k was deployed, so the October run would have bought ~$100k unattended and pushed
+the ETF book above NAV — funding the difference by borrowing at BM+1.5%. Raising one allocation
+without lowering another re-creates that. Override per-run with `BASKET_ALLOCATION=… ` etc.
+
+**Sleeve symbols must stay disjoint.** `BasketExecution` reconciles by conId against the whole
+account and cannot tell one sleeve's IEF from another's.
+
 ## Install — one command (recommended)
 ```bash
 ./scripts/install_schedules.sh            # run from a normal terminal (reads $FRED_API_KEY from your env)

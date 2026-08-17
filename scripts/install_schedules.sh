@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Install (or uninstall) the forward-paper-track launchd schedules:
 #   - com.fx.paper-rebalance    : monthly FX rebalance (1st of month, 09:00 local)      [needs FRED_API_KEY]
-#   - com.fx.basket-rebalance   : quarterly ETF-basket rebalance (1st Jan/Apr/Jul/Oct, 09:30) [no key]
+#   - com.fx.basket-rebalance   : quarterly rebalance of ALL FOUR ETF sleeves (1st Jan/Apr/Jul/Oct,
+#                                 09:30) — basket, bond ladder, income, cash          [no key]
 #   - com.fx.nav-snapshot       : daily NAV snapshot (21:00 local)                      [read-only, no key]
 #   - com.fx.healthcheck        : daily scheduled-job healthcheck (22:00 local)         [read-only, no key]
 #                                 notifies + writes health_status.txt when a job is overdue
@@ -67,7 +68,7 @@ cat > "$BASKET_PLIST" <<EOF
 <plist version="1.0"><dict>
   <key>Label</key><string>com.fx.basket-rebalance</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>$REPO/scripts/quarterly_basket_rebalance.sh</string></array>
+  <array><string>/bin/bash</string><string>$REPO/scripts/quarterly_sleeves.sh</string></array>
   <key>EnvironmentVariables</key><dict><key>IB_PORT</key><string>$IB_PORT</string></dict>
   <key>StartCalendarInterval</key>
   <array>

@@ -34,6 +34,8 @@ def main():
                         help="IB client ID (default 26)")
     parser.add_argument("--allow-live", action="store_true",
                         help="Allow placement on live accounts (not recommended)")
+    parser.add_argument("--max-order-frac", type=float, default=1.0,
+                        help="Per-order cap as a fraction of allocation (default 1.0 — see below)")
     parser.add_argument("--account", type=str,
                         default=os.environ.get("FOREX_IB_ACCOUNT", "DUQ218063"),
                         help="IB account identifier")
@@ -52,6 +54,13 @@ def main():
         preview=preview,
         confirm=args.confirm,
         allow_live=args.allow_live,
+        # BasketExecution's per-order cap guards against one leg being an outsized share of a
+        # multi-symbol basket. A single-symbol sleeve is 100% of its allocation by definition, so
+        # the default 0.6 cap makes the FIRST placement impossible — it raised
+        # "order SGOV 100% exceeds max_order_frac 60%" and blocked the sleeve entirely. The
+        # meaningful bound here is --allocation itself, which is required; the other guards
+        # (DU-account check, min-order skip, reconcile-by-conId, rollback) all still apply.
+        max_order_frac=args.max_order_frac,
     )
 
     print(f"Cash sleeve: hold ${args.allocation:,.0f} of {args.symbol} "

@@ -42,8 +42,16 @@ WATCHED = [
         "daily NAV snapshot (21:00) — needs the Gateway, so it fails first when anything is wrong"),
     Job("paper-rebalance", "track.log", MONTHLY, 9, 0, 3.0,
         "monthly FX rebalance (1st, 09:00)"),
+    # All four ETF sleeves run from one quarterly job, but each writes its own CSV — so a single
+    # sleeve failing mid-run is visible, rather than being masked by the others succeeding.
     Job("basket-rebalance", "basket_positions.csv", QUARTERLY, 9, 30, 5.0,
-        "quarterly ETF basket rebalance (1st Jan/Apr/Jul/Oct, 09:30)"),
+        "quarterly ETF basket sleeve (1st Jan/Apr/Jul/Oct, 09:30)"),
+    Job("ladder-rebalance", "bond_ladder_positions.csv", QUARTERLY, 9, 30, 5.0,
+        "quarterly Treasury ladder sleeve"),
+    Job("income-rebalance", "income_sleeve_positions.csv", QUARTERLY, 9, 30, 5.0,
+        "quarterly BDC/covered-call income sleeve"),
+    Job("cash-rebalance", "cash_positions.csv", QUARTERLY, 9, 30, 5.0,
+        "quarterly SGOV cash sleeve"),
 ]
 
 
