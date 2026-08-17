@@ -103,11 +103,13 @@ gated until 20 observations accumulate, and there is currently one.
 2. **Scheduling is partial.** launchd runs the monthly FX rebalance, the quarterly basket rebalance,
    and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule. A
    healthcheck agent is installed and verified running under launchd (2026-08-16).
-3. **The FX book does not clear its own financing cost.** Charging IBKR's published spreads in the
-   backtest takes `carry_cot_mom` from **Sharpe 1.15 / +3.03%/yr** to **Sharpe 0.17 / +0.44%/yr** —
-   below cash, and unfixable by leverage since the drag scales with gross. G10-only is worse (−0.37):
-   the expensive legs and the profitable legs are the same legs. **Real-money deployment is not
-   justified on these economics.** Full analysis:
+3. **The FX book is viable at institutional financing and dead at retail.** Charging IBKR's published
+   spreads takes `carry_cot_mom` from **Sharpe 1.15 / +3.03%/yr** to **0.17 / +0.44%/yr**. Inverting
+   the model: it needs **~95bp all-in** (a third of retail's 289bp) to clear Sharpe 0.8; at 50bp it
+   runs 0.97. **Borrowing is ~65% of the cost and is the negotiable side** — fixing only that reaches
+   0.76. A bigger IBKR account does not help: EM debit spreads do not tier at any plausible size, and
+   the best USD tier only reaches 0.31. **The binding constraint is the financing relationship, not
+   the signal** — so further strategy work cannot fix it. Full analysis:
    [`docs/financing-spread-findings.md`](../../docs/financing-spread-findings.md).
 4. **Financing drag — CONFIRMED against IBKR's published rates.** The book pays its carry rather than
    earning it. Verified 2026-08-16 against IBKR's published tiers: every leg untouched by the recent
@@ -129,8 +131,8 @@ when starting it; do not pre-write specs.
 | # | Item | Size | Priority | Notes |
 |---|---|---|---|---|
 | 1 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Now automated once #1 is done: the healthcheck flags it by 2026-09-04. The check cannot tell a scheduled run from a manual one, so confirm `track.log` carries a 09:00 entry. |
-| 2 | Price the financing terms the book would need to be viable | S | High | Invert the model: what spreads clear a Sharpe of ~0.8? Decides whether an institutional prime relationship is worth pursuing or the book is dead. |
-| 3 | Re-run the factor search with `--financing` on | L | High | Every comparison in the research arc was made without this cost. It penalises gross exposure, so close calls may reorder — the vol-target overlay and the wide-universe choice are the candidates. |
+| 2 | Re-run the factor search with `--financing` on | L | **Medium** | Downgraded from High: financing is now known to be the binding constraint, so this is for correctness of the record, not to find a better book. A pre-financing Sharpe of 1.3 would still only reach ~0.3 at retail. |
+| 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
 | 5 | Deploy the cash sleeve (SGOV) | S | Medium | Built, documented, never run; ~96k sits unparked. Keep symbols disjoint from other sleeves. |
 | 6 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |

@@ -282,3 +282,99 @@ Worth pursuing, in order:
 3. **Reconsider what the account is for.** The ETF sleeves are financed completely differently
    (long-only, cash) and are unaffected by any of this. The diversified income book stands; it is the
    FX overlay specifically that does not pay for itself here.
+
+
+---
+
+# Part 3 — What terms would make it viable? (2026-08-16)
+
+Backlog #3. Part 2 showed the book does not clear IBKR retail financing. This inverts the question:
+what financing would it need? The model takes a schedule override, so the published spreads can be
+scaled and the walk-forward re-run.
+
+`carry_cot_mom`, deliverable universe, 750/250, 5bp. λ scales IBKR's published credit *and* debit
+spreads; λ=0 is free financing, λ=1 is retail. "avg spread" is the mean all-in annual financing cost
+across the book's legs.
+
+| λ | avg spread | Sharpe | ann return | max DD |
+|---|---|---|---|---|
+| 0.00 | 0bp | 1.15 | +3.04% | −2.94% |
+| 0.10 | 29bp | 1.04 | +2.76% | −3.00% |
+| 0.20 | 58bp | 0.94 | +2.49% | −3.05% |
+| **0.33** | **95bp** | **0.81** | **+2.14%** | — |
+| 0.50 | 144bp | 0.65 | +1.71% | −4.25% |
+| 0.75 | 216bp | 0.41 | +1.08% | −5.53% |
+| **1.00** | **289bp** | **0.17** | **+0.46%** | −6.79% |
+
+**The answer: about 95bp all-in — roughly one third of IBKR retail's 289bp — to clear a Sharpe of 0.8.**
+At 50bp it runs Sharpe 0.97, essentially the unfinanced 1.15 minus a manageable haircut.
+
+The relationship is close to linear, which is what you would expect from a constant cost on a
+roughly constant gross exposure. There is no cliff to engineer around and no threshold effect to
+exploit — every basis point of financing costs about 0.0034 of Sharpe.
+
+## Two thirds of the cost is the borrowing side
+
+| Which side is charged | avg spread | Sharpe | ann return |
+|---|---|---|---|
+| Both (retail) | 289bp | 0.17 | +0.46% |
+| **Borrowing spread only** (paid full benchmark on longs) | 188bp | 0.55 | +1.46% |
+| **Credit shortfall only** (borrow at benchmark) | 100bp | **0.76** | +2.02% |
+
+Borrowing is **~65% of the total cost**. Fixing only that — borrowing at benchmark while still being
+underpaid on long balances at retail terms — gets to **Sharpe 0.76**, near the 0.8 bar on its own.
+
+That matters because the two sides are not equally negotiable. What a broker charges to lend you
+money is the classic relationship lever; what it deigns to pay on your credit balances is usually
+take-it-or-leave-it. **The expensive side is the negotiable side**, which is the most encouraging
+thing in this analysis.
+
+## A bigger IBKR account does not fix it
+
+IBKR's debit spreads tier down with balance, so the obvious cheap move is to fund the account more.
+It is not enough:
+
+| USD debit tier | avg spread | Sharpe | ann return |
+|---|---|---|---|
+| BM+1.5% (tier 1, as modelled) | 289bp | 0.17 | +0.46% |
+| BM+1.0% (>100k) | 264bp | 0.26 | +0.69% |
+| BM+0.75% (>1M) | 251bp | 0.31 | +0.81% |
+
+Even the best published USD tier leaves Sharpe at 0.31. The reason is that **EM debit spreads do not
+tier at any plausible account size** — HUF's next tier begins at 4.5bn HUF (~$14M), CZK's at 400m CZK,
+and both stay at BM+3% to BM+5% throughout. EM is where the carry lives, so the legs that cost the
+most are precisely the ones size cannot help.
+
+This also corrects an approximation flagged in Part 2: the model encodes tier-1 USD debit while the
+deployed account is ~1M and would blend to roughly BM+1.1%. The correction is real but small, and the
+conclusion survives it.
+
+## What this means
+
+**The strategy is viable at institutional financing and dead at retail.** That is a sharper statement
+than "it does not work", and it points somewhere specific: the required ~95bp all-in is in the range
+that a genuine prime-brokerage or institutional FX financing relationship prices at, and nowhere near
+what a retail margin account offers.
+
+Whether that is worth pursuing is a capital question, not a research one. Institutional financing
+relationships carry minimums and operational overhead that a ~$1M account will not clear. **At current
+capital the book is not deployable and no amount of strategy work changes that** — the constraint is
+the financing relationship, not the signal.
+
+Leverage does not rescue it and does not need to. The drag scales with gross and so does the return,
+so Sharpe is invariant: at 50bp the book runs Sharpe 0.97, which levered to a 10% vol target is a
+~10%/yr book. At retail's 0.17 the same leverage produces ~1.7%/yr at 10% vol — strictly worse than
+cash, with all of the risk.
+
+## Recommended position
+
+1. **Do not deploy real money at retail terms.** Settled in Part 2, reinforced here.
+2. **Do not spend more effort on the FX signal** while financing is the binding constraint. Improving
+   Sharpe from 1.15 to 1.3 pre-financing moves the retail result from 0.17 to perhaps 0.3 — still
+   nowhere. Backlog "re-run the factor search with financing on" is worth doing for *correctness of the
+   record*, not because a better book is waiting to be found.
+3. **Revisit if capital changes.** The number to remember is **95bp all-in**. If a financing
+   relationship at or below that becomes available, the book becomes a Sharpe ~0.8 proposition and
+   everything else in this repo is ready for it.
+4. **The ETF sleeves are unaffected.** They are long-only and cash-financed. The diversified income
+   book stands on its own; it is the FX overlay specifically that needs terms this account cannot get.

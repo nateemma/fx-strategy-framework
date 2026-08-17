@@ -18,12 +18,14 @@ the stack is pandas + numpy + stdlib, and the whole test suite runs offline with
 > and a BDC/covered-call income sleeve — composed into a diversified income book) runs alongside it on the
 > same guarded execution engine — see *Live execution*.
 >
-> **⚠️ The FX book does not survive retail financing costs (2026-08-16).** Charging IBKR's published
-> credit/debit spreads on held positions takes the walk-forward Sharpe from **1.15 to 0.17** and the annual
-> return from **+3.03% to +0.44%** — below cash. The signal research stands; what fails is keeping the
-> return at retail financing terms. Real-money deployment is not justified on these economics. Full
-> analysis: [`docs/financing-spread-findings.md`](docs/financing-spread-findings.md). Every Sharpe quoted
-> below is **pre-financing** unless stated; add `--financing` to charge it.
+> **⚠️ The FX book needs institutional financing (2026-08-16).** Charging IBKR's published credit/debit
+> spreads on held positions takes the walk-forward Sharpe from **1.15 to 0.17** and the annual return from
+> **+3.03% to +0.44%** — below cash. Inverting the model, the book needs **~95bp all-in** (a third of
+> retail's 289bp) to clear Sharpe 0.8; at 50bp it runs 0.97. The signal research stands — the binding
+> constraint is the financing relationship, not the strategy, and no amount of further strategy work
+> changes that. Real-money deployment is not justified at retail terms. Full analysis:
+> [`docs/financing-spread-findings.md`](docs/financing-spread-findings.md). Every Sharpe quoted below is
+> **pre-financing** unless stated; add `--financing` to charge it.
 
 ---
 
