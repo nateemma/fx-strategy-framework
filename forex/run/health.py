@@ -52,6 +52,8 @@ WATCHED = [
         "quarterly BDC/covered-call income sleeve"),
     Job("cash-rebalance", "cash_positions.csv", QUARTERLY, 9, 30, 5.0,
         "quarterly SGOV cash sleeve"),
+    Job("trend-sleeve", "trend_positions.csv", MONTHLY, 10, 0, 3.0,
+        "monthly cross-asset trend sleeve (futures)"),
 ]
 
 

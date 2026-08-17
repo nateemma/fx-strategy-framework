@@ -104,6 +104,32 @@ without lowering another re-creates that. Override per-run with `BASKET_ALLOCATI
 **Sleeve symbols must stay disjoint.** `BasketExecution` reconciles by conId against the whole
 account and cannot tell one sleeve's IEF from another's.
 
+## The trend sleeve (`com.fx.trend-sleeve`, monthly)
+
+The account's only equity-uncorrelated return source, per the A2 gate
+([`cross-asset-trend-findings.md`](./cross-asset-trend-findings.md)). Eight futures markets across
+equity, bonds, FX and commodities; 3-lookback trend ensemble, inverse-vol risk parity, vol target,
+monthly rebalance. `scripts/trend_sleeve.py`, spec `005-futures-trend-sleeve`.
+
+**Futures, not ETFs — and that is the whole point.** The same book implemented in margined ETFs
+returns −1.5% excess over cash and unlevered ETFs −1.3%, because it runs at ~2.5× gross and retail
+margin costs ~218bp. Futures embed leverage in the basis at roughly the risk-free rate.
+
+```bash
+python scripts/trend_sleeve.py --risk-base 200000            # preview
+python scripts/trend_sleeve.py --risk-base 200000 --confirm  # place
+```
+
+> **⚠️ Requires a CME/CBOT/NYMEX market-data subscription.** Without one IBKR returns a handful of
+> bars rather than an error — a *degraded* signal, which is the dangerous failure mode. The runner
+> refuses to trade below 315 bars rather than acting on it. Verified against the live account
+> 2026-08-17: all eight markets returned **0 bars** and the sleeve declined.
+
+Contract roll is handled in `forex/run/futures_roll.py` and reconciliation is **per market, not per
+contract**, so a roll is a matched pair that nets to zero exposure change rather than looking like the
+signal round-tripping. Rounding error is reported every run: at a $200k risk base the smallest market
+is ~1.5 contracts, so it is a material part of how faithfully the tested construction is being run.
+
 ## Install — one command (recommended)
 ```bash
 ./scripts/install_schedules.sh            # run from a normal terminal (reads $FRED_API_KEY from your env)

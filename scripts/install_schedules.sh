@@ -4,6 +4,8 @@
 #   - com.fx.basket-rebalance   : quarterly rebalance of ALL FOUR ETF sleeves (1st Jan/Apr/Jul/Oct,
 #                                 09:30) — basket, bond ladder, income, cash          [no key]
 #   - com.fx.nav-snapshot       : daily NAV snapshot (21:00 local)                      [read-only, no key]
+#   - com.fx.trend-sleeve       : monthly cross-asset trend sleeve, futures (1st, 10:00)  [no key]
+#                                 NEEDS a CME/CBOT/NYMEX market-data subscription
 #   - com.fx.healthcheck        : daily scheduled-job healthcheck (22:00 local)         [read-only, no key]
 #                                 notifies + writes health_status.txt when a job is overdue
 # Generates the plists into ~/Library/LaunchAgents with this repo's absolute paths, then loads them.
@@ -16,15 +18,17 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PY="$REPO/.venv/bin/python"
 IB_PORT="${IB_PORT:-4002}"
+TREND_RISK_BASE="${TREND_RISK_BASE:-200000}"
 LA="$HOME/Library/LaunchAgents"
 FOREX_ENV="$HOME/.config/forex/env"
 REBAL_PLIST="$LA/com.fx.paper-rebalance.plist"
 BASKET_PLIST="$LA/com.fx.basket-rebalance.plist"
 SNAP_PLIST="$LA/com.fx.nav-snapshot.plist"
 HEALTH_PLIST="$LA/com.fx.healthcheck.plist"
+TREND_PLIST="$LA/com.fx.trend-sleeve.plist"
 
 if [ "${1:-}" = "uninstall" ]; then
-  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST"; do
+  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST"; do
     launchctl unload "$pl" 2>/dev/null || true
     rm -f "$pl" && echo "removed: $pl"
   done
@@ -110,12 +114,28 @@ cat > "$HEALTH_PLIST" <<EOF
 </dict></plist>
 EOF
 
-for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST"; do
+cat > "$TREND_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.fx.trend-sleeve</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>ProgramArguments</key>
+  <array><string>$PY</string><string>scripts/trend_sleeve.py</string>
+         <string>--risk-base</string><string>$TREND_RISK_BASE</string><string>--confirm</string></array>
+  <key>EnvironmentVariables</key><dict><key>IB_PORT</key><string>$IB_PORT</string></dict>
+  <key>StartCalendarInterval</key><dict><key>Day</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>$REPO/trend.log</string>
+  <key>StandardErrorPath</key><string>$REPO/trend.log</string>
+</dict></plist>
+EOF
+
+for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST"; do
   launchctl unload "$pl" 2>/dev/null || true    # unload-first so re-running updates cleanly
   launchctl load "$pl"
   echo "loaded: $(basename "$pl")"
 done
 echo "installed. FX rebalance = 1st 09:00 ; basket rebalance = 1st Jan/Apr/Jul/Oct 09:30 ; NAV snapshot = 21:00 ;"
-echo "           healthcheck = 22:00 daily (an hour after the snapshot) ; port=$IB_PORT"
+echo "           healthcheck = 22:00 daily ; trend sleeve = 1st 10:00 (risk base $TREND_RISK_BASE) ; port=$IB_PORT"
 echo "verify:  launchctl list | grep com.fx"
 echo "remove:  $0 uninstall"

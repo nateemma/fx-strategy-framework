@@ -135,15 +135,16 @@ when starting it; do not pre-write specs.
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
 | 5 | VIX carry as a ≤10% satellite sleeve | M | Medium | **Gated 2026-08-17: conditional pass.** Signal real (contango 92% of days, gate helps every era) and financing-clean (long-only cash ETF). But Sharpe 0.61 / −34% DD on the current instrument, +0.58 to SPY, and it loses on the basket's worst days — return enhancement, not diversification. Adding 10% lifts the ETF book 0.88 → 0.97 Sharpe. `docs/vix-carry-findings.md`. |
-| 6 | Build the cross-asset trend sleeve **in futures** | L | **High** | **Gated 2026-08-17: PASS** — the equity-uncorrelated sleeve the book lacks. Every era positive, −0.08 to SPY, flat on the basket's worst days; a 20% sleeve cuts book drawdown −17.7% → −12.2%. Viable ONLY in futures: levered ETFs and unlevered ETFs both lose to cash. Needs a market-data subscription + a futures executor. `docs/cross-asset-trend-findings.md`. |
-| 7 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
-| 8 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
-| 9 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 10 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 11 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 12 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
-| 13 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
-| 14 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 6 | **Buy a CME/CBOT/NYMEX market-data subscription** | S | **Highest** | The only thing blocking the trend sleeve. Spec `005` phases 1–5 are built and tested (60 tests); without data IBKR returns 0 bars and the sleeve correctly refuses. Nothing else can proceed. |
+| 7 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
+| 8 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
+| 9 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
+| 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 12 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 13 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 14 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
+| 15 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
 paper-validated; going live is a decision, not an engineering item, and is gated by Constitution

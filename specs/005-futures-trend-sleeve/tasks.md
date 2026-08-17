@@ -18,8 +18,8 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ## Phase 1: Setup
 
-- [ ] T001 Add the eight-market universe table (symbol, exchange, multiplier, ETF proxy, granularity note) in `strategies/trend_book.py`
-- [ ] T002 Add a fake-IB fixture for futures, modelled on `tests/test_live_execution.py::_FakeIB`, in `tests/test_futures_execution.py`
+- [X] T001 Add the eight-market universe table (symbol, exchange, multiplier, ETF proxy, granularity note) in `strategies/trend_book.py`
+- [X] T002 Add a fake-IB fixture for futures, modelled on `tests/test_live_execution.py::_FakeIB`, in `tests/test_futures_execution.py`
 
 ---
 
@@ -27,9 +27,9 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 **Rolling wrong silently doubles or zeroes a position, so it is settled before anything places orders.**
 
-- [ ] T003 Write failing tests for front-contract selection and roll timing — which contract to hold on a given date, and that a roll is not a signal change — in `tests/test_futures_roll.py`
-- [ ] T004 Implement `front_contract(market, asof)` and `needs_roll(held, asof)` in `forex/run/futures_roll.py`
-- [ ] T005 [P] Write failing tests that reconciliation compares per MARKET, not per contract, so a roll does not read as a full round-trip — in `tests/test_futures_roll.py`
+- [X] T003 Write failing tests for front-contract selection and roll timing — which contract to hold on a given date, and that a roll is not a signal change — in `tests/test_futures_roll.py`
+- [X] T004 Implement `front_contract(market, asof)` and `needs_roll(held, asof)` in `forex/run/futures_roll.py`
+- [X] T005 [P] Write failing tests that reconciliation compares per MARKET, not per contract, so a roll does not read as a full round-trip — in `tests/test_futures_roll.py`
 
 **Checkpoint**: "what should I hold today" is answerable and tested without a broker.
 
@@ -37,16 +37,16 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ## Phase 3: User Story 1 — Place and reconcile safely (Priority: P1) 🎯 MVP
 
-- [ ] T006 [P] [US1] Write failing tests for the guard set: preview places nothing, confirm required, non-DU account refused without the live gate (FR-001) — in `tests/test_futures_execution.py`
-- [ ] T007 [US1] Implement `FuturesExecution` connect/preview/placement skeleton in `forex/run/futures.py`
-- [ ] T008 [P] [US1] Write a failing test that the per-order cap raises **before** any order is placed — an atomic pre-pass, as fixed in `basket.py` — in `tests/test_futures_execution.py`
-- [ ] T009 [US1] Implement the per-order cap pre-pass and the min-order skip in `forex/run/futures.py`
-- [ ] T010 [P] [US1] Write a failing test that an unchanged target places zero orders (FR-002) — in `tests/test_futures_execution.py`
-- [ ] T011 [US1] Implement reconcile-by-contract-identity, comparing per market so rolls are not round-trips, in `forex/run/futures.py`
-- [ ] T012 [P] [US1] Write a failing test that a mid-batch failure triggers an unwind that never raises, then re-raises the original error (FR-001) — in `tests/test_futures_execution.py`
-- [ ] T013 [US1] Implement the never-raising `_unwind` in `forex/run/futures.py`
-- [ ] T014 [P] [US1] Write a failing test that placement is refused when available funds would fall below the configured floor (FR-008) — in `tests/test_futures_execution.py`
-- [ ] T015 [US1] Implement the margin floor check in `forex/run/futures.py`
+- [X] T006 [P] [US1] Write failing tests for the guard set: preview places nothing, confirm required, non-DU account refused without the live gate (FR-001) — in `tests/test_futures_execution.py`
+- [X] T007 [US1] Implement `FuturesExecution` connect/preview/placement skeleton in `forex/run/futures.py`
+- [X] T008 [P] [US1] Write a failing test that the per-order cap raises **before** any order is placed — an atomic pre-pass, as fixed in `basket.py` — in `tests/test_futures_execution.py`
+- [X] T009 [US1] Implement the per-order cap pre-pass and the min-order skip in `forex/run/futures.py`
+- [X] T010 [P] [US1] Write a failing test that an unchanged target places zero orders (FR-002) — in `tests/test_futures_execution.py`
+- [X] T011 [US1] Implement reconcile-by-contract-identity, comparing per market so rolls are not round-trips, in `forex/run/futures.py`
+- [X] T012 [P] [US1] Write a failing test that a mid-batch failure triggers an unwind that never raises, then re-raises the original error (FR-001) — in `tests/test_futures_execution.py`
+- [X] T013 [US1] Implement the never-raising `_unwind` in `forex/run/futures.py`
+- [X] T014 [P] [US1] Write a failing test that placement is refused when available funds would fall below the configured floor (FR-008) — in `tests/test_futures_execution.py`
+- [X] T015 [US1] Implement the margin floor check in `forex/run/futures.py`
 
 **Checkpoint**: futures can be traded as safely as FX and stocks. Nothing has been placed yet.
 
@@ -54,12 +54,12 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ## Phase 4: User Story 2 — Compute target positions (Priority: P2)
 
-- [ ] T016 [P] [US2] Write failing tests that the signal reproduces the gate's construction — 3-lookback ensemble, inverse-vol weights — against a fixture with a known answer, in `tests/test_trend_book.py`
-- [ ] T017 [US2] Implement the ensemble signal and inverse-vol weights in `strategies/trend_book.py`
-- [ ] T018 [P] [US2] Write a failing causality test: weights on date *t* are unchanged when data after *t* is truncated (FR-005, Constitution II) — in `tests/test_trend_book.py`
-- [ ] T019 [P] [US2] Write failing tests that targets are whole contracts and that per-market rounding error is reported, including a market rounding to zero (FR-004, SC-003) — in `tests/test_trend_book.py`
-- [ ] T020 [US2] Implement `target_contracts(weights, risk_base, prices, multipliers)` returning integers plus the rounding report, in `strategies/trend_book.py`
-- [ ] T021 [US2] Implement the refuse-on-insufficient-history path (FR-007) in `strategies/trend_book.py`
+- [X] T016 [P] [US2] Write failing tests that the signal reproduces the gate's construction — 3-lookback ensemble, inverse-vol weights — against a fixture with a known answer, in `tests/test_trend_book.py`
+- [X] T017 [US2] Implement the ensemble signal and inverse-vol weights in `strategies/trend_book.py`
+- [X] T018 [P] [US2] Write a failing causality test: weights on date *t* are unchanged when data after *t* is truncated (FR-005, Constitution II) — in `tests/test_trend_book.py`
+- [X] T019 [P] [US2] Write failing tests that targets are whole contracts and that per-market rounding error is reported, including a market rounding to zero (FR-004, SC-003) — in `tests/test_trend_book.py`
+- [X] T020 [US2] Implement `target_contracts(weights, risk_base, prices, multipliers)` returning integers plus the rounding report, in `strategies/trend_book.py`
+- [X] T021 [US2] Implement the refuse-on-insufficient-history path (FR-007) in `strategies/trend_book.py`
 
 **Checkpoint**: what to hold is computed, faithful to the gate, and honest about rounding.
 
@@ -67,14 +67,14 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ## Phase 5: User Story 3 — Run it on schedule (Priority: P3)
 
-- [ ] T022 [US3] Implement `scripts/trend_sleeve.py` — preview by default, `--confirm` arms placement, `--risk-base` required
-- [ ] T023 [US3] Write the positions CSV on applied runs, reusing `forex/run/basket_track.py` (FR-009)
-- [ ] T024 [US3] Add a monthly `com.fx.trend-sleeve` agent to `scripts/install_schedules.sh`
-- [ ] T025 [US3] Add the sleeve to `WATCHED` in `forex/run/health.py` and update its tests
+- [X] T022 [US3] Implement `scripts/trend_sleeve.py` — preview by default, `--confirm` arms placement, `--risk-base` required
+- [X] T023 [US3] Write the positions CSV on applied runs, reusing `forex/run/basket_track.py` (FR-009)
+- [X] T024 [US3] Add a monthly `com.fx.trend-sleeve` agent to `scripts/install_schedules.sh`
+- [X] T025 [US3] Add the sleeve to `WATCHED` in `forex/run/health.py` and update its tests
 
 ---
 
-## Phase 6: Live validation (needs the market-data subscription)
+## Phase 6: Live validation (needs the market-data subscription) — ⛔ BLOCKED
 
 - [ ] T026 Confirm the subscription is active: front-month daily bars return a full history, not the 7-bar signature the A1 gate found
 - [ ] T027 Run `scripts/trend_sleeve.py` in preview against the live account and check all eight markets produce sane targets and rounding errors
@@ -86,9 +86,9 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ## Phase 7: Polish
 
-- [ ] T031 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm green and no new violations
-- [ ] T032 Update `specs/000-baseline/baseline.md` — sleeve deployed, allocations, and what remains unverified
-- [ ] T033 Document the sleeve in `docs/scheduled-paper-track.md` alongside the other four
+- [X] T031 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm green and no new violations
+- [X] T032 Update `specs/000-baseline/baseline.md` — sleeve deployed, allocations, and what remains unverified
+- [X] T033 Document the sleeve in `docs/scheduled-paper-track.md` alongside the other four
 
 ---
 
