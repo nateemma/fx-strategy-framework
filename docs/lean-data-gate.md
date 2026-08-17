@@ -87,11 +87,55 @@ LEAN remains the right answer to two questions it was never in the running for h
 2. **Roll-adjusted commodity history.** Still blocked (Tier C1). If that is ever pursued, Databento
    is the source — reachable directly from Python, with LEAN optional rather than required.
 
+## Addendum — can the $5 be pre-justified for free? (2026-08-17)
+
+Attempted, and the answer is **no** — but the attempt was worth it.
+
+Yahoo carries free front-month continuous futures for all eight markets (`ES=F`, `ZT=F`, `6E=F`,
+`CL=F`, …), most back to 2001. Running the gate construction unchanged on those, against the ETF
+proxies over the same window:
+
+| | ann | Sharpe | maxDD |
+|---|---|---|---|
+| ETF proxies | +7.0% | **0.95** | −16.8% |
+| Yahoo futures (unadjusted) | +1.7% | **0.25** | −25.7% |
+
+A large divergence. I split it by asset group expecting roll-gap contamination to explain it —
+financials have a small basis, commodities a large one, so financials should have agreed:
+
+| | futures | ETF |
+|---|---|---|
+| financials only (ZT ZF M6E M6A MES M2K) | 0.13 | 0.77 |
+| commodities only (MCL ZC) | 0.03 | 0.61 |
+
+**They did not agree, and that framing of the diagnostic was wrong.** The contamination is not the
+size of individual roll *gaps*; it is that an unadjusted front-month series **truncates each
+contract's convergence at the splice**, so the carry a real position earns never appears in the price
+series at all. That applies to every futures market in proportion to its basis, financials included,
+and it compounds over nine years. It is the same defect recorded for commodity carry — *"roll gaps
+**are** the signal with flipped sign"* — appearing here as a systematic return drag.
+
+**So free continuous futures data cannot settle this question**, and no amount of care with it will.
+That is a structural property of the data, not a limitation of the test.
+
+What the exercise *did* establish, because these are correlation properties and survive the artifact:
+
+- the two implementations correlate **+0.74**;
+- the futures version's diversification holds — **−0.15** to SPY, **−0.13** to the basket, and
+  **+0.32%** on the basket's 20 worst days, positive 60% of the time (ETF version: +0.38%, 55%).
+
+The *diversification* case survives. The *return level* in the actual instrument is genuinely open,
+and that is precisely what the subscription buys an answer to.
+
 ## Recommendation
 
 1. **Buy the US Futures Value Bundle PLUS (~$5/month)** and re-run `scripts/trend_sleeve.py`. The
    practical test is immediate: today all eight markets return 0 bars, so the sleeve refuses. If bars
    appear, spec `005` phase 6 is unblocked.
+   **The first thing to check is history depth, not the strategy.** IBKR's retention for *expired*
+   futures contracts is limited, and a back-adjusted series long enough to re-run the gate needs them.
+   If only a couple of years come back, the subscription has not solved the problem and Databento
+   becomes the real question — cancel and reassess rather than forcing a short-window result.
 2. **Do not migrate to LEAN.** Migration-plan stages 1–5 are closed on this evidence. The framework
    stays.
 3. **Verify two things at subscription time**, since neither could be settled from documentation:
