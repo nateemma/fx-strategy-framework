@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from forex.run.health import (DAILY, MONTHLY, QUARTERLY, WATCHED, check_health,
-                              last_due, notification_command, overdue_summary)
+                              alert_command, last_due, notification_command,
+                              overdue_summary)
 
 
 def artifact(root, name, age_days, now):
@@ -200,3 +201,17 @@ def test_summary_names_every_overdue_job(tmp_path):
 
 def test_summary_of_a_healthy_report_says_so(tmp_path):
     assert "current" in overdue_summary(check_health(NOW, fresh_repo(tmp_path, NOW)))
+
+
+def test_alert_command_uses_double_quotes_and_a_timeout():
+    """The modal is the channel that actually reaches the operator, so its quoting matters most."""
+    script = alert_command("FX track", "overdue: nav-snapshot", 90)[-1]
+    assert '"overdue: nav-snapshot"' in script
+    assert '"FX track"' in script
+    assert "giving up after 90" in script
+    assert "'" not in script
+
+
+def test_alert_command_always_bounds_itself():
+    """Without a timeout an unattended machine would block the scheduled job indefinitely."""
+    assert "giving up after" in alert_command("t", "m")[-1]

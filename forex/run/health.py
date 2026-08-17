@@ -128,11 +128,27 @@ def overdue_summary(report) -> str:
 
 
 def notification_command(title, message):
-    """The `osascript` argv for a desktop notification.
+    """The `osascript` argv for a Notification Centre banner.
 
     AppleScript string literals must be DOUBLE quoted — single quotes are a syntax error, so building
     this with Python's repr() silently produces a command that never fires. json.dumps gives correctly
     double-quoted, escaped literals.
+
+    NOTE: a banner is delivered under Script Editor's notification permission. If that is not granted
+    the banner is dropped while osascript still exits 0 — verified on this machine 2026-08-16, where
+    nothing appeared. Treat banners as a bonus, never as the alert. Use `alert_command`.
     """
     return ["osascript", "-e",
             f"display notification {json.dumps(str(message))} with title {json.dumps(str(title))}"]
+
+
+def alert_command(title, message, timeout_seconds=120):
+    """The `osascript` argv for a MODAL alert — the channel that actually gets through.
+
+    Unlike a banner this is an app window, so Notification Centre permissions cannot suppress it.
+    `giving up after` bounds it so an unattended machine dismisses it instead of blocking the
+    scheduled job forever.
+    """
+    return ["osascript", "-e",
+            f"display alert {json.dumps(str(title))} message {json.dumps(str(message))} "
+            f"giving up after {int(timeout_seconds)}"]

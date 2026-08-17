@@ -45,5 +45,17 @@ A third bug was caught by making the code testable: the notification command was
 outright, so the notification would never have fired — it would have failed silently into the
 best-effort handler. Moved into the module with a regression test that actually executes `osascript`.
 
-Implemented 2026-08-16, all 19 tasks. 391 tests pass; ruff unchanged at 21 pre-existing violations.
-**Not yet installed** — `scripts/install_schedules.sh` needs `FRED_API_KEY` from the operator's shell.
+**A fourth problem was found only by verifying the channel after install.** The notification banner
+did not appear, despite `osascript` exiting 0 — Notification Centre banners are delivered under Script
+Editor's permission, which is not granted on this machine. The alert would have been silently
+suppressed forever, which is worse than having no alert at all, because the status file would have
+looked like a redundant backup rather than the only working channel.
+
+Replaced with a modal alert (`display alert ... giving up after`), which is an app window and cannot
+be suppressed that way; confirmed delivered. Added `--self-test` so the channel can be checked without
+waiting for a real failure, and added `health_status.txt` to the session-start routine as a channel
+that cannot be suppressed at all.
+
+Implemented and installed 2026-08-16, all 19 tasks. Verified running under launchd (`launchctl start
+com.fx.healthcheck` → exit 0, `health.log` written by the agent). 393 tests pass; ruff unchanged at 21
+pre-existing violations.

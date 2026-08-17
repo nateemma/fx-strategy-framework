@@ -53,10 +53,23 @@ could not flag a missed run for three more weeks.
 .venv/bin/python scripts/healthcheck.py     # read-only; no broker, no network
 ```
 
-Overdue jobs raise a desktop notification and set a non-zero exit code; every run writes
-`health_status.txt` so the result outlives the notification. A healthy run is silent, so an alert
-always means something. Installed by `install_schedules.sh` to run daily at **22:00**, an hour after
-the NAV snapshot.
+Overdue jobs raise a **modal alert** and set a non-zero exit code; every run writes
+`health_status.txt` so the result outlives the alert.
+
+> **Why a modal and not a notification banner.** Banners are delivered under Script Editor's
+> notification permission. On this machine that permission is not granted, so `osascript` exited 0
+> while nothing appeared — a silently-suppressed alert, which is worse than none. A modal is an app
+> window and cannot be suppressed that way; it bounds itself with `giving up after` so an unattended
+> machine dismisses it rather than blocking the job. A banner is still fired as a bonus, and will
+> start working if you grant Script Editor notification permission in System Settings → Notifications.
+>
+> Verify the channel any time without waiting for a failure:
+> ```bash
+> .venv/bin/python scripts/healthcheck.py --self-test
+> ```
+
+A healthy run is silent, so an alert always means something. Installed by `install_schedules.sh` to
+run daily at **22:00**, an hour after the NAV snapshot.
 
 Grace periods (in `forex/run/health.py`, alongside the schedule): daily 1.5 days — one missed snapshot
 is a harmless gap, so an alert means two consecutive misses, which is what a dead Gateway looks like;

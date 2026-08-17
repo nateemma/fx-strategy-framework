@@ -5,8 +5,10 @@
 **Start of every session**, before anything else:
 
 1. `git pull`
-2. Read `specs/000-baseline/baseline.md` — the status page: what's done, in flight, and backlogged.
-3. Read the `tasks.md` of any active feature under `specs/`.
+2. Read `health_status.txt` if present — the scheduled-job healthcheck's last verdict. It is the
+   channel that cannot be suppressed, so check it even if no alert appeared.
+3. Read `specs/000-baseline/baseline.md` — the status page: what's done, in flight, and backlogged.
+4. Read the `tasks.md` of any active feature under `specs/`.
 
 **All non-trivial work goes through Spec Kit:** `/speckit.specify` → `/speckit.plan` →
 `/speckit.tasks` → implement, checking off `tasks.md` items as they complete. Each feature gets its
