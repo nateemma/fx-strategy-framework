@@ -3,6 +3,8 @@
 #   - com.fx.paper-rebalance    : monthly FX rebalance (1st of month, 09:00 local)      [needs FRED_API_KEY]
 #   - com.fx.basket-rebalance   : quarterly ETF-basket rebalance (1st Jan/Apr/Jul/Oct, 09:30) [no key]
 #   - com.fx.nav-snapshot       : daily NAV snapshot (21:00 local)                      [read-only, no key]
+#   - com.fx.healthcheck        : daily scheduled-job healthcheck (22:00 local)         [read-only, no key]
+#                                 notifies + writes health_status.txt when a job is overdue
 # Generates both plists into ~/Library/LaunchAgents with this repo absolute paths and your
 # $FRED_API_KEY baked in (read from the environment; it is in your .zshrc, so run this from a normal
 # terminal), then loads them. Re-run any time to update (idempotent). "install_schedules.sh uninstall"
@@ -16,9 +18,10 @@ LA="$HOME/Library/LaunchAgents"
 REBAL_PLIST="$LA/com.fx.paper-rebalance.plist"
 BASKET_PLIST="$LA/com.fx.basket-rebalance.plist"
 SNAP_PLIST="$LA/com.fx.nav-snapshot.plist"
+HEALTH_PLIST="$LA/com.fx.healthcheck.plist"
 
 if [ "${1:-}" = "uninstall" ]; then
-  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST"; do
+  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST"; do
     launchctl unload "$pl" 2>/dev/null || true
     rm -f "$pl" && echo "removed: $pl"
   done
@@ -78,11 +81,26 @@ cat > "$SNAP_PLIST" <<EOF
 </dict></plist>
 EOF
 
-for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST"; do
+cat > "$HEALTH_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.fx.healthcheck</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>ProgramArguments</key>
+  <array><string>$PY</string><string>scripts/healthcheck.py</string></array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>$REPO/health.log</string>
+  <key>StandardErrorPath</key><string>$REPO/health.log</string>
+</dict></plist>
+EOF
+
+for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST"; do
   launchctl unload "$pl" 2>/dev/null || true    # unload-first so re-running updates cleanly
   launchctl load "$pl"
   echo "loaded: $(basename "$pl")"
 done
-echo "installed. FX rebalance = 1st 09:00 ; basket rebalance = 1st Jan/Apr/Jul/Oct 09:30 ; NAV snapshot = 21:00 ; port=$IB_PORT"
+echo "installed. FX rebalance = 1st 09:00 ; basket rebalance = 1st Jan/Apr/Jul/Oct 09:30 ; NAV snapshot = 21:00 ;"
+echo "           healthcheck = 22:00 daily (an hour after the snapshot) ; port=$IB_PORT"
 echo "verify:  launchctl list | grep com.fx"
 echo "remove:  $0 uninstall"

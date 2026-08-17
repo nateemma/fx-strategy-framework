@@ -72,6 +72,7 @@ Do not relitigate these without new *data*; a better model on the same inputs wa
 | FX-only reporting | `forex/run/fxtrack.py` | Done (2026-08-16). Spec `001-fx-only-reporting`; 32 tests. |
 | Financing diagnosis | `forex/run/financing.py` | Done (2026-08-16). Spec `002-financing-spread`; 21 tests. |
 | Financing in the backtest | `forex/backtest/financing.py` | Done (2026-08-16). Spec `003-financing-in-backtest`; `--financing`; 20 tests. |
+| Scheduled-job healthcheck | `forex/run/health.py` | Done (2026-08-16). Spec `004-schedule-healthcheck`; 21 tests. Needs installing. |
 | Connect-with-retry | `forex/run/ibconnect.py` | Done. Rides through Gateway auto-restart. |
 | Scheduling | `scripts/install_schedules.sh` | Partially done — see In flight. |
 
@@ -100,7 +101,8 @@ gated until 20 observations accumulate, and there is currently one.
    Statistics are gated at 20 observations and only one FX-bearing snapshot exists, so the report
    currently runs in levels-only mode. First meaningful reading is several weeks out.
 2. **Scheduling is partial.** launchd runs the monthly FX rebalance, the quarterly basket rebalance,
-   and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule.
+   and the daily NAV snapshot. The bond-ladder, income, and cash sleeves have no schedule. A
+   healthcheck agent is now written but **not yet installed** — run `scripts/install_schedules.sh`.
 3. **The FX book does not clear its own financing cost.** Charging IBKR's published spreads in the
    backtest takes `carry_cot_mom` from **Sharpe 1.15 / +3.03%/yr** to **Sharpe 0.17 / +0.44%/yr** —
    below cash, and unfixable by leverage since the drag scales with gross. G10-only is worse (−0.37):
@@ -126,8 +128,8 @@ when starting it; do not pre-write specs.
 
 | # | Item | Size | Priority | Notes |
 |---|---|---|---|---|
-| 1 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Nothing alerts on a missed rebalance; `launchd.err` is gitignored and written only on failure. |
-| 2 | Alert on a missed/failed scheduled job | S | High | Why the 2026-08-01 failure (In flight #3) went unnoticed for 11 days. |
+| 1 | Install the healthcheck agent before 2026-09-01 | S | **Highest** | Built in `004`, not yet installed — needs `FRED_API_KEY` in the shell, so it is a one-command manual step. Without it the 2026-09-01 rebalance is unobserved. |
+| 2 | Verify the 2026-09-01 scheduled rebalance actually fired | S | High | Now automated once #1 is done: the healthcheck flags it by 2026-09-04. The check cannot tell a scheduled run from a manual one, so confirm `track.log` carries a 09:00 entry. |
 | 3 | Price the financing terms the book would need to be viable | S | High | Invert the model: what spreads clear a Sharpe of ~0.8? Decides whether an institutional prime relationship is worth pursuing or the book is dead. |
 | 4 | Re-run the factor search with `--financing` on | L | High | Every comparison in the research arc was made without this cost. It penalises gross exposure, so close calls may reorder — the vol-target overlay and the wide-universe choice are the candidates. |
 | 5 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
@@ -135,14 +137,13 @@ when starting it; do not pre-write specs.
 | 7 | Schedule bond-ladder / income / cash sleeves | S | Medium | Manual-only today. |
 | 8 | Move the FRED API key out of the launchd plist | S | Medium | Cleartext in `com.fx.paper-rebalance.plist` (mode 0600). Violates the EnvConfig-secrets rule. |
 | 9 | Fix 21 pre-existing ruff violations | S | Medium | 8 unused imports, 11 over-long lines, 2 empty f-strings. Constitution III mandates the gate. |
-| 10 | Refresh `docs/scheduled-paper-track.md` | S | Medium | Still documents `~/Documents/forex` paths throughout. |
-| 11 | CI (pytest + ruff on push) | M | Medium | No CI exists; both gates are hand-run. |
-| 12 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 13 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 14 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 15 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
-| 16 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
-| 17 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 10 | CI (pytest + ruff on push) | M | Medium | No CI exists; both gates are hand-run. |
+| 11 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 12 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 13 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 14 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 15 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
+| 16 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
 paper-validated; going live is a decision, not an engineering item, and is gated by Constitution

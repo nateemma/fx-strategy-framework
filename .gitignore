@@ -12,6 +12,8 @@ nav.csv
 snapshot.log
 launchd.err
 *_positions.csv
+health_status.txt
+health.log
 .superpowers/
 
 # Machine-local Claude Code settings. .claude/skills/ and .specify/ ARE tracked,
