@@ -178,7 +178,13 @@ def test_benchmark_rate_rejects_an_unknown_currency(tmp_path):
 
 
 def test_benchmark_rate_reads_the_real_cache():
+    """Integration check against the populated cache. data_cache/ is git-ignored, so this cannot
+    run on a fresh clone or in CI — skip rather than fail there."""
+    import pathlib
+    from forex.config import CURRENCIES
     from forex.run.financing import benchmark_rate
+    if not (pathlib.Path("data_cache") / f"{CURRENCIES['MXN'].rate_fred}.parquet").exists():
+        pytest.skip("data_cache/ not populated (git-ignored) — run `forex download`")
     rate, asof = benchmark_rate("MXN")
     assert rate is not None and 0.0 < rate < 0.5
     assert asof and asof.startswith("202")

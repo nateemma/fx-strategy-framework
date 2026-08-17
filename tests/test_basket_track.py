@@ -1,5 +1,4 @@
 import csv
-from pathlib import Path
 from types import SimpleNamespace
 
 from forex.run.basket_track import log_basket_positions

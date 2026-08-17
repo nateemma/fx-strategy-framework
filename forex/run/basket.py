@@ -58,7 +58,8 @@ class BasketExecution:
             try:
                 if tr.orderStatus.status not in ("Filled",):
                     ib.cancelOrder(tr.order)
-                filled = sum(float(f.execution.shares) for f in getattr(tr, "fills", [])) or float(tr.orderStatus.filled)
+                filled = (sum(float(f.execution.shares) for f in getattr(tr, "fills", []))
+                          or float(tr.orderStatus.filled))
                 if filled:
                     opp = "SELL" if tr.order.action == "BUY" else "BUY"
                     o = self._make_order()(opp, round(abs(filled))); o.tif = self.tif
@@ -133,7 +134,8 @@ class BasketExecution:
             for sym, d in c["orders"].items():
                 notional = abs(d) * c["price"][sym]
                 if notional / allocation_usd > self.max_order_frac:
-                    raise RuntimeError(f"order {sym} {notional / allocation_usd:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
+                    raise RuntimeError(f"order {sym} {notional / allocation_usd:.0%} exceeds "
+                                       f"max_order_frac {self.max_order_frac:.0%}")
             placed, skipped = [], {}
             try:
                 make_order = self._make_order()

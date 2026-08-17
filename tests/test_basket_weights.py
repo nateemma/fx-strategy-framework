@@ -1,6 +1,5 @@
 import math
 import pandas as pd
-import pytest
 from forex.run.basket_weights import inverse_vol_weights, target_shares
 
 

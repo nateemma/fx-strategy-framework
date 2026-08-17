@@ -6,7 +6,8 @@
 #   - IB Gateway (recommended: headless + always-on + auto-restart) OR TWS, logged into the PAPER account,
 #     API enabled (Read-Only API OFF, so placement is allowed), on $IB_PORT. Gateway is strongly preferred
 #     for unattended runs — TWS auto-restarts daily and needs a re-login.
-#   - FRED_API_KEY in the environment (to refresh the 3-month rates).
+#   - FRED_API_KEY, read from ~/.config/forex/env (0600). Deliberately NOT in the plist:
+#     launchd EnvironmentVariables are exposed by `launchctl print`.
 #   - The project venv.
 # Data: carry_cot_mom pulls THREE sources — IBKR daily spot, FRED rates, CFTC COT — refreshed by
 #   refresh_track_data.py (each independently; a stale source falls back to last-good cache + logs it).
@@ -17,6 +18,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source .venv/bin/activate
+
+# Secrets live outside the repo, in a 0600 file — NOT in the launchd plist, whose
+# EnvironmentVariables are readable by any process via `launchctl print`.
+FOREX_ENV="${FOREX_ENV:-$HOME/.config/forex/env}"
+[ -f "$FOREX_ENV" ] && . "$FOREX_ENV"
+: "${FRED_API_KEY:?no FRED_API_KEY — expected in $FOREX_ENV (run scripts/install_schedules.sh)}"
 
 IB_PORT="${IB_PORT:-4002}"          # Gateway paper=4002 ; TWS paper=7497
 export IB_PORT

@@ -1,0 +1,29 @@
+name: CI
+
+# The suite is offline by design — no network, no broker, no API key — so CI is just
+# "install and run". data_cache/ is git-ignored, so the one test that reads it skips here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev,probe,live]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest -q

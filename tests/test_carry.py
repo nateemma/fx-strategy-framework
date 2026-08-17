@@ -1,4 +1,4 @@
-import numpy as np, pandas as pd
+import pandas as pd
 from forex.features.carry import carry_signal
 from strategies.features.basket import basket_weights
 

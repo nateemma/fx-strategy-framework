@@ -40,12 +40,14 @@ class _FakeIB:
     def cancelOrder(self, order): self.cancel_calls += 1
     def placeOrder(self, contract, order):
         self.placeOrder_calls += 1
-        self.placed.append((getattr(contract, "pair", None), order.action, order.totalQuantity, getattr(order, "tif", None)))
+        self.placed.append((getattr(contract, "pair", None), order.action,
+                            order.totalQuantity, getattr(order, "tif", None)))
         if self._fail_on is not None and self.placeOrder_calls == self._fail_on:
             raise RuntimeError("induced placeOrder failure")
         filled = order.totalQuantity * self._fill_frac
         return SimpleNamespace(
-            orderStatus=SimpleNamespace(status="Filled" if self._fill_frac >= 1.0 else "Submitted", filled=filled, avgFillPrice=self._price),
+            orderStatus=SimpleNamespace(status="Filled" if self._fill_frac >= 1.0 else "Submitted",
+                                        filled=filled, avgFillPrice=self._price),
             order=order,
             fills=[SimpleNamespace(execution=SimpleNamespace(shares=filled, price=self._price))] if filled else [])
 
@@ -135,8 +137,8 @@ def test_half_balance_produces_half_order():
     # EUR: target_units = 0.5*nav/eur_price, current = half of that, order = half of target
     eur_target_units = 0.5 * nav / eur_price
     mxn_target_units = -(0.5 * nav)  # inverted: negative USD units
-    assert abs(rep.orders["EURUSD"] - eur_target_units * 0.5) < 1e-6, f"EURUSD order should be half target"
-    assert abs(rep.orders["USDMXN"] - mxn_target_units * 0.5) < 1e-6, f"USDMXN order should be half target"
+    assert abs(rep.orders["EURUSD"] - eur_target_units * 0.5) < 1e-6, "EURUSD order should be half target"
+    assert abs(rep.orders["USDMXN"] - mxn_target_units * 0.5) < 1e-6, "USDMXN order should be half target"
 
 def test_empty_account_snapshot_refuses_to_reconcile():
     # cold-connect race: the account-value snapshot hasn't arrived -> accountValues() is empty.

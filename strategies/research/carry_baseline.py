@@ -10,7 +10,6 @@ def run_baseline(cache_dir, loader=load_series, codes=None,
     return r.returns, r.metrics
 
 if __name__ == "__main__":
-    import pandas as pd
     from forex.config import CURRENCIES
     from forex.data.fred import load_series
     from forex.data.prices import build_spot_panel, spot_returns

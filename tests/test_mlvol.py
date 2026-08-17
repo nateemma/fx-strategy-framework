@@ -29,7 +29,7 @@ def test_exog_none_is_byte_identical():
     assert len(f.coef_) == 4 and f.mean_ is None       # no exog -> 4 coefs, no standardization
 
 def test_exog_adds_features_and_standardizes():
-    import numpy as np, pandas as pd
+    import pandas as pd
     r = _regime_returns()
     # an exog column that tracks the realized-vol regime (informative)
     ex = pd.DataFrame({"risk": (r.abs().rolling(21).mean() * 20).fillna(0.0)}, index=r.index)

@@ -207,9 +207,11 @@ def _format(out: dict) -> str:
         rep = out["dryrun"]
         if out.get("broker") == "ib":
             if rep.applied:
-                header = f"ORDERS PLACED -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
+                header = (f"ORDERS PLACED -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}"
+                          f"  est.cost {rep.cost:,.0f}")
             else:
-                header = f"PREVIEW IBKR rebalance -> NAV {rep.equity:,.0f}  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}"
+                header = (f"PREVIEW IBKR rebalance -> NAV {rep.equity:,.0f}"
+                          f"  turnover {rep.turnover:.3f}  est.cost {rep.cost:,.0f}")
             lines = []
             if rep.applied and not getattr(rep, "complete", True):
                 lines.append("⚠ INCOMPLETE — partial fills; review positions")

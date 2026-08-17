@@ -1,5 +1,5 @@
 import pandas as pd, pytest
-from forex.run.execution import SimExecution, LiveExecution, RebalanceReport
+from forex.run.execution import SimExecution, LiveExecution
 
 def test_first_rebalance_inits_and_applies(tmp_path):
     pf = tmp_path / "pf.json"

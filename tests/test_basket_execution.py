@@ -1,5 +1,5 @@
 import math
-import pandas as pd, pytest
+import pytest
 from types import SimpleNamespace
 from forex.run.basket import BasketExecution
 

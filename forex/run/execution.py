@@ -136,7 +136,8 @@ class LiveExecution:
             raise RuntimeError(f"invalid NAV from IBKR: {nav!r}")
         make_contract = self._make_contract()
         try:                                  # ensure the position snapshot (and NAV + cash balances) has populated
-            ib.reqPositions(); ib.sleep(1.5)  # after connect, else a fresh reconnect reads spurious "flat" and OVER-TRADES
+            # after connect, else a fresh reconnect reads spurious "flat" and OVER-TRADES
+            ib.reqPositions(); ib.sleep(1.5)
         except Exception:                     # (the reconnect-per-rebalance loop bug found in intraday B)
             pass
         # settled FX = per-ccy CASH BALANCE, not a Position; ib.positions() is EMPTY for it (T+2),
@@ -189,7 +190,8 @@ class LiveExecution:
             try:
                 if tr.orderStatus.status not in ("Filled",):
                     ib.cancelOrder(tr.order)           # unfilled remainder -> cancel
-                filled = sum(float(f.execution.shares) for f in getattr(tr, "fills", [])) or float(tr.orderStatus.filled)
+                filled = (sum(float(f.execution.shares) for f in getattr(tr, "fills", []))
+                          or float(tr.orderStatus.filled))
                 if filled:                             # already filled -> flatten opposite
                     opp = "SELL" if tr.order.action == "BUY" else "BUY"
                     o = self._make_order()(opp, round(abs(filled))); o.tif = self.tif
@@ -236,7 +238,8 @@ class LiveExecution:
             for pair, units in c["orders"].items():
                 notional = abs(units) * (1.0 if c["base_usd"][pair] else c["price"][pair])
                 if notional / c["nav"] > self.max_order_frac:
-                    raise RuntimeError(f"order {pair} {notional / c['nav']:.0%} exceeds max_order_frac {self.max_order_frac:.0%}")
+                    raise RuntimeError(f"order {pair} {notional / c['nav']:.0%} exceeds "
+                                       f"max_order_frac {self.max_order_frac:.0%}")
             placed = []   # list of (pair, trade, contract, intended_units)
             try:
                 make_order = self._make_order()
