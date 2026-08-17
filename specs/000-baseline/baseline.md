@@ -135,17 +135,16 @@ when starting it; do not pre-write specs.
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
 | 5 | VIX carry as a ≤10% satellite sleeve | M | Medium | **Gated 2026-08-17: conditional pass.** Signal real (contango 92% of days, gate helps every era) and financing-clean (long-only cash ETF). But Sharpe 0.61 / −34% DD on the current instrument, +0.58 to SPY, and it loses on the basket's worst days — return enhancement, not diversification. Adding 10% lifts the ETF book 0.88 → 0.97 Sharpe. `docs/vix-carry-findings.md`. |
-| 6 | **LEAN data gate** (spec `006`) | S | **Highest** | Can LEAN supply roll-adjusted futures history for the eight trend markets, and at what cost? Unblocks spec `005` without an IBKR subscription, and closes the A2 gate's ETF-proxy-vs-futures gap. A failed gate is a good outcome. |
-| 7 | Buy a CME/CBOT/NYMEX market-data subscription | S | Medium | The alternative route to the same data. Costed against the LEAN gate above rather than bought first. |
-| 8 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
-| 9 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
-| 10 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
-| 11 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
-| 12 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
-| 13 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
-| 14 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
-| 15 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
-| 16 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 6 | **Buy the US Futures Value Bundle PLUS (~$5/month)** | S | **Highest** | The entire blocker on the trend sleeve, and it is five dollars. Gate `006` closed the LEAN alternative. Verify non-professional status applies, then re-run `scripts/trend_sleeve.py` — 0 bars today means it refuses; bars mean spec `005` phase 6 is unblocked. |
+| 7 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
+| 8 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
+| 9 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
+| 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
+| 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
+| 12 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
+| 13 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
+| 14 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
+| 15 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
 paper-validated; going live is a decision, not an engineering item, and is gated by Constitution
@@ -198,7 +197,8 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/vix-carry-findings.md` | **Live.** A1 gate: VIX carry is real but is equity beta, not a diversifier. |
 | `docs/cross-asset-trend-findings.md` | **Live.** A2 gate: cross-asset trend passes, but only in futures. |
 | `docs/platform-decision.md` | **Live.** Why IBKR stays, why LEAN is research-only, and why capital is the real constraint. |
-| `docs/lean-migration-plan.md` | **Live.** Staged LEAN plan with an explicit stop-decision; a full migration is argued against. |
+| `docs/lean-migration-plan.md` | **Closed.** Staged LEAN plan; declined at stage 0. |
+| `docs/lean-data-gate.md` | **Live.** Why LEAN was declined, and the ~$5/month IBKR subscription that unblocks the trend sleeve. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |

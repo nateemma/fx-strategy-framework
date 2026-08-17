@@ -3,7 +3,13 @@
 Companion to [`platform-decision.md`](./platform-decision.md): IBKR stays for execution, LEAN is
 evaluated for research data.
 
-**Headline recommendation: plan for stages 0–2 and expect to stop there.** A full migration is
+> **⛔ CLOSED 2026-08-17 at stage 0.** The gate found that IBKR's own market-data subscription is
+> **~$5/month** and works with code already built and tested, while the LEAN route needs an account, a
+> paid marketplace of undisclosed price, Docker, and a translation layer. Stages 1–5 are closed. Full
+> reasoning: [`lean-data-gate.md`](./lean-data-gate.md). The plan below is kept as the record of what
+> was considered and why it was declined.
+
+**Headline recommendation (as written before the gate): plan for stages 0–2 and expect to stop there.** A full migration is
 probably the wrong shape, and the plan is deliberately built so that stopping early is a success
 rather than an abandonment.
 

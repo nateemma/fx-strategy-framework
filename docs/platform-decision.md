@@ -1,7 +1,8 @@
 # Platform & Broker Decision (2026-08-17)
 
-**Decision: IBKR stays as the execution broker. QuantConnect/LEAN is evaluated for research data
-only, starting with a feasibility gate. No framework migration is committed.**
+**Decision: IBKR stays as the execution broker. QuantConnect/LEAN was evaluated for research data and
+**declined** — the gate found IBKR's own market-data subscription costs ~$5/month and works with
+existing code ([`lean-data-gate.md`](./lean-data-gate.md)). No framework migration.**
 
 Recorded because the reasoning is easy to lose and it bears directly on whether the futures trend
 sleeve is worth unblocking.
