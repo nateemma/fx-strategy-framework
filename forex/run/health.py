@@ -35,6 +35,7 @@ class Job(NamedTuple):
     minute: int
     grace_days: float    # allowance after the due time before calling it overdue
     description: str
+    enabled: bool = True  # a job that cannot run yet must not alarm — see WATCHED
 
 
 WATCHED = [
@@ -52,8 +53,13 @@ WATCHED = [
         "quarterly BDC/covered-call income sleeve"),
     Job("cash-rebalance", "cash_positions.csv", QUARTERLY, 9, 30, 5.0,
         "quarterly SGOV cash sleeve"),
+    # Registered but DORMANT: the sleeve is built and tested but cannot run until a CME/CBOT/NYMEX
+    # market-data subscription exists (docs/lean-data-gate.md). Watching it now would fire a nightly
+    # alarm for something that is correctly not running — and a false alarm teaches the operator to
+    # ignore the channel, which is the exact failure this whole feature exists to prevent.
+    # Flip to enabled=True when the sleeve is first deployed.
     Job("trend-sleeve", "trend_positions.csv", MONTHLY, 10, 0, 3.0,
-        "monthly cross-asset trend sleeve (futures)"),
+        "monthly cross-asset trend sleeve (futures) — not yet deployed", enabled=False),
 ]
 
 
@@ -101,6 +107,8 @@ def check_health(now, root=Path(".")) -> HealthReport:
     root = Path(root)
     results = []
     for job in WATCHED:
+        if not job.enabled:      # registered but not yet deployed: never alarm
+            continue
         # The most recent fire time that is ALSO older than grace. Comparing against the very latest
         # fire time would mean a job dead for weeks looks fine whenever the check happens to run
         # shortly after one — grace would reset on every cycle.

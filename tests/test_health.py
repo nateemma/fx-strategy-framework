@@ -104,7 +104,7 @@ def test_all_overdue_jobs_are_reported_together(tmp_path):
     for job in WATCHED:
         artifact(tmp_path, job.artifact, 400.0, NOW)
     report = check_health(NOW, tmp_path)
-    assert len(report.overdue) == len(WATCHED)
+    assert len(report.overdue) == sum(1 for j in WATCHED if j.enabled)
 
 
 def test_the_report_states_how_late_each_job_is(tmp_path):
@@ -196,7 +196,8 @@ def test_summary_names_every_overdue_job(tmp_path):
         artifact(tmp_path, job.artifact, 400.0, NOW)
     text = overdue_summary(check_health(NOW, tmp_path))
     for job in WATCHED:
-        assert job.name in text
+        if job.enabled:
+            assert job.name in text
 
 
 def test_summary_of_a_healthy_report_says_so(tmp_path):
@@ -215,3 +216,33 @@ def test_alert_command_uses_double_quotes_and_a_timeout():
 def test_alert_command_always_bounds_itself():
     """Without a timeout an unattended machine would block the scheduled job indefinitely."""
     assert "giving up after" in alert_command("t", "m")[-1]
+
+
+# ---------------------------------------------------------------- dormant jobs must not alarm
+
+def test_a_disabled_job_is_never_reported_overdue(tmp_path):
+    """A sleeve that is built but not yet deployed has no artifact and never will until it runs.
+    Alarming on it nightly would train the operator to ignore the channel."""
+    fresh_repo(tmp_path, NOW)
+    dormant = [j for j in WATCHED if not j.enabled]
+    assert dormant, "expected at least one registered-but-dormant job"
+    for job in dormant:
+        (tmp_path / job.artifact).unlink(missing_ok=True)
+    report = check_health(NOW, tmp_path)
+    assert report.healthy
+    assert not any(j.name in {d.name for d in dormant} for j in report.overdue)
+
+
+def test_disabled_jobs_do_not_appear_in_the_report_at_all(tmp_path):
+    fresh_repo(tmp_path, NOW)
+    names = {r.job.name for r in check_health(NOW, tmp_path).results}
+    for job in WATCHED:
+        if not job.enabled:
+            assert job.name not in names
+
+
+def test_enabled_jobs_are_still_checked(tmp_path):
+    """The dormancy escape hatch must not accidentally silence everything."""
+    fresh_repo(tmp_path, NOW)
+    artifact(tmp_path, "nav.csv", 10.0, NOW)
+    assert not check_health(NOW, tmp_path).healthy
