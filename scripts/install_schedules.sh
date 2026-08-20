@@ -6,6 +6,7 @@
 #   - com.fx.nav-snapshot       : daily NAV snapshot (21:00 local)                      [read-only, no key]
 #   - com.fx.trend-sleeve       : monthly cross-asset trend sleeve, futures (1st, 10:00)  [no key]
 #                                 NEEDS a CME/CBOT/NYMEX market-data subscription
+#   - com.fx.vix-carry          : daily VIX carry satellite, SVXY (08:30 local, pre-open)  [needs FRED]
 #   - com.fx.healthcheck        : daily scheduled-job healthcheck (22:00 local)         [read-only, no key]
 #                                 notifies + writes health_status.txt when a job is overdue
 # Generates the plists into ~/Library/LaunchAgents with this repo's absolute paths, then loads them.
@@ -19,6 +20,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 PY="$REPO/.venv/bin/python"
 IB_PORT="${IB_PORT:-4002}"
 TREND_RISK_BASE="${TREND_RISK_BASE:-200000}"
+VIX_ALLOCATION="${VIX_ALLOCATION:-0}"   # 0 = sleeve inert until sized
 LA="$HOME/Library/LaunchAgents"
 FOREX_ENV="$HOME/.config/forex/env"
 REBAL_PLIST="$LA/com.fx.paper-rebalance.plist"
@@ -26,9 +28,10 @@ BASKET_PLIST="$LA/com.fx.basket-rebalance.plist"
 SNAP_PLIST="$LA/com.fx.nav-snapshot.plist"
 HEALTH_PLIST="$LA/com.fx.healthcheck.plist"
 TREND_PLIST="$LA/com.fx.trend-sleeve.plist"
+VIX_PLIST="$LA/com.fx.vix-carry.plist"
 
 if [ "${1:-}" = "uninstall" ]; then
-  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST"; do
+  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST"; do
     launchctl unload "$pl" 2>/dev/null || true
     rm -f "$pl" && echo "removed: $pl"
   done
@@ -130,7 +133,7 @@ cat > "$TREND_PLIST" <<EOF
 </dict></plist>
 EOF
 
-for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST"; do
+for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST"; do
   launchctl unload "$pl" 2>/dev/null || true    # unload-first so re-running updates cleanly
   launchctl load "$pl"
   echo "loaded: $(basename "$pl")"

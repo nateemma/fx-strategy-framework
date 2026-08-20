@@ -58,6 +58,9 @@ WATCHED = [
     # alarm for something that is correctly not running — and a false alarm teaches the operator to
     # ignore the channel, which is the exact failure this whole feature exists to prevent.
     # Flip to enabled=True when the sleeve is first deployed.
+    # Also dormant until first deployed, for the same reason as the trend sleeve below.
+    Job("vix-carry", "vix_carry_positions.csv", DAILY, 8, 30, 2.5,
+        "daily VIX carry satellite (SVXY, contango-gated) — not yet deployed", enabled=False),
     Job("trend-sleeve", "trend_positions.csv", MONTHLY, 10, 0, 3.0,
         "monthly cross-asset trend sleeve (futures) — not yet deployed", enabled=False),
 ]

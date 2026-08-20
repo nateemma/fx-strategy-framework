@@ -16,6 +16,7 @@ health_status.txt
 health.log
 basket.log
 trend.log
+vix_carry.log
 .superpowers/
 
 # Machine-local Claude Code settings. .claude/skills/ and .specify/ ARE tracked,
