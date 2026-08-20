@@ -7,8 +7,9 @@
 #   income  BIZD/JEPI            equal-weight     client 28
 #   cash    SGOV                 the residual     client 26   <- runs LAST, it soaks up what is left
 #
-# Allocations default to what is actually deployed, NOT to aspirational figures. They sum to ~$981k
-# against ~$1,006k NAV, leaving a small USD buffer. Raising one without lowering another pushes the
+# Allocations default to what is actually deployed, NOT to aspirational figures. They sum to ~$951k
+# against ~$1,007k NAV, leaving a small USD buffer. The basket was trimmed 298k -> 268k on 2026-08-20
+# to fund the VIX carry sleeve ($30k, daily agent com.fx.vix-carry — NOT part of this quarterly job). Raising one without lowering another pushes the
 # ETF book above NAV and funds the difference by borrowing at BM+1.5% — see
 # docs/financing-spread-findings.md for why that is expensive.
 #
@@ -24,7 +25,7 @@ source .venv/bin/activate
 
 IB_PORT="${IB_PORT:-4002}"
 export IB_PORT
-BASKET_ALLOCATION="${BASKET_ALLOCATION:-298000}"
+BASKET_ALLOCATION="${BASKET_ALLOCATION:-268000}"   # trimmed 2026-08-20 to fund the VIX sleeve
 LADDER_ALLOCATION="${LADDER_ALLOCATION:-300000}"
 INCOME_ALLOCATION="${INCOME_ALLOCATION:-298000}"
 CASH_ALLOCATION="${CASH_ALLOCATION:-85000}"

@@ -83,10 +83,11 @@ Running since **2026-07-17**. NAV ~1,005k from 994k at inception.
 | Sleeve | Runner | Deployed | Holding |
 |---|---|---|---|
 | FX book `carry_cot_mom` | `scripts/monthly_paper_rebalance.sh` | Yes | 14 currency legs (cash) |
-| Risk-parity basket | `scripts/basket_rebalance.py` | Yes | SPY/TLT/IEF/GLD/DBC, ~298k |
+| Risk-parity basket | `scripts/basket_rebalance.py` | Yes | SPY/TLT/IEF/GLD/DBC, ~268k (trimmed 2026-08-20 to fund VIX carry) |
 | Treasury bond ladder | `scripts/bond_ladder.py` | Yes | IBTG–IBTL, ~300k |
 | Income sleeve | `scripts/income_sleeve.py` | Yes | BIZD/JEPI, ~298k |
 | Cash sleeve (SGOV) | `scripts/cash_sleeve.py` | Yes | SGOV 845 (~85k), placed 2026-08-16 |
+| VIX carry satellite | `scripts/vix_carry_sleeve.py` | Yes | SVXY 491 (~30k), placed 2026-08-20. Daily, contango-gated. |
 
 **The ETF sleeves are ~90% of NAV**, so whole-account numbers measure the sleeves rather than
 `carry_cot_mom`. `scripts/track_report.py` now reports the two separately — but FX statistics are
@@ -134,7 +135,7 @@ when starting it; do not pre-write specs.
 | 2 | Re-run the factor search with `--financing` on | L | **Medium** | Downgraded from High: financing is now known to be the binding constraint, so this is for correctness of the record, not to find a better book. A pre-financing Sharpe of 1.3 would still only reach ~0.3 at retail. |
 | 3 | Revisit deployment if financing terms change | — | Watch | The number to remember is **95bp all-in**. Below that the book is a Sharpe ~0.8 proposition and the repo is ready for it. Not actionable at current capital. |
 | 4 | ~~Filter the universe on financing terms~~ | S | **Closed** | Tested during 003: G10-only is *worse* (Sharpe −0.37 vs 0.17). The expensive legs are the profitable legs. Narrowing is not the fix. |
-| 5 | VIX carry as a ≤10% satellite sleeve | M | Medium | **Gated 2026-08-17: conditional pass.** Signal real (contango 92% of days, gate helps every era) and financing-clean (long-only cash ETF). But Sharpe 0.61 / −34% DD on the current instrument, +0.58 to SPY, and it loses on the basket's worst days — return enhancement, not diversification. Adding 10% lifts the ETF book 0.88 → 0.97 Sharpe. `docs/vix-carry-findings.md`. |
+| 5 | ~~VIX carry satellite~~ | M | **Done** | Deployed 2026-08-20 at \$30k (SVXY 491), funded by trimming the basket 298k → 268k. Spec `007`; daily contango gate; healthcheck watching. Return enhancement, NOT diversification — the book still lacks an equity-uncorrelated sleeve. |
 | 6 | **Buy the US Futures Value Bundle PLUS (~$5/month)** | S | **Highest** | The entire blocker on the trend sleeve, and it is five dollars. Gate `006` closed the LEAN alternative. Verify non-professional status applies, then re-run `scripts/trend_sleeve.py` — 0 bars today means it refuses; bars mean spec `005` phase 6 is unblocked. |
 | 7 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
 | 8 | ~~Box-spread financing~~ | S | **Closed** | Gated 2026-08-19: solves a problem this book does not have. Cannot rescue FX carry (0.42 vs the 0.80 bar, because a box borrows USD and the cost is in the foreign legs), and levering the ETF basket destroys Sharpe at any financing rate. Revisit only if a high-Sharpe cash strategy worth levering appears. `docs/box-spread-findings.md`. |

@@ -130,6 +130,26 @@ contract**, so a roll is a matched pair that nets to zero exposure change rather
 signal round-tripping. Rounding error is reported every run: at a $200k risk base the smallest market
 is ~1.5 contracts, so it is a material part of how faithfully the tested construction is being run.
 
+## The VIX carry satellite (`com.fx.vix-carry`, daily pre-open)
+
+Holds SVXY while the volatility curve is in contango, stands aside otherwise (A1 gate,
+[`vix-carry-findings.md`](./vix-carry-findings.md)). Deployed 2026-08-20 at **$30,000**, funded by
+trimming the basket sleeve 298k → 268k. `scripts/vix_carry_sleeve.py`, spec `007`.
+
+Long-only cash ETF — no margin, no borrow — so the financing drag that killed the FX book does not
+apply. Runs daily at 08:30 local, before the US open, using the **previous** session's term structure.
+Contango holds ~92% of days, so it trades on roughly 5–15 flips a year; every other day reconciles to
+no orders.
+
+> **This is not a diversifier.** +0.58 correlation to SPY, and on the book's twenty worst days it
+> averages −1.89% and is positive only 5% of the time. It is return enhancement bolted onto equity
+> beta. It does **not** reduce the need for the trend sleeve.
+>
+> **Sized for a tail the instrument has never seen.** SVXY was re-levered from −1x to −0.5x the week
+> after the 2018 blowup that killed its predecessor, which lost 83% in a single day. The contango gate
+> would have been out for that day — but was fully *in* for Brexit (−26.4%). At $30k a repeat costs
+> roughly 1.5% of NAV.
+
 ## Install — one command (recommended)
 ```bash
 ./scripts/install_schedules.sh            # run from a normal terminal (reads $FRED_API_KEY from your env)

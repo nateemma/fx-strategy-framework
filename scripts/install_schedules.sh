@@ -133,10 +133,46 @@ cat > "$TREND_PLIST" <<EOF
 </dict></plist>
 EOF
 
+# VIX carry satellite: daily, pre-open. Only installed when an allocation is set — a sleeve sized 0
+# should not have an agent at all.
+if [ "${VIX_ALLOCATION}" != "0" ]; then
+cat > "$VIX_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.fx.vix-carry</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/bash</string><string>-lc</string>
+         <string>. "$FOREX_ENV"; exec "$PY" scripts/vix_carry_sleeve.py --allocation $VIX_ALLOCATION --confirm</string></array>
+  <key>EnvironmentVariables</key><dict><key>IB_PORT</key><string>$IB_PORT</string></dict>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StandardOutPath</key><string>$REPO/vix_carry.log</string>
+  <key>StandardErrorPath</key><string>$REPO/vix_carry.log</string>
+</dict></plist>
+EOF
+else
+  rm -f "$VIX_PLIST"
+  echo "VIX_ALLOCATION=0 -> vix-carry agent not installed"
+fi
+
 for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST"; do
+  [ -f "$pl" ] || { echo "skipped (not generated): $(basename "$pl")"; continue; }
   launchctl unload "$pl" 2>/dev/null || true    # unload-first so re-running updates cleanly
   launchctl load "$pl"
-  echo "loaded: $(basename "$pl")"
+  # `launchctl load` exits 0 even when the file is MISSING, so confirm the agent actually
+  # registered rather than trusting the exit code — that silently skipped an agent once.
+  # Match the label column exactly; registration is not instant, so allow a moment.
+  label="$(basename "$pl" .plist)"
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    launchctl list | awk '{print $3}' | grep -qx "$label" && break
+    sleep 0.3
+  done
+  if launchctl list | awk '{print $3}' | grep -qx "$label"; then
+    echo "loaded: $(basename "$pl")"
+  else
+    echo "FAILED to load: $(basename "$pl")" >&2; exit 1
+  fi
 done
 echo "installed. FX rebalance = 1st 09:00 ; basket rebalance = 1st Jan/Apr/Jul/Oct 09:30 ; NAV snapshot = 21:00 ;"
 echo "           healthcheck = 22:00 daily ; trend sleeve = 1st 10:00 (risk base $TREND_RISK_BASE) ; port=$IB_PORT"

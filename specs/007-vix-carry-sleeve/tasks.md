@@ -34,16 +34,16 @@
 
 ## Phase 4: Deploy
 
-- [ ] T010 Decide the allocation with the operator — the gate supports up to 10% of the ETF track, the tail argues for the lower end, and it must be cash-funded
-- [ ] T011 Preview against the live account and confirm the decision matches the current term structure
-- [ ] T012 Place, verify the fill, and enable the healthcheck entry
+- [X] T010 Decide the allocation with the operator — the gate supports up to 10% of the ETF track, the tail argues for the lower end, and it must be cash-funded
+- [X] T011 Preview against the live account and confirm the decision matches the current term structure
+- [X] T012 Place, verify the fill, and enable the healthcheck entry
 
 ---
 
 ## Phase 5: Polish
 
 - [X] T013 Run `pytest -q` and `ruff check .`; confirm green with no new violations
-- [ ] T014 Update `specs/000-baseline/baseline.md` and document the sleeve in `docs/scheduled-paper-track.md`
+- [X] T014 Update `specs/000-baseline/baseline.md` and document the sleeve in `docs/scheduled-paper-track.md`
 
 ---
 
