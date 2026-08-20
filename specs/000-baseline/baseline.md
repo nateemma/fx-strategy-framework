@@ -137,7 +137,7 @@ when starting it; do not pre-write specs.
 | 5 | VIX carry as a ≤10% satellite sleeve | M | Medium | **Gated 2026-08-17: conditional pass.** Signal real (contango 92% of days, gate helps every era) and financing-clean (long-only cash ETF). But Sharpe 0.61 / −34% DD on the current instrument, +0.58 to SPY, and it loses on the basket's worst days — return enhancement, not diversification. Adding 10% lifts the ETF book 0.88 → 0.97 Sharpe. `docs/vix-carry-findings.md`. |
 | 6 | **Buy the US Futures Value Bundle PLUS (~$5/month)** | S | **Highest** | The entire blocker on the trend sleeve, and it is five dollars. Gate `006` closed the LEAN alternative. Verify non-professional status applies, then re-run `scripts/trend_sleeve.py` — 0 bars today means it refuses; bars mean spec `005` phase 6 is unblocked. |
 | 7 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
-| 8 | Box-spread financing as a margin alternative | S | Medium | Tier A4. Borrow at ~risk-free via SPX boxes instead of BM+1.5%. An enabler, not a strategy — changes the economics of every cash-instrument sleeve. |
+| 8 | ~~Box-spread financing~~ | S | **Closed** | Gated 2026-08-19: solves a problem this book does not have. Cannot rescue FX carry (0.42 vs the 0.80 bar, because a box borrows USD and the cost is in the foreign legs), and levering the ETF basket destroys Sharpe at any financing rate. Revisit only if a high-Sharpe cash strategy worth levering appears. `docs/box-spread-findings.md`. |
 | 9 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
 | 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
 | 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
@@ -199,6 +199,7 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/platform-decision.md` | **Live.** Why IBKR stays, why LEAN is research-only, and why capital is the real constraint. |
 | `docs/lean-migration-plan.md` | **Closed.** Staged LEAN plan; declined at stage 0. |
 | `docs/lean-data-gate.md` | **Live.** Why LEAN was declined, and the ~$5/month IBKR subscription that unblocks the trend sleeve. |
+| `docs/box-spread-findings.md` | **Closed.** Box financing rejected: the book has nothing worth levering in cash instruments. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |
