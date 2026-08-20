@@ -139,7 +139,7 @@ when starting it; do not pre-write specs.
 | 6 | **Buy the US Futures Value Bundle PLUS (~$5/month)** | S | **Highest** | The entire blocker on the trend sleeve, and it is five dollars. Gate `006` closed the LEAN alternative. Verify non-professional status applies, then re-run `scripts/trend_sleeve.py` — 0 bars today means it refuses; bars mean spec `005` phase 6 is unblocked. |
 | 7 | Trend sleeve live validation (spec `005` phase 6) | M | High | Preview → one-contract test order → trim ETF sleeves 20% → place the book. Blocked on the subscription above. |
 | 8 | ~~Box-spread financing~~ | S | **Closed** | Gated 2026-08-19: solves a problem this book does not have. Cannot rescue FX carry (0.42 vs the 0.80 bar, because a box borrows USD and the cost is in the foreign legs), and levering the ETF basket destroys Sharpe at any financing rate. Revisit only if a high-Sharpe cash strategy worth levering appears. `docs/box-spread-findings.md`. |
-| 9 | Prediction markets (ForecastEx) — data feasibility spike | S | Medium | Tier B1. The only genuinely unexplored asset class, and fully collateralised so it carries no financing drag. An afternoon's gate, not a build. |
+| 9 | ~~Prediction markets (ForecastEx)~~ | S | **Closed** | Gated 2026-08-20. Data is the best of any candidate — free daily CSVs, ~2y deep, settlement prices included — but median traded contract turns over **$49/day** and only 8% of contracts trade at all. Rejected on liquidity. Calibration unresolved; three filter definitions gave three answers and the first was my own selection bias. `docs/prediction-markets-findings.md`. |
 | 10 | Stress the FX+basket blend against a synthetic 2008 | M | Low | Recommended in the findings doc before sizing; window has no GFC. |
 | 11 | Commodity carry via roll-adjusted data | L | Low | Blocked on paid data (Norgate/Databento). The only commodity signal not yet falsified. |
 | 12 | Macro-surprise nowcasting (#8) | L | Low | Blocked: needs a consensus feed. |
@@ -201,6 +201,7 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/lean-migration-plan.md` | **Closed.** Staged LEAN plan; declined at stage 0. |
 | `docs/lean-data-gate.md` | **Live.** Why LEAN was declined, and the ~$5/month IBKR subscription that unblocks the trend sleeve. |
 | `docs/box-spread-findings.md` | **Closed.** Box financing rejected: the book has nothing worth levering in cash instruments. |
+| `docs/prediction-markets-findings.md` | **Closed.** ForecastEx rejected on liquidity ($49/day median). Contains a reusable warning about filters that delete losers. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |

@@ -1,14 +1,20 @@
 <!--
 Sync Impact Report
-Version change: (unversioned template) → 1.0.0
-Bump rationale: MAJOR — first ratified constitution; all principles newly defined.
-Modified principles: none (initial adoption; template placeholders replaced)
-Added sections:
-  - Core Principles I–V
-  - Execution & Data Safety
-  - Development Workflow
-  - Governance
-Removed sections: none
+Version change: (unversioned template) → 1.0.0 → 1.1.0
+
+1.0.0 (2026-08-16) — MAJOR, first ratified constitution; all principles newly defined.
+  Added: Core Principles I–V, Execution & Data Safety, Development Workflow, Governance.
+  Modified: none. Removed: none.
+
+1.1.0 (2026-08-20) — MINOR, materially expanded guidance; no principle removed or redefined.
+  Added the STANDALONE-FIRST rule to Execution & Data Safety: a candidate must first be judged on
+  whether it would be worth running on its own capital, with blending treated as a separate later
+  decision. Prompted by an operator observation that gates A1 (VIX carry) and A2 (cross-asset trend)
+  were both judged largely on their contribution to the existing ETF book rather than on their own
+  merits. That framing was defensible — the program's best documented result came from combining
+  uncorrelated sleeves — but that result is itself now weakened by the financing finding, and the
+  framing was quietly making the existing book the thing being optimised.
+
 Deferred TODOs:
   - Principle III mandates ruff. [tool.ruff] was added to pyproject.toml at ratification
     (F, E9, E501 at line-length 120 — deliberately not E4/E7, which clash with the repo's
@@ -104,6 +110,12 @@ keeping MUST be backed up deliberately.
 Research verdicts MUST be judged in the deployment regime with an era split, on cost- and
 liquidity-aware out-of-sample P&L — never on in-sample fit or a model-quality metric alone.
 
+**A candidate MUST first be judged standalone: would this be worth running on its own capital?**
+Only once it clears that bar is its contribution to the existing book considered, and blending is a
+separate, later decision. Judging a candidate primarily by "does adding X% improve the current book"
+anchors every idea to what is already deployed, biases toward small incremental satellites, and
+quietly makes the existing book the thing being optimised rather than the question being asked.
+
 ## Development Workflow
 
 All non-trivial work goes through Spec Kit: `/speckit.specify` → `/speckit.plan` → `/speckit.tasks`
@@ -131,4 +143,4 @@ Compliance is reviewed at the point of change: any work that touches an executio
 `Strategy` contract, or the causality machinery MUST state which principles it engages and how it
 satisfies them. Complexity MUST be justified against the simpler alternative it replaces.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-16 | **Last Amended**: 2026-08-16
+**Version**: 1.1.0 | **Ratified**: 2026-08-16 | **Last Amended**: 2026-08-20
