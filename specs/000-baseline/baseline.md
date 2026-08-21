@@ -207,4 +207,5 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
 | `MEMORY.md` + `memory/` | Findings not derivable from code or git history. |
+| `docs/archive/legacy-memory/` | **Archive.** 25 memories stranded at the pre-move `~/Documents/forex` path. Historical; superseded by the docs of record. |
 | `docs/archive/` | Superseded. Kept for the record, not maintained. |
