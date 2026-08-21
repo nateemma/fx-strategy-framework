@@ -53,23 +53,35 @@ While pricing the alternatives, IBKR's own market-data fees turn out to be trivi
 
 | IBKR market data (non-professional) | USD/month |
 |---|---|
-| **US Futures Value Bundle PLUS** | **5.00** |
+| US Futures Value Bundle PLUS *(L2 add-on — **not** what is wanted; requires the base bundle)* | 5.00 |
 | CME Real-Time (L1) | 1.55 |
 | CBOT Real-Time (L1) | 1.55 |
 | CME Real-Time (L2) | 12.10 |
-| US Securities Snapshot and Futures Value Bundle | 10.00 |
+| **US Securities Snapshot and Futures Value Bundle** *(L1 CBOT/CME/COMEX/NYMEX — **this is the one**)* | **10.00** |
 
 The eight trend markets span CME (M2K, MES, M6E, M6A), CBOT (ZT, ZF, ZC) and NYMEX (MCL). Either
-three individual L1 subscriptions (~$4.65) or the **US Futures Value Bundle PLUS at $5.00/month**
-covers all of them.
+three individual L1 subscriptions (~$4.65) or the **US Securities Snapshot and Futures Value Bundle at
+$10.00/month** covers all of them.
 
-**The blocker that stopped spec `005` is a five-dollar-a-month subscription.**
+**The blocker that stopped spec `005` is a ten-dollar-a-month subscription.**
+
+> **CORRECTION (2026-08-21).** This section originally named the *US Futures Value Bundle PLUS* at
+> $5.00/month. That product is wrong for this purpose. Per IBKR footnote 5 it is a **depth-of-book (L2)
+> add-on that requires** the $10 base bundle — the portal auto-adds the base when you tick PLUS. The
+> base bundle alone (footnote 2) carries **top-of-book L1 for CBOT, CME, COMEX and NYMEX**, which is all
+> a daily-bar strategy needs. Correct purchase: **the $10 base bundle only, without PLUS.**
+>
+> Two further conditions surfaced with it:
+> - **Footnote 3 — US Futures data requires US Futures Trading Permissions on the account.** This account
+>   has never traded futures, so this is a separate enablement and is probably the real hurdle.
+> - **Footnote 4 — the $10 is waived above $30/month in commissions.** This book will not reach that; a
+>   monthly FX rebalance plus quarterly sleeve runs is nowhere near. Budget the full $10.
 
 ## Comparison
 
 | | IBKR subscription | LEAN / QC datasets |
 |---|---|---|
-| Cost | **~$5/month, published** | Paid, undisclosed |
+| Cost | **$10/month, published** | Paid, undisclosed |
 | Works with existing code | **Yes — `005` is built and tested** | No — needs a loader and translation layer |
 | New tooling | **None** | LEAN CLI, Docker, a QC account |
 | Roll convention | Individual contracts; continuous series built explicitly | Unknown |
@@ -129,7 +141,7 @@ and that is precisely what the subscription buys an answer to.
 
 ## Recommendation
 
-1. **Buy the US Futures Value Bundle PLUS (~$5/month)** and re-run `scripts/trend_sleeve.py`. The
+1. **Buy the US Securities Snapshot and Futures Value Bundle ($10/month)** — *not* the PLUS add-on — and re-run `scripts/trend_sleeve.py`. The
    practical test is immediate: today all eight markets return 0 bars, so the sleeve refuses. If bars
    appear, spec `005` phase 6 is unblocked.
    **The first thing to check is history depth, not the strategy.** IBKR's retention for *expired*
@@ -149,4 +161,4 @@ and that is precisely what the subscription buys an answer to.
 ## Cost of this gate
 
 About an hour, no money, no changes to the repo beyond documentation. It closed a proposed migration
-and replaced it with a $5/month purchase — which is what a gate is for.
+and replaced it with a $10/month purchase — which is what a gate is for.
