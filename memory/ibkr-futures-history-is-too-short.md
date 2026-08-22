@@ -9,13 +9,13 @@ metadata:
 Probed the live Gateway read-only on 2026-08-21, after three documents had recommended buying a
 market-data subscription to unblock the futures trend sleeve.
 
-**Futures data already works, with no subscription.** All eight markets (M2K MES M6E M6A ZT ZF ZC MCL)
-return daily bars, no entitlement error, `usfuture` farm connects — **while the account's US Futures
-Trading Permissions application was still pending.** Do not read that as "permissions are in place"; it
-was inferred from the absence of a permission error. Re-run the probes after approval to confirm the
-depth numbers below are unchanged.
+**The subscription is bought and works — that is why data returns.** All eight markets deliver live L1
+(`marketDataType=1`, no entitlement error, `usfuture` connected); SPY throws 10089 because the base
+bundle gives snapshot equities, not streaming. Do not repeat the error made here first time round:
+data flowing is evidence the purchase worked, not evidence it was unnecessary. US Futures **Trading**
+Permissions (a separate approval from market data) were still pending when this was measured.
 
-**What actually blocks the sleeve is history retention.** CONTFUT continuous series: MES/M2K from
+**The purchase did not unblock the sleeve; history retention did not move.** CONTFUT continuous series: MES/M2K from
 2024-09, M6E/M6A from **2025-06** (298 bars), ZT/ZF from 2025-01, ZC from 2021-12, MCL from 2023-10.
 `reqContractDetails(includeExpired=True)` returns only **8 contracts per market, earliest expiry
 2025-12**. That is IBKR's contract-database retention and **a market-data subscription does not change

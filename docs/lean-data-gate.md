@@ -144,22 +144,23 @@ and that is precisely what the subscription buys an answer to.
 Probed the live Gateway (read-only) instead of continuing to reason from documentation. **The premise of
 this whole gate was wrong.**
 
-**Futures data already works without any subscription.** All eight markets return daily bars with no
-permission or entitlement error, and `usfuture` connects.
+**The subscription was purchased, and it works.** The operator bought the bundle before this probe ran
+— which is *why* data returns at all. All eight markets deliver **live** L1 (`marketDataType=1`, no
+entitlement error, `usfuture` farm connected). SPY by contrast throws error 10089 "requires additional
+subscription", consistent with the base bundle carrying snapshot equities but streaming futures. The
+purchase did exactly what it advertises.
 
-> ⚠️ **PROVISIONAL — re-verify after futures approval.** These measurements were taken while the
-> account's **US Futures Trading Permissions application was still pending** (operator, 2026-08-21). The
-> original text here claimed permissions were in place; that was inferred from the *absence* of a
-> permission error, which is not the same thing. Bars returning at all with approval pending suggests
-> historical futures data is not gated on the trading permission — weak evidence that the depth numbers
-> below are real, not conclusive. **Re-run the probes once approval lands** before treating the verdict
-> as final: `reqContractDetails(includeExpired=True)`, `reqHistoricalData` on the front months, and
-> `ContFuture`. If depth is unchanged, the finding stands and the purchase stays closed.
-The earlier "0 bars" reading was a **competing live session** (error 10197 / "Trading TWS session is
-connected from a different IP address"), which blocks *all* market data — SPY failed identically. It was
-never evidence about futures entitlement.
+> **Correction.** This addendum first claimed futures data "already works without any subscription" and
+> recommended not buying. That was wrong on both counts — the data was flowing *because* of the
+> purchase. What follows was measured **with the entitlement active**, which makes it stronger evidence,
+> not weaker.
 
-**The real blocker is history retention, and money cannot fix it.**
+> ⚠️ **One variable still open.** US Futures **Trading** Permissions were still pending when this ran
+> (market-data entitlement and trading permission are separate approvals). Depth is unlikely to be
+> gated on the trading permission, but re-run the probes once it lands before treating the numbers as
+> final.
+
+**The subscription did not solve the problem. The blocker is history retention, and money cannot buy it.**
 
 | Market | Front-month bars | CONTFUT continuous series |
 |---|---|---|
@@ -176,12 +177,19 @@ gate needs years of expired contracts; they are not there to be bought.
 
 **Consequences:**
 
-1. **Do not buy the bundle.** It addresses entitlement, which was never the constraint.
+1. **The bundle is bought and delivers live futures L1 — but not usable history.** This is precisely the
+   exit criterion this gate wrote in advance: *"If only a couple of years come back, the subscription has
+   not solved the problem."* It came back with two. Keep it only for a scoped purpose (see 5); otherwise
+   cancel — billing is not prorated, so a cancellation still runs to the 1st.
 2. **The A2 gate cannot be re-run on IBKR futures data.** An era split needs ≥2 temporally distant
    windows; two years of micros is one window. Forcing it would be the short-window overfit the method
    exists to prevent.
 3. **The sleeve cannot run today regardless.** `MIN_HISTORY` is 315 bars; M6E and M6A have 298. It would
    refuse on 2 of 8 markets and run unvalidated on the rest.
+5. **There is one good use for the month already paid for: spec `005` T028** — the single-contract test
+   order, fill, reconcile and flatten. That validates the `FuturesExecution` guard set on a real account,
+   needs only live quotes, and is independent of signal validation. Both prior sleeves had guard bugs
+   that surfaced only on first real placement.
 4. **This consolidates two blockers into one purchase decision.** Futures trend validation and commodity
    carry (Tier C1) both now need **Databento** roll-adjusted history. That is the real question, and it
    has a real price — unlike the $10 this gate spent three documents recommending.
