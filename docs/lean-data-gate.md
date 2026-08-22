@@ -145,7 +145,16 @@ Probed the live Gateway (read-only) instead of continuing to reason from documen
 this whole gate was wrong.**
 
 **Futures data already works without any subscription.** All eight markets return daily bars with no
-permission or entitlement error, and `usfuture` connects. US Futures Trading Permissions are in place.
+permission or entitlement error, and `usfuture` connects.
+
+> ⚠️ **PROVISIONAL — re-verify after futures approval.** These measurements were taken while the
+> account's **US Futures Trading Permissions application was still pending** (operator, 2026-08-21). The
+> original text here claimed permissions were in place; that was inferred from the *absence* of a
+> permission error, which is not the same thing. Bars returning at all with approval pending suggests
+> historical futures data is not gated on the trading permission — weak evidence that the depth numbers
+> below are real, not conclusive. **Re-run the probes once approval lands** before treating the verdict
+> as final: `reqContractDetails(includeExpired=True)`, `reqHistoricalData` on the front months, and
+> `ContFuture`. If depth is unchanged, the finding stands and the purchase stays closed.
 The earlier "0 bars" reading was a **competing live session** (error 10197 / "Trading TWS session is
 connected from a different IP address"), which blocks *all* market data — SPY failed identically. It was
 never evidence about futures entitlement.
