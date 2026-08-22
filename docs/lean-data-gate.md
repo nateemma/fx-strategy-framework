@@ -139,9 +139,51 @@ What the exercise *did* establish, because these are correlation properties and 
 The *diversification* case survives. The *return level* in the actual instrument is genuinely open,
 and that is precisely what the subscription buys an answer to.
 
+## Addendum — the subscription question is CLOSED: do not buy (2026-08-21)
+
+Probed the live Gateway (read-only) instead of continuing to reason from documentation. **The premise of
+this whole gate was wrong.**
+
+**Futures data already works without any subscription.** All eight markets return daily bars with no
+permission or entitlement error, and `usfuture` connects. US Futures Trading Permissions are in place.
+The earlier "0 bars" reading was a **competing live session** (error 10197 / "Trading TWS session is
+connected from a different IP address"), which blocks *all* market data — SPY failed identically. It was
+never evidence about futures entitlement.
+
+**The real blocker is history retention, and money cannot fix it.**
+
+| Market | Front-month bars | CONTFUT continuous series |
+|---|---|---|
+| MES / M2K | 294 (from 2025-06) | 480 — from 2024-09 |
+| M6E / M6A | 110 (from 2026-03) | 298 — from 2025-06 |
+| ZT / ZF | 160 (from 2026-01) | ~405 — from 2025-01 |
+| ZC | 670 | 1175 — from 2021-12 |
+| MCL | 701 | 704 — from 2023-10 |
+
+`reqContractDetails(includeExpired=True)` returns only **8 contracts per market, earliest expiry
+2025-12** — about eight months of expired-contract retention. That is IBKR's *contract database* limit,
+which a market-data subscription does not affect. A back-adjusted series long enough to re-run the A2
+gate needs years of expired contracts; they are not there to be bought.
+
+**Consequences:**
+
+1. **Do not buy the bundle.** It addresses entitlement, which was never the constraint.
+2. **The A2 gate cannot be re-run on IBKR futures data.** An era split needs ≥2 temporally distant
+   windows; two years of micros is one window. Forcing it would be the short-window overfit the method
+   exists to prevent.
+3. **The sleeve cannot run today regardless.** `MIN_HISTORY` is 315 bars; M6E and M6A have 298. It would
+   refuse on 2 of 8 markets and run unvalidated on the rest.
+4. **This consolidates two blockers into one purchase decision.** Futures trend validation and commodity
+   carry (Tier C1) both now need **Databento** roll-adjusted history. That is the real question, and it
+   has a real price — unlike the $10 this gate spent three documents recommending.
+
+**Method note.** Two successive recommendations here were wrong from documentation alone: the product
+(PLUS is an L2 add-on, not the base bundle) and then the premise (entitlement, not retention). One
+read-only probe against the live Gateway settled both. Probe the system before pricing the fix.
+
 ## Recommendation
 
-1. **Buy the US Securities Snapshot and Futures Value Bundle ($10/month)** — *not* the PLUS add-on — and re-run `scripts/trend_sleeve.py`. The
+1. ~~**Buy the US Securities Snapshot and Futures Value Bundle ($10/month)**~~ — **SUPERSEDED, do not buy.** See the 2026-08-21 addendum above: data already works, and the binding constraint is history retention, which no subscription fixes. Original text: re-run `scripts/trend_sleeve.py`. The
    practical test is immediate: today all eight markets return 0 bars, so the sleeve refuses. If bars
    appear, spec `005` phase 6 is unblocked.
    **The first thing to check is history depth, not the strategy.** IBKR's retention for *expired*

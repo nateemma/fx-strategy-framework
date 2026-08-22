@@ -9,3 +9,4 @@ is the index. Findings that generalise across trading projects belong in
 - [Sleeve table is design, not deployment](memory/sleeve-table-is-design-not-deployment.md) — the README lists sleeves that may hold nothing; a sleeve that has never placed has never had its guards exercised.
 - [Launchd schedule state](memory/launchd-schedule-state.md) — six agents scheduled and verified; the 2026-08-01 miss means launchd has still never exercised the fix.
 - [Claude memory stranded by the repo move](memory/claude-memory-stranded-by-repo-move.md) — 25 pre-migration memories archived under `docs/archive/legacy-memory/`, deliberately not rehydrated.
+- [IBKR futures history is too short](memory/ibkr-futures-history-is-too-short.md) — data works with no subscription; ~2 years of micros is the real blocker, and a competing login zeroes all market data.
