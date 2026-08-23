@@ -69,8 +69,14 @@ def main():
     if len(prices) < MIN_HISTORY:
         raise SystemExit(
             f"\nREFUSING TO TRADE: only {len(prices)} bars, need {MIN_HISTORY}.\n"
-            f"This is what a missing market-data subscription looks like — IBKR returns a few bars\n"
-            f"rather than an error. Acting on that signal would be worse than not trading.")
+            f"This is EXPECTED and is not a subscription problem (verified 2026-08-21/23: the\n"
+            f"market-data entitlement is live and returns bars). History is fetched from the FRONT\n"
+            f"MONTH only, so it is capped at that contract's own listed life — MESU6 tops out near\n"
+            f"294 bars, M6EU6 near 110. No front contract can ever reach {MIN_HISTORY}. Running this\n"
+            f"needs a stitched, back-adjusted continuous series (and data deep enough to stitch);\n"
+            f"see docs/lean-data-gate.md. Zero bars across ALL markets usually means something else:\n"
+            f"IBKR pacing (>60 historical requests/10min) or a competing login. Acting on a short\n"
+            f"signal would be worse than not trading.")
 
     targets, diag = trend_targets(prices, {m.symbol: m.multiplier for m in UNIVERSE}, args.risk_base)
 

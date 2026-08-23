@@ -74,7 +74,27 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 ---
 
-## Phase 6: Live validation (needs the market-data subscription) — ⛔ BLOCKED
+## Phase 6: Live validation — ⛔ BLOCKED (revised 2026-08-23)
+
+> **The blocker is not the market-data subscription.** That was bought and verified live on
+> 2026-08-21/23 (all eight markets return bars, `mdType=1`, `usfuture` connected). Two *other* things
+> block this phase, and T026–T027 cannot be completed as originally written:
+>
+> 1. **The sleeve fetches the FRONT MONTH only** (`scripts/trend_sleeve.py`), so available history is
+>    capped at that contract's own listed life — MESU6 ~294 bars, M6EU6 ~110, ZTU6/ZFU6 ~160, against
+>    `MIN_HISTORY` 315. **No front contract can ever satisfy it**, at any subscription level. This needs
+>    a stitched, back-adjusted continuous-series builder, which does not exist yet — `futures_roll.py`
+>    decides what to *hold*, not how to build a price *history*.
+> 2. **IBKR does not retain enough contract history to stitch from.** CONTFUT gives ~2 years on the
+>    micros; `includeExpired` returns 8 contracts back to 2025-12. Needs Databento.
+>
+> T028 (single-contract executor validation) is the one task here that is **not** data-blocked — it needs
+> only live quotes, which exist. It is blocked solely on US Futures **Trading** Permissions, still pending
+> as of 2026-08-23. Do that one first when approval lands.
+>
+> Also beware two measurement artifacts that both look like "no data": IBKR **pacing** (>60 historical
+> requests / 10 min silently times requests out) and a **competing login** (error 10197 — cuts market data
+> to the API entirely, SPY included). Both produced false "0 bars" readings during this investigation.
 
 - [ ] T026 Confirm the subscription is active: front-month daily bars return a full history, not the 7-bar signature the A1 gate found
 - [ ] T027 Run `scripts/trend_sleeve.py` in preview against the live account and check all eight markets produce sane targets and rounding errors
