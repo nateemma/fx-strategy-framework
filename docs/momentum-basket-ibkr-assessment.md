@@ -159,9 +159,88 @@ are mostly just high-beta names — concentration risk without a diversification
 this idea in all three asset classes, and it was absent from the original study. Any future
 cross-sectional proposal here should be scored against it before anything else.
 
+
+## Follow-ups (2026-08-25, part 2) — is there a better universe, and is BTC the right gate?
+
+### Dispersion per unit of cost, across everything IBKR can trade liquidly
+
+| universe | n | median cross-sec sd (14d) | assumed cost/turn | **disp/cost** |
+|---|---|---|---|---|
+| US sector ETFs | 9 | 2.4% | 2bp | 157 |
+| **industry / thematic ETFs** | **48** | **4.1%** | **3bp** | **137** |
+| US large caps | 98 | 5.8% | 5bp | 116 |
+| country ETFs | 35 | 3.2% | 5bp | 64 |
+| crypto — all 75 | 75 | 11.8% | 20bp | 59 |
+| US small caps | 103 | 8.3% | 15bp | 55 |
+| crypto — IBKR/PAXOS 9 | 9 | 7.7% | 20bp | 39 |
+
+**Crypto ranks near the bottom on this measure.** Industry/thematic ETFs (SMH, XBI, GDX, XOP, URA, TAN,
+KRE …) look like the ideal hunting ground: 2.3× crypto's ratio with a genuine 48-name cross-section, at
+ETF spreads. Sector ETFs rank top but 9 names with top-3 is not a cross-section.
+
+### Industry/thematic ETFs — the best candidate on paper, and it still fails
+
+n=48, 2012-2026, 3bp/turn:
+
+| | 2012–2016 | 2017–2021 | 2022–2026 | full ann | Sharpe | maxDD |
+|---|---|---|---|---|---|---|
+| SPY | 14.2 / 1.11 | 18.4 / 0.99 | 12.4 / 0.75 | 15.0% | **0.93** | −33.7% |
+| **EW buy & hold, this universe** | 8.6 / 0.61 | 16.6 / 0.83 | 12.9 / 0.73 | 12.6% | **0.73** | −39.6% |
+| momentum lb=21, SPY gate (103×/yr) | 1.5 / 0.18 | 16.7 / 0.76 | 25.6 / 1.04 | 13.9% | 0.66 | −30.6% |
+| momentum lb=90, SPY gate | 7.2 / 0.42 | 11.6 / 0.59 | 14.2 / 0.67 | 10.9% | 0.56 | −31.1% |
+| momentum lb=126, SPY gate | 13.0 / 0.64 | 4.7 / 0.31 | 13.0 / 0.62 | 10.1% | 0.52 | −43.0% |
+
+Best variant is 0.66 against the universe's own equal-weight null at 0.73 — and against simply holding
+**SPY at 0.93**. The universe itself is a worse thing to own than the index; rotating within it is worse
+again. **Dispersion per unit of cost is necessary but not sufficient.**
+
+### Is BTC the right gate outside crypto? The question dissolves — no gate helps outside crypto
+
+Tested three regime references (market index, the universe's *own* equal-weight index, and none). The
+original small-cap run used SPY where IWM or the universe's own aggregate is arguably correct; fixing
+that changes nothing.
+
+| small caps, 15bp | SPY gate | IWM gate | own-EW gate |
+|---|---|---|---|
+| lb=21 | **0.33** | 0.18 | 0.15 |
+| lb=126 | 0.50 | **0.52** | 0.51 |
+
+| industry ETFs, 3bp | SPY gate | own-EW gate | **no gate** |
+|---|---|---|---|
+| lb=21 | **0.66** | 0.64 | 0.65 |
+| lb=90 | 0.56 | 0.52 | 0.58 |
+| lb=126 | 0.52 | 0.44 | **0.60** |
+
+All within noise, and on industry ETFs **no gate at all scores as well as any gate**. Contrast crypto,
+where the gate is worth ~43 percentage points of annual return. There is no equity-side equivalent
+because no equity index trends the way BTC did — and SPY>SMA-type rules are the most-decayed timing
+signal in the literature.
+
+### Why crypto works and nothing else does
+
+The gate and the cross-section are **complements**, not substitutes:
+
+| | ann | Sharpe | maxDD |
+|---|---|---|---|
+| BTC buy & hold | 12.6% | 0.49 | −76.6% |
+| BTC trend only (>SMA100, else cash, 20bp) | **9.3%** | **0.45** | −39.1% |
+| basket IBKR-9 lb=21 (gate + cross-section) | 22.0% | 0.67 | −54.5% |
+| basket full-75 lb=14 (gate + cross-section) | 47.2% | 0.89 | −73.6% |
+| basket full-75 lb=14, **gate ablated** | 3.7% | 0.47 | — |
+
+Remove the gate → 3.7%. Remove the cross-section → 9.3%. Keep both → 47.2%. The strategy needs a
+**strongly-trending dominant factor** *and* a **high-dispersion tail of assets levered to it**. Crypto
+2021-2026 supplied both. No IBKR-reachable universe supplies either at sufficient strength — which is a
+more precise and more portable statement than "survivorship bias."
+
+**This closes the search.** Seven universes were measured; the two most promising on first principles
+(small caps for dispersion, industry ETFs for dispersion-per-cost) were each run to a verdict, and both
+lost to a zero-turnover equal-weight null.
+
 ## Reproduction
 
 `scratchpad/mom_engine.py` (shared mechanics), `crypto_test.py`, `stock_test.py`, `stock_control.py`,
-`gate_ablation.py`, `fetch_small.py`, `small_test.py`.
+`gate_ablation.py`, `fetch_small.py`, `small_test.py`, `fetch_etfs.py`, `dispersion_survey.py`,
+`gate_and_industry.py`, `btc_trend_only.py`.
 Data: freqtrade `binanceus` daily feathers; Yahoo chart API for equities; IBKR live probe for the PAXOS
 universe. All free.
