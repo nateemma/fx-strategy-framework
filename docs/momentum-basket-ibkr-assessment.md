@@ -237,10 +237,51 @@ more precise and more portable statement than "survivorship bias."
 (small caps for dispersion, industry ETFs for dispersion-per-cost) were each run to a verdict, and both
 lost to a zero-turnover equal-weight null.
 
+
+## Follow-up (2026-08-25, part 3) — "beats SPY" is a moving bar. Does momentum earn its keep when the index doesn't?
+
+A fair objection to every comparison above: **SPY's 0.93 Sharpe is not a property of equities, it is a
+property of 2010-2026.** By era:
+
+| era | ann | Sharpe | maxDD |
+|---|---|---|---|
+| 1993–1999 | 21.0% | **1.32** | −19.0% |
+| **2000–2009** | **−1.0%** | **0.07** | **−55.2%** |
+| 2010–2019 | 13.5% | 0.93 | −19.3% |
+| 2020–2026 | 15.6% | 0.82 | −33.7% |
+| full 1993–2026 | 10.8% | 0.65 | −55.2% |
+
+So the null used above is itself flattered by the window, and "an index return" is a realised path, not an
+expected value you can bank. The honest test is therefore: **in the decade the index delivered nothing,
+does the rotation earn its keep?**
+
+2000–2009, 67 names with full history (still survivorship-biased in momentum's favour), 10bp/turn:
+
+| | ann | Sharpe | maxDD |
+|---|---|---|---|
+| SPY | −1.0% | 0.07 | −55.2% |
+| **EW buy & hold, these names** | **+11.0%** | **0.57** | −46.3% |
+| cash (T-bills) | +2.7% | — | 0.0% |
+| momentum lb=21 (SPY gate) | **−7.2%** | −0.11 | **−79.2%** |
+| momentum lb=90 (SPY gate) | −6.0% | −0.07 | −81.3% |
+| momentum lb=126 (SPY gate) | +2.1% | 0.21 | −68.2% |
+| momentum lb=252 (SPY gate) | +3.8% | 0.28 | −73.9% |
+| momentum lb=90 (no gate) | −7.7% | −0.03 | −87.0% |
+
+**It fails worse, not better.** In the exact regime where a rotation strategy should prove its value, it
+lost money with 68–87% drawdowns while equal-weighting the same names returned 11%/yr and cash returned
+2.7% with no drawdown. The objection was reasonable and the test refutes it — this *strengthens* the
+rejection rather than weakening it.
+
+The residual lesson is about the null, not the strategy: **equal-weight buy-and-hold beat SPY by 12pp/yr
+in the lost decade** (+11.0% vs −1.0%). Cap-weighting, not equity itself, is what delivered nothing in
+the 2000s. That is a point about index construction and belongs to the basket sleeve's design question,
+not to momentum.
+
 ## Reproduction
 
 `scratchpad/mom_engine.py` (shared mechanics), `crypto_test.py`, `stock_test.py`, `stock_control.py`,
 `gate_ablation.py`, `fetch_small.py`, `small_test.py`, `fetch_etfs.py`, `dispersion_survey.py`,
-`gate_and_industry.py`, `btc_trend_only.py`.
+`gate_and_industry.py`, `btc_trend_only.py`, `lost_decade.py`.
 Data: freqtrade `binanceus` daily feathers; Yahoo chart API for equities; IBKR live probe for the PAXOS
 universe. All free.
