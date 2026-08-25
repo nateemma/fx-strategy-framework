@@ -100,6 +100,7 @@ Confirmed against IBKR's own pricing pages, 2026-08-17.
 | Cross-asset trend (ETF proxies) | ~0% modern, −32% COVID whipsaw. |
 | Equity style factors | Premia decayed; combo Sharpe 1.0 → 0.05. |
 | Momentum rotation | Works (~6–7%) but does not beat the basket; frequent rebalancing *hurts* on liquid ETFs. |
+| Momentum basket on IBKR stocks/crypto | **Rejected 2026-08-25.** Crypto: IBKR's 11 coins = buy-and-hold BTC (Sh 0.49). Equities: loses to equal-weight buy-and-hold on a de-biased universe. [`momentum-basket-ibkr-assessment.md`](./momentum-basket-ibkr-assessment.md) |
 | Per-holding trend overlay (crypto analog) | **Rejected 2026-08-21.** Cuts drawdown and equity correlation, but not persistent across eras and loses to a static cash split. [`momentum-basket-15m-assessment.md`](./momentum-basket-15m-assessment.md) |
 | Securities lending (SYEP) | Net-negative here — general-collateral holdings, and PIL destroys qualified-dividend treatment. |
 | **FX + basket combination** | **The actual answer so far:** two uncorrelated sleeves → ~10% CAGR at −8% DD, Sharpe ~1.5. Now weakened by the FX leg's financing problem. |

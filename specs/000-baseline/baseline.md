@@ -146,6 +146,7 @@ when starting it; do not pre-write specs.
 | 13 | FX options VRP (#9) / order flow (#10) | L | Low | Blocked: no free/retail data source. |
 | 14 | Explicit rebalance marker written at trade time | S | Low | Robust alternative deferred in `specs/001-fx-only-reporting/research.md` R1. Current detection infers rebalances from unsettled-trade counts, which depends on a stable ETF position baseline. |
 | 15 | Securities lending (SYEP) | S | Won't do | Assessed net-negative for this book in a taxable account. Revisit only if tax-advantaged or holding hard-to-borrow names. |
+| 17 | ~~Momentum basket on IBKR stocks or crypto~~ | S | **Closed** | Gated 2026-08-25 from the freqtrade `MomentumRegimeBasket15mFast` review. **Crypto:** IBKR/PAXOS offers 11 coins; restricted to them the strategy returns 12.7% at Sharpe 0.49 — identical to holding BTC — and P3 goes +1094% → −9.2%. The edge lived in the illiquid-alt tail IBKR does not list. **Equities:** on a de-biased large-cap universe every lookback loses to equal-weight buy-and-hold of the same names (lb=14 Sharpe 0.51, lb=90 0.74, vs EW 1.04 and SPY 0.86). Fast lookbacks are the *worst* on liquid names. `docs/momentum-basket-ibkr-assessment.md`. |
 | 16 | ~~Per-holding trend overlay on the basket~~ | S | **Closed** | Gated 2026-08-21 from the freqtrade `MomentumRegimeBasket15m` review. Moving each ETF's slice to cash when it trades below its own SMA cuts maxDD (−18.5% → −9.8%) and equity correlation (0.32 → −0.03), but the Sharpe gain appears in only one of two eras and **loses to a static 63/37 basket/T-bill split** that needs no signal at all. Genuine benefit is confined to stock-bond joint drawdowns (2022: −1.3% vs −11.8%). `docs/momentum-basket-15m-assessment.md`. |
 
 **Live deployment** is deliberately *not* on this list as a task. The execution stack is
@@ -203,6 +204,7 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/lean-data-gate.md` | **Live.** Why LEAN was declined, and the ~$5/month IBKR subscription that unblocks the trend sleeve. |
 | `docs/box-spread-findings.md` | **Closed.** Box financing rejected: the book has nothing worth levering in cash instruments. |
 | `docs/prediction-markets-findings.md` | **Closed.** ForecastEx rejected on liquidity ($49/day median). Contains a reusable warning about filters that delete losers. |
+| `docs/momentum-basket-ibkr-assessment.md` | **Closed.** Momentum basket on IBKR stocks/crypto rejected; contains the equal-weight null that should be run against any future cross-sectional idea. |
 | `docs/momentum-basket-15m-assessment.md` | **Closed.** Why the freqtrade 15m momentum-basket approach does not transfer, and the trend-overlay gate that rejected its one testable component. |
 | `docs/basket-sleeve.md` | **Live.** Basket sleeve operating manual (see discrepancies 3–5). |
 | `docs/scheduled-paper-track.md` | **Live.** Scheduling operating manual (see discrepancy 1). |
