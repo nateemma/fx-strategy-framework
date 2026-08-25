@@ -101,8 +101,67 @@ Sharpe with a Calmar constraint — not raw return.
 - Neither is worth funding on the evidence above: the mechanism failed against a *free* null (equal
   weight) in both asset classes.
 
+
+## Follow-ups (2026-08-25) — the regime gate, and small caps
+
+Two questions raised on review. Both change the *explanation*; neither changes the verdict.
+
+### Is the BTC regime gate actually applied — and does it matter?
+
+Applied, and it is doing nearly all of the work. `BTC > SMA100` is risk-on only **47.4%** of days
+(`SPY > SMA100`: 77.4%). Ablating it:
+
+| case | gate ON | gate OFF |
+|---|---|---|
+| crypto full-75, lb=14 | 47.2% / 0.89 | **3.7% / 0.47** |
+| crypto IBKR-9, lb=14 | 12.7% / 0.49 | **0.8% / 0.27** |
+| crypto IBKR-9, lb=21 | 22.0% / 0.67 | 6.2% / 0.38 |
+| equity 98, lb=14 | 24.0% / 0.84 | 16.2% / 0.60 |
+| equity 98, lb=90 | 37.5% / 1.14 | **39.4% / 1.11** |
+
+**In crypto this is a BTC trend-timing overlay with a cross-sectional garnish, not a momentum basket.**
+Remove the gate and the full-universe result falls from 47.2%/yr to 3.7%. On equities at the slow
+lookbacks the gate contributes nothing at all (37.5 vs 39.4). Anyone porting "the momentum basket" is
+mostly porting `BTC > SMA100`, and its equity analogue is the most-decayed timing rule in the literature.
+
+### Do small caps supply the missing dispersion?
+
+**Yes — and it still fails, which is the more useful result.** 103 US small/mid caps, 2010-2026.
+
+Median cross-sectional sd of 14-day returns: **small-cap 8.3%**, large-cap 5.8%, IBKR crypto 7.7%,
+crypto-75 11.8%. So small caps genuinely carry more dispersion than IBKR's crypto universe.
+
+| | full ann | Sharpe | maxDD |
+|---|---|---|---|
+| IWM (actual small-cap index) | 11.2% | 0.59 | −41.1% |
+| **EW buy & hold, this universe** | 19.4% | **0.86** | −48.4% |
+| momentum lb=126 @ 15bp | 13.1% | 0.50 | −47.7% |
+| momentum lb=90 @ 15bp | 10.9% | 0.45 | −62.8% |
+| momentum lb=14 @ 15bp | 7.3% | 0.37 | −67.9% |
+| momentum lb=14 @ 30bp | **−9.5%** | −0.05 | **−90.8%** |
+| momentum lb=21 @ 30bp | −9.5% | −0.09 | −94.2% |
+
+**Dispersion is necessary but not sufficient — what matters is dispersion per unit of cost.** Dispersion
+rose ~43% (5.8% → 8.3%) while small-cap spreads are 3–6× large-cap and the strategy turns over 100–113×
+per year. The cost term scales faster than the signal. Crypto clears this bar because 11.8% dispersion
+comes at roughly 20bp all-in; small caps offer less dispersion at similar or worse cost.
+
+**The survivorship control is worse here than for large caps.** Equal-weighting this hand-assembled
+universe returns 19.4%/yr against IWM's actual 11.2% — an ~8pp/year bias baked into the ticker list. The
+momentum rows above are therefore upper bounds *and* they still lose to the equal-weight null by a wide
+margin.
+
+Concentration is the other half of it: holding 3 names out of 100 produces −48% to −95% drawdowns
+against the universe's own −48%. The cross-section is dominated by market beta, so top-3 momentum names
+are mostly just high-beta names — concentration risk without a diversification payoff.
+
+**Closing note on method.** The equal-weight buy-and-hold of the *same universe* is the null that killed
+this idea in all three asset classes, and it was absent from the original study. Any future
+cross-sectional proposal here should be scored against it before anything else.
+
 ## Reproduction
 
-`scratchpad/mom_engine.py` (shared mechanics), `crypto_test.py`, `stock_test.py`, `stock_control.py`.
+`scratchpad/mom_engine.py` (shared mechanics), `crypto_test.py`, `stock_test.py`, `stock_control.py`,
+`gate_ablation.py`, `fetch_small.py`, `small_test.py`.
 Data: freqtrade `binanceus` daily feathers; Yahoo chart API for equities; IBKR live probe for the PAXOS
 universe. All free.
