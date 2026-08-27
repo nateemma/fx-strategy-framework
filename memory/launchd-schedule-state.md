@@ -36,6 +36,28 @@ and nothing appeared. It uses a modal `display alert ... giving up after` instea
 `com.fx.paper-rebalance.plist` carries the **FRED API key in cleartext** in `EnvironmentVariables`
 (mode 0600, so not exposed to other users, but outside the EnvConfig discipline).
 
+**The IB Gateway had no supervisor at all until 2026-08-27.** IBC ships `~/ibc/local.ibc-gateway.plist`
+and it had never been copied into `~/Library/LaunchAgents/`. When IBKR's 03:00 auto-restart fired, the
+Gateway restarted itself, IBC saw its child exit and terminated (`Gateway finished`), and nothing brought
+it back — the operator had been relaunching by hand (visible as mid-day entries in
+`~/Jts/launcher.*.log` against clean 03:00 ones). Now installed as `local.ibc-gateway` running
+`~/ibc/gateway_supervisor.sh`, verified: hard-kill → recovered in **2m06s**.
+
+Two design notes, both learned the hard way:
+
+- **Use `StartInterval`, not `KeepAlive`, for a poll script**, and **do not skip the port check.** Without
+  the check a restart launches a *second* Gateway beside a running one, and a duplicate IBKR login
+  triggers "competing live session" (error 10197) which silently cuts market data to the API for every
+  symbol — indistinguishable from a missing subscription. See
+  [[ibkr-futures-history-is-too-short]].
+- **A hard `kill` of the Gateway leaves the session registered server-side.** The next login then sits on
+  an open dialog until IBKR releases it — measured at **3h42m** before a "Re-login is required" dialog
+  appeared and IBC clicked through. Clean restarts take seconds. So a slow recovery after a forced kill
+  is a *server-side session* artifact, not a broken supervisor. (I first misdiagnosed this as launchd
+  throttling `KeepAlive`; the log showed it had fired on time at 12:34:46.)
+- **Known gap:** if IBC hangs on a login dialog, launchd sees a running job and will not retry. Left
+  unhandled deliberately — killing repeatedly would likely prolong the session conflict.
+
 **How to apply:** when anything moves the repo, re-run `scripts/install_schedules.sh` — plists hardcode
 absolute paths, and a move is exactly what caused the one real outage. See [[paper-track-live-state]]
 and [[sleeve-table-is-design-not-deployment]].
