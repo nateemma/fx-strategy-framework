@@ -87,6 +87,115 @@ exactly why the ETF sleeves were untouched by the financing finding.
    the asset. Revisit if the trend sleeve validates on real futures data, or if financing terms change
    (the number is 95bp all-in — see [`financing-spread-findings.md`](./financing-spread-findings.md)).
 
+## Addendum 2026-10-09: operational stability — the dimension this doc missed
+
+**The decision above still holds, but it was taken without weighing uptime at all.** It predates the
+two Gateway outages, so "is IBKR a good platform" was answered on financing, data and capital while
+the thing that has actually cost the most — the Gateway staying logged in — went unexamined.
+
+### What happened
+
+| Date | Event | Cost |
+|---|---|---|
+| 2026-09-06 | Auto-restart tokens expired at 03:00; Gateway sat logged out | ~13h, cleared same day |
+| 2026-09-13 → 10-08 | Same failure, nobody noticed | **25 days.** October's monthly FX rebalance and the quarterly sleeve rebalance both fired on time and placed nothing; `nav.csv` lost 25 days, unrecoverably |
+| 2026-12-15 | Gateway 10.45 desupported (error 2172 on every connect) | A forced upgrade on a deadline |
+
+### The mechanism, so it is not rediscovered expensively
+
+IBKR's unattended restart depends on a token file at `~/Jts/<session-id>/autorestart`. The Gateway's
+own log states the rule outright:
+
+```
+autorestart file found at ~/Jts/<id>/autorestart: authentication will not be required
+autorestart file not found: full authentication will be required
+```
+
+One day's log showed **14 token-based restarts against 2 full-auth demands**. When the token is
+present the Gateway restarts silently; when it is absent IBKR demands credentials and the error is
+explicit: *"The security tokens associated with your login credentials have expired (routinely) in
+accordance with our security protocols. Please manually enter your username and password."* That is
+IBKR policy, not a bug, and it is the Sep 13 failure.
+
+So the cadence is structural: **a full authentication is demanded periodically and IBC 3.24.1 did not
+recover from it**, even though credentials are stored in `config.ini`. Notably IBC *did* auto-recover
+a different dialog — "Re-login is required" on 2026-10-08 21:53, logged through to "Login has
+completed" in ~45 seconds — so stored-credential logins work in general. The token-expiry dialog is
+the one it sits on.
+
+### The honest split of blame
+
+| Symptom | Cause | Status |
+|---|---|---|
+| Forced full login every week or two | **IBKR policy.** Not fixable by us | Open — mitigation attempted 2026-10-09, see below |
+| 25 days of *silence* about it | **Ours.** The healthcheck asserted on file mtime, which a failure traceback refreshed | **Fixed** 2026-10-09, spec `008` |
+| No Gateway supervisor at all until 2026-08-27 | Ours | Fixed, then found insufficient (its timer was starved) — also spec `008` |
+| A missed rebalance rather than a late one | Ours. `connect_with_retry` gives up after ~1 minute, which is far too impatient for a monthly job | **Open** — Backlog #23 |
+
+Worth being precise about this, because the two are easy to conflate: IBKR costs a login every week
+or two. It cost *five weeks of data* because our own monitoring reported green through the outage.
+
+### Does this change the decision? No — but for a narrower reason than before
+
+The alternatives were re-surveyed on 2026-10-09 against the new evidence:
+
+| Platform | Fixes the uptime problem? | What it costs |
+|---|---|---|
+| Alpaca | Yes — REST, no gateway, stable unattended | **No FX, no futures.** Deletes the FX book and the trend sleeve outright |
+| OANDA / IG | Yes, clean REST, good FX data | Financing and spreads worse than IBKR — kills carry harder than IBKR does |
+| tastytrade | Partly — futures, but no multi-currency FX | Financing worse |
+| Tradier | Yes | US equities/options only |
+| QuantConnect/LEAN | Not a broker; connects *to* one | Already gated and declined above |
+
+**No retail broker combines IBKR's financing, multi-currency FX, futures, and an API.** Every option
+with better uptime is strictly narrower, and the narrowing removes the strategies this program exists
+to test. The margin table at the top of this doc remains decisive: the 218bp that took `carry_cot_mom`
+from Sharpe 1.15 to 0.17 would be 600bp+ at a broker with a nicer API.
+
+So the conclusion is unchanged but the reasoning is now explicitly three-sided: IBKR is the cheapest
+retail financing, its data gap is a *vendor* purchase rather than a broker problem, and its
+operational fragility is real but costs a periodic manual login rather than a strategy.
+
+**A switch would make sense only if the strategy changed first** — dropping FX carry and futures for
+US equities and options only. That is a strategy decision, with the platform following from it, not
+the other way round.
+
+### The fix attempted 2026-10-09: `ColdRestartTime`
+
+**Both outages began on a Sunday** — 2026-09-06 and 2026-09-13 are both Sundays. That is not a
+coincidence: IBKR requires a full shutdown and fresh logon once a week, and IBC documents the handler
+for it in its own `config.ini`:
+
+> *"To assist in complying with the requirement to fully shut down TWS on Sundays, IBC can be
+> configured with a Cold Restart Time... IBC tidily closes TWS, and the script then reloads IBC thus
+> starting a new instance and initiating the usual full logon. There is thus no need to make any other
+> arrangements for closing and restarting at the weekend."*
+
+And, pointedly: *"where this information mentions 'manual authentication', closing down and restarting
+IBC will do the job."*
+
+**`ColdRestartTime` was blank.** Only `AutoRestartTime=03:00` was set, which performs the *soft*,
+token-based restart — the one that works until the token expires and then demands a human. So the
+configuration had a daily restart that could not survive the weekly re-authentication, and no weekly
+cold restart to satisfy it.
+
+Set to `ColdRestartTime=04:30` (local). 04:30 PT is 07:30 US/Eastern year-round — PT is always ET−3 —
+which satisfies IBC's "after 01:00 US/Eastern" requirement without a DST edge case, and is clear of
+both `AutoRestartTime=03:00` and every scheduled job. Previous config backed up to
+`~/ibc/config.ini.bak-20261009`.
+
+**This is a hypothesis with good evidence, not a verified fix.** What supports it: the Sunday
+correlation, IBC's own documentation naming this the remedy for exactly this symptom, and the
+2026-10-08 21:53 event where IBC *did* complete an unattended credentialed re-login in ~45 seconds,
+which shows stored-credential logon works in general. What is unproven: whether a full cold logon
+completes unattended, or whether it stops for 2FA — `SecondFactorDevice` is blank and
+`--on2fatimeout=exit` is on IBC's command line, so a 2FA prompt is the plausible failure mode.
+
+It will be exercised on the next Sunday cold restart, with the `com.fx.gateway-watchdog` agent (spec
+`008`) as the net — the first time this class of failure has had a detector in place while it
+happened. Expect at most one watchdog alert if the cold logon runs longer than ~5 minutes; a quiet
+Sunday morning means it worked.
+
 ## What would change this
 
 - **The trend sleeve validating on real futures data** would give the first strategy that both works

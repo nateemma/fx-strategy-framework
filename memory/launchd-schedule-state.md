@@ -1,12 +1,12 @@
 ---
 name: launchd-schedule-state
-description: Six launchd agents now scheduled and verified; the 2026-08-01 FX rebalance silently failed after the repo move and launchd has still never exercised the fix
+description: Seven launchd agents scheduled and verified; the 2026-08-01 post-move fix HAS now been exercised by launchd (2026-09-01 and 2026-10-01 both fired on time)
 metadata:
   node_type: memory
   type: project
 ---
 
-Unattended operation is wired. Six agents installed and verified loaded (2026-08-21, all exit 0):
+Unattended operation is wired. **Seven** agents installed and verified loaded (2026-08-21; watchdog added 2026-10-09):
 
 | Agent | Schedule |
 |---|---|
@@ -16,6 +16,13 @@ Unattended operation is wired. Six agents installed and verified loaded (2026-08
 | `com.fx.healthcheck` | daily |
 | `com.fx.vix-carry` | daily (contango gate) |
 | `com.fx.trend-sleeve` | monthly — **watching an undeployed sleeve**, so it carries an `enabled` flag |
+| `com.fx.gateway-watchdog` | **every 300s** (added 2026-10-09, spec `008`) — probe-only; alerts if port 4002 stops serving. `StartInterval`, so its timer cannot be starved the way `local.ibc-gateway`'s was |
+
+**UPDATE 2026-10-09 — the post-move fix has now been exercised.** `track.log` carries a
+`2026-09-01T16:00:04Z` entry, i.e. 09:00 PDT, which is the timer rather than a human; 2026-10-01 fired
+on time too (and failed only because the Gateway was logged out — see [[gateway-sunday-reauth]]).
+**launchd itself has never been the problem since.** What failed instead was the Gateway underneath it
+and a healthcheck that reported green through the failure.
 
 **The 2026-08-01 silent failure, still unclosed.** The repo moved from `~/Documents/forex` to
 `~/projects/forex`; the plists still pointed at the old path and `launchd.err` recorded
