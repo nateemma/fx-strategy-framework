@@ -129,7 +129,7 @@ several stale files.
 
 - [X] T030 Run `.venv/bin/python -m pytest -q` and `python -m ruff check .`; confirm green and no new violations
 - [X] T031 Run [quickstart.md](./quickstart.md) steps 1–5 and confirm each expectation
-- [ ] T032 Run `scripts/gateway_watchdog.py --self-test` and confirm a modal alert actually appears (quickstart step 6) — a silent pass here is a known-possible state and means the channel is broken
+- [X] T032 Run `scripts/gateway_watchdog.py --self-test` and confirm a modal alert actually appears (quickstart step 6) — a silent pass here is a known-possible state and means the channel is broken
 - [X] T033 Install the agent and **verify the timer re-fires** by confirming `gateway_status.txt`'s mtime advances across a >5-minute gap — this is the precise defect being fixed, so confirm it rather than assuming it
 - [X] T034 Update `specs/000-baseline/baseline.md`: close Backlog #19 and #20, and record the feature under Completed with what remains unverified
 - [X] T035 Commit and push spec, plan, tasks and implementation (Constitution V — planning state that exists on one machine does not exist)
@@ -141,10 +141,11 @@ several stale files.
 > precise property the old supervisor lost (its port check had not run in 40 days), so it is recorded as a
 > measurement rather than an assumption. `gateway_watchdog.log` shows the repeated runs.
 >
-> **T032 left for the operator**: `--self-test` raises a modal dialog on the desktop, so it needs someone
-> present to see and dismiss it. It is the one step that cannot be self-verified — and it matters, because
-> a dropped alert is a known-possible state here: Notification Centre banners were silently discarded on
-> this machine while `osascript` still exited 0.
+> **T032 verified by the operator 2026-10-09**: `--self-test` returned `alert delivered` and the modal
+> appeared. This step cannot be self-verified — it needs someone present to see and dismiss the dialog —
+> and it matters, because a dropped alert is a known-possible state here: Notification Centre banners were
+> silently discarded on this machine while `osascript` still exited 0. The modal path is confirmed to get
+> through, so an alert raised by the watchdog will actually reach someone.
 
 ## Dependencies & Execution Order
 
