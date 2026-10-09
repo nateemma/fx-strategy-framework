@@ -202,8 +202,9 @@ failure; this shortens the time from "something is wrong" to "I know what to do"
   harmful here: starting a second instance triggers a duplicate-login state that silently cuts market data,
   and a hard kill leaves the session registered server-side, after which the next login was measured waiting
   3h42m for release. Auto-starting when **no** instance is running is retained, since that case is safe and
-  is what the current supervisor already does. **This is the one scope decision in this spec that a reader
-  might reasonably reverse** — it trades faster recovery for not making a bad state worse.
+  is what the current supervisor already does. **Confirmed by the operator 2026-10-09**, so this is settled
+  scope rather than a default: the watchdog never kills, never restarts a live instance, and never attempts
+  a login. It trades recovery speed for not making a bad state worse.
 - **Detection latency is bounded below by the nightly restart window**, since a short absence must be
   tolerated to avoid a nightly false alarm. One hour is comfortably above that floor and far below the
   horizon that matters (the next scheduled job).

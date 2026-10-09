@@ -17,6 +17,10 @@ health.log
 basket.log
 trend.log
 vix_carry.log
+fx_rebalance_status.csv
+gateway_status.txt
+gateway_watchdog_state.json
+gateway_watchdog.log
 .superpowers/
 
 # Machine-local Claude Code settings. .claude/skills/ and .specify/ ARE tracked,

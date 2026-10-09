@@ -8,11 +8,13 @@ outlives the notification. Exits non-zero when anything is overdue.
 
 Runs daily from launchd (com.fx.healthcheck) — see scripts/install_schedules.sh.
 """
+import os
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
+from forex.run.gateway_watchdog import port_is_serving
 from forex.run.health import (alert_command, check_health, format_report,
                               notification_command, overdue_summary)
 
@@ -48,7 +50,12 @@ if "--self-test" in sys.argv:
     sys.exit(0 if ok else 1)
 
 now = datetime.now().astimezone()
-report = check_health(now)
+# Probe the broker so the status file names the CAUSE, not just the stale symptoms. During the
+# 2026-09-13..10-08 outage every failing job was a symptom of one dead Gateway, and nothing said so.
+# Injected rather than called inside check_health, which stays pure and offline-testable; an
+# unreachable broker is reported but never changes a job verdict.
+port = int(os.environ.get("IB_PORT", "4002"))
+report = check_health(now, probe=lambda: port_is_serving(port))
 
 stamp = now.strftime("%Y-%m-%d %H:%M:%S %Z")
 verdict = "HEALTHY" if report.healthy else "OVERDUE"

@@ -36,5 +36,13 @@ STAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   forex dryrun --strategy carry_cot_mom --universe "$UNIVERSE" --broker ib --ib-port "$IB_PORT" --confirm
   echo "--- done $STAMP ---"
 } >> track.log 2>&1
+
+# SUCCESS MARKER — the healthcheck watches this file, deliberately NOT track.log.
+# Reached only when every command in the block above succeeded: `set -euo pipefail` aborts the script
+# on the first failure, so a refused Gateway connection never gets here. Verified against the forward
+# record — the failed 2026-10-01 run never reached its own "--- done ---" line either.
+# Watching track.log instead is what reported that run as healthy for 25 days (spec 008).
+printf '%s,ok\n' "$STAMP" >> fx_rebalance_status.csv
+
 echo "monthly paper rebalance complete ($STAMP) — details appended to $(pwd)/track.log"
 tail -n 4 track.log

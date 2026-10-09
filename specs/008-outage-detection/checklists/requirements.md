@@ -46,11 +46,11 @@ Validation run 2026-10-09. Three items needed a second pass:
    testable. Split into FR-011 (must not start a second instance) and FR-012 (must start when none is
    running), both directly assertable with an injected process check.
 
-**No [NEEDS CLARIFICATION] markers were left**, but one decision was made by informed default rather than
-by the operator and is flagged in Assumptions: a wedged-but-alive Gateway is **alerted, not auto-recovered**.
-The evidence for that default is in-repo and strong (duplicate login silently kills market data; a hard kill
-measured 3h42m of server-side session lock), but it trades recovery speed for safety and is the one thing in
-this spec worth an explicit yes/no before planning.
+**No [NEEDS CLARIFICATION] markers were left.** One decision was initially taken by informed default and
+has since been **confirmed by the operator (2026-10-09)**: a wedged-but-alive Gateway is **alerted, not
+auto-recovered**. The evidence was in-repo and strong (duplicate login silently kills market data; a hard
+kill measured 3h42m of server-side session lock); the operator ratified it, so planning may treat
+"never kill, never restart a live instance, never attempt a login" as a hard constraint.
 
 One deliberate exception to "no implementation details": FR-015 names `tests/test_health.py` and its 26
 tests. That is a regression constraint the operator stated explicitly and it has to be checkable, so the

@@ -29,9 +29,10 @@ SNAP_PLIST="$LA/com.fx.nav-snapshot.plist"
 HEALTH_PLIST="$LA/com.fx.healthcheck.plist"
 TREND_PLIST="$LA/com.fx.trend-sleeve.plist"
 VIX_PLIST="$LA/com.fx.vix-carry.plist"
+WATCHDOG_PLIST="$LA/com.fx.gateway-watchdog.plist"
 
 if [ "${1:-}" = "uninstall" ]; then
-  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST"; do
+  for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST" "$WATCHDOG_PLIST"; do
     launchctl unload "$pl" 2>/dev/null || true
     rm -f "$pl" && echo "removed: $pl"
   done
@@ -156,7 +157,35 @@ else
   echo "VIX_ALLOCATION=0 -> vix-carry agent not installed"
 fi
 
-for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST"; do
+# Gateway watchdog: every 300s, probe-only. StartInterval, NOT StartCalendarInterval — the failure it
+# catches (IBKR expiring the auto-restart tokens, leaving the Gateway up but logged out) can begin at
+# any hour: observed at 03:00 on 2026-09-13 and at 21:52 on 2026-10-08.
+#
+# And StartInterval, NOT KeepAlive: KeepAlive treats a fast-exiting poll script as a crash loop and
+# applies escalating backoff, measured at 3h47m on this machine. Same trap is recorded in
+# ~/Library/LaunchAgents/local.ibc-gateway.plist.
+#
+# INDEPENDENT of local.ibc-gateway, which keeps sole responsibility for cold-starting IBC. That
+# separation IS the fix: local.ibc-gateway's timer is starved whenever IBC is alive, because its
+# script exec's IBC and never exits — its port check had not run in 40 days. This agent does one
+# probe and exits every time, so its timer cannot be starved.
+cat > "$WATCHDOG_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.fx.gateway-watchdog</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>ProgramArguments</key>
+  <array><string>$PY</string><string>scripts/gateway_watchdog.py</string></array>
+  <key>EnvironmentVariables</key><dict><key>IB_PORT</key><string>$IB_PORT</string></dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>$REPO/gateway_watchdog.log</string>
+  <key>StandardErrorPath</key><string>$REPO/gateway_watchdog.log</string>
+</dict></plist>
+EOF
+
+for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_PLIST" "$VIX_PLIST" "$WATCHDOG_PLIST"; do
   [ -f "$pl" ] || { echo "skipped (not generated): $(basename "$pl")"; continue; }
   launchctl unload "$pl" 2>/dev/null || true    # unload-first so re-running updates cleanly
   launchctl load "$pl"
@@ -176,5 +205,6 @@ for pl in "$REBAL_PLIST" "$BASKET_PLIST" "$SNAP_PLIST" "$HEALTH_PLIST" "$TREND_P
 done
 echo "installed. FX rebalance = 1st 09:00 ; basket rebalance = 1st Jan/Apr/Jul/Oct 09:30 ; NAV snapshot = 21:00 ;"
 echo "           healthcheck = 22:00 daily ; trend sleeve = 1st 10:00 (risk base $TREND_RISK_BASE) ; port=$IB_PORT"
+echo "           gateway watchdog = every 300s (probe-only: never starts, kills, or logs in)"
 echo "verify:  launchctl list | grep com.fx"
 echo "remove:  $0 uninstall"
