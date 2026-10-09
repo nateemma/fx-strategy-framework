@@ -108,7 +108,39 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 
 - [ ] T026 Confirm the subscription is active: front-month daily bars return a full history, not the 7-bar signature the A1 gate found
 - [ ] T027 Run `scripts/trend_sleeve.py` in preview against the live account and check all eight markets produce sane targets and rounding errors
-- [ ] T028 Place a single-contract test order in one market, verify fill and reconcile, then flatten it
+- [X] T028 Place a single-contract test order in one market, verify fill and reconcile, then flatten it
+
+  **DONE 2026-10-09, 13:26 CDT** (inside the CME cash session). Driven through
+  `FuturesExecution.rebalance({"MES": 1})` with `confirm=True` and a MES-only market list, so the
+  Phase 3 guards were the thing under test rather than a raw order.
+
+  | Step | Result |
+  |---|---|
+  | Preflight | DUQ218063 (paper), NAV 990,154, AvailableFunds 722,237 vs the 25,000 floor, **0 futures held** |
+  | Order | 1 contract, ~4% of NAV against the 50% `max_order_frac` cap |
+  | Fill | `MESZ6` conId 815824257 **BOT 1 @ 7863.5**, `complete=True` |
+  | Reconcile | exactly **+1** future added; nothing removed, nothing changed; FX book untouched |
+  | Margin | AvailableFunds −2,587, against the 2,472 the earlier read-only `whatIfOrder` predicted |
+  | Flatten | `rebalance({"MES": 0})` → **SLD 1 @ 7863.0**; flat, and positions back to the baseline **exactly** |
+  | Round trip | −2.50 before commission — half a tick, i.e. the spread |
+
+  **No guard fired, and that is the mildly surprising part.** The task note below predicted one would:
+  the FX sleeve and the basket sleeve each had a guard bug that only surfaced on first real placement
+  (the basket's per-order cap aborted its first run; the cash sleeve's cap made placement impossible at
+  all). This executor placed, reconciled and flattened correctly first time. The difference is probably
+  that `futures.py` was written *after* both of those bugs were found and deliberately copied the fixed
+  shape — the atomic cap pre-pass is called out in its own docstring as "as fixed in basket.py". So the
+  prediction was reasonable and the outcome is better than expected; it is recorded rather than smoothed
+  over, because "we expected a bug and found none" is itself evidence about the executor.
+
+  **What this does NOT unblock**: the sleeve still refuses to trade. T026/T027 and T029/T030 remain
+  blocked on history depth — `MIN_HISTORY` is 315 bars, IBKR retains ~2 years of micros, and the
+  stitched continuous series needs Databento. T028 validated the *executor*, which is all it ever
+  claimed to.
+
+  Run from one-off scratchpad scripts (preflight / place / verify / flatten) rather than a committed
+  runner, since this is a gate rather than a recurring job. The parameters above are the whole recipe
+  if it needs repeating — e.g. after the Gateway 10.45 desupport on 2026-12-15 (Backlog #22).
 
   **Unblocked 2026-10-09.** Steps below; the numbers were measured that day, so re-measure before running.
 
