@@ -89,16 +89,51 @@ validated against live data. Phases 1–4 can be built and tested offline in the
 >    micros; `includeExpired` returns 8 contracts back to 2025-12. Needs Databento.
 >
 > T028 (single-contract executor validation) is the one task here that is **not** data-blocked — it needs
-> only live quotes, which exist. It is blocked solely on US Futures **Trading** Permissions, still pending
-> as of 2026-08-23. Do that one first when approval lands.
+> only live quotes, which exist. It was blocked solely on US Futures **Trading** Permissions.
 >
-> Also beware two measurement artifacts that both look like "no data": IBKR **pacing** (>60 historical
-> requests / 10 min silently times requests out) and a **competing login** (error 10197 — cuts market data
-> to the API entirely, SPY included). Both produced false "0 bars" readings during this investigation.
+> **UPDATE 2026-10-09: trading permission has landed, so T028 is UNBLOCKED and is now the only runnable
+> task in this phase.** Verified read-only by `whatIfOrder` (a margin query, which never transmits):
+> MESZ6 priced at initMargin +$2,471.96 / maint +$1,843.09 / commission $0.61, and ZTZ6 at +$1,378.78 /
+> +$1,198.95 / $1.51, both `status='PreSubmitted'` with no permission error. A rejection returns an error,
+> not a priced margin delta. Market data is also still live and real-time (`usfuture` connected,
+> `mktDataType=1`, 30 clean daily bars per market). The data blockers on T026–T027 and T029–T030 are
+> unchanged: history retention still needs Databento.
+>
+> Also beware **three** measurement artifacts that all look like a negative result: IBKR **pacing** (>60
+> historical requests / 10 min silently times requests out), a **competing login** (error 10197 — cuts
+> market data to the API entirely, SPY included), and — new on 2026-10-09 — warning **10349** ("Order TIF
+> was set to DAY based on order preset"), which terminates a `whatIfOrder` request early so it returns an
+> empty result indistinguishable from a permissions rejection. Set `order.tif` explicitly to avoid it. The
+> first two produced false "0 bars" readings; the third produced a false "permission denied" reading.
 
 - [ ] T026 Confirm the subscription is active: front-month daily bars return a full history, not the 7-bar signature the A1 gate found
 - [ ] T027 Run `scripts/trend_sleeve.py` in preview against the live account and check all eight markets produce sane targets and rounding errors
 - [ ] T028 Place a single-contract test order in one market, verify fill and reconcile, then flatten it
+
+  **Unblocked 2026-10-09.** Steps below; the numbers were measured that day, so re-measure before running.
+
+  - **Market and contract**: **MES on CME**, front contract **MESZ6** (expiry 2026-12-18, conId
+    815824257, multiplier 5). Chosen because it is the smallest notional of the eight — ~$39.2k at
+    7846.5 — against ZTZ6's ~$204k, and it is the market whose ETF proxy (SPY) is an exact match.
+  - **Size**: exactly 1 contract, BUY. Not a percentage, not risk-sized.
+  - **Vehicle**: a dedicated minimal runner — **not** `scripts/trend_sleeve.py`, which fetches all eight
+    markets and refuses at `MIN_HISTORY` 315 before reaching any execution code, so it cannot place a
+    single contract at all. The runner MUST go through `FuturesExecution.rebalance({"MES": 1})` with
+    `confirm=True` and a MES-only market list, because the Phase 3 guards (per-order cap pre-pass,
+    min-order skip, margin floor, never-raising unwind) are the thing under test. Placing a raw order
+    would defeat the task.
+  - **Preflight**: paper account `DUQ218063` on port 4002; `AvailableFunds` clear of
+    `min_available_funds` (25k default) with the ~$2.5k initial margin added; CME US cash-session hours,
+    so a market order fills against real liquidity.
+  - **Fill check**: the order reaches `Filled` with `filled == 1` and a non-zero `avgFillPrice`.
+  - **Reconcile check**: `ib.positions()` shows exactly +1 of conId 815824257 **and no change to any ETF
+    or FX position**. Reconcile is by contract identity against the whole account, so this doubles as the
+    sleeve-disjointness check that `BasketExecution` cannot make for itself.
+  - **Flatten**: `rebalance({"MES": 0})`, then confirm no futures position remains. The task is not
+    complete while anything is still held.
+  - **Abort condition**: if the order does not reach a terminal status within the executor's wait, or
+    `filled != 1`, or any unrelated position moves — flatten, stop, and do **not** proceed to T029.
+    Record what happened; a guard firing here is the expected outcome, not a failure of the task.
 - [ ] T029 Trim the ETF sleeves ~20% to fund the sleeve, then place the full trend book
 - [ ] T030 Record realised gross exposure and margin usage against the assumptions in the plan
 
@@ -119,7 +154,8 @@ Phase 1 -> Phase 2 (roll)  BLOCKS everything that places orders
    └─> Phase 3 US1 (guards)        MVP — the safety work
         └─> Phase 4 US2 (signal)   needs somewhere safe to send targets
              └─> Phase 5 US3 (schedule)
-                  └─> Phase 6 (live) ── BLOCKED on the market-data subscription
+                  └─> Phase 6 (live) ── T028 unblocked 2026-10-09; the rest BLOCKED on
+                                        continuous-series history (Databento), not on market data
                        └─> Phase 7
 ```
 

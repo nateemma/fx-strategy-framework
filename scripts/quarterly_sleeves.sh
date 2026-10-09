@@ -27,14 +27,18 @@ IB_PORT="${IB_PORT:-4002}"
 export IB_PORT
 BASKET_ALLOCATION="${BASKET_ALLOCATION:-268000}"   # trimmed 2026-08-20 to fund the VIX sleeve
 LADDER_ALLOCATION="${LADDER_ALLOCATION:-300000}"
+# MUST be passed: bond_ladder.py defaults to SHY,IEI,IEF, but the deployed ladder is the iBonds
+# rungs below. Omitting it orphans ~300k of IBTG-IBTL, buys ~200k of SHY+IEI, and makes the ladder
+# fight the basket over IEF (reconcile is by conId account-wide, so sleeves must stay disjoint).
+LADDER_SYMBOLS="${LADDER_SYMBOLS:-IBTG,IBTH,IBTI,IBTJ,IBTK,IBTL}"
 INCOME_ALLOCATION="${INCOME_ALLOCATION:-298000}"
 CASH_ALLOCATION="${CASH_ALLOCATION:-85000}"
 STAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 failed=0
 
-run_sleeve() {           # name, script, allocation
+run_sleeve() {           # name, script, allocation, [extra flags...]
   echo "--- $1: \$$3 ---"
-  if python "scripts/$2" --confirm --allocation "$3" --port "$IB_PORT"; then
+  if python "scripts/$2" --confirm --allocation "$3" --port "$IB_PORT" "${@:4}"; then
     echo "--- $1 ok ---"
   else
     echo "!!! $1 FAILED (exit $?) — other sleeves continue !!!"
@@ -45,7 +49,7 @@ run_sleeve() {           # name, script, allocation
 {
   echo "=== $STAMP  quarterly sleeve rebalance (port $IB_PORT) ==="
   run_sleeve basket basket_rebalance.py "$BASKET_ALLOCATION"
-  run_sleeve ladder bond_ladder.py      "$LADDER_ALLOCATION"
+  run_sleeve ladder bond_ladder.py      "$LADDER_ALLOCATION" --symbols "$LADDER_SYMBOLS"
   run_sleeve income income_sleeve.py    "$INCOME_ALLOCATION"
   run_sleeve cash   cash_sleeve.py      "$CASH_ALLOCATION"   # last: it is the residual
   echo "--- done $STAMP (failed=$failed) ---"
