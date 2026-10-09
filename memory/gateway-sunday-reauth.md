@@ -29,10 +29,19 @@ initiates a full logon from stored credentials. Set to `04:30` on 2026-10-09 (04
 year-round, since PT is always ET−3; clear of `AutoRestartTime=03:00` and all scheduled jobs). Backup
 at `~/ibc/config.ini.bak-20261009`.
 
-**Not yet verified** — it is exercised only on a Sunday. The plausible remaining failure is 2FA:
-`SecondFactorDevice` is blank and `--on2fatimeout=exit` is on IBC's command line. Counter-evidence
-that it may be fine: on 2026-10-08 21:53 IBC auto-handled a "Re-login is required" dialog through to
-"Login has completed" in ~45s with no human.
+**The unattended logon is VERIFIED (2026-10-09).** Tested by SIGTERM (never SIGKILL — that is the
+3h42m session-lock trap) on the Gateway java process while the `autorestart` token was absent, i.e.
+the Sep 13 condition. Result: `NS_AUTH_START ... initialTokenType=PWD` → `IBC: Login has completed`
+in **4 seconds, no 2FA prompt**. Compare the Sep 6 failure, which was `initialTokenType=TST` →
+`Authorization failed`.
+
+**So the real defect is that IBC retries an expired TOKEN auth instead of falling back to a PASSWORD
+auth.** A fresh process does `PWD` and succeeds immediately, which is why Cold Restart is the remedy
+and why a manual login always "fixed" it. The 2FA worry was unfounded: `SecondFactorDevice` is blank
+and no second factor is requested.
+
+Still unverified, but narrowly: IBC's `ColdRestartTime` *trigger* fires only on Sundays, so its clock
+is untested even though the mechanism it performs is now proven.
 
 **Why:** two supervisor fixes (2026-08-27, then spec `008`) both addressed *detecting* or *restarting
 after* this failure without ever addressing its cause, because the cause looked like random

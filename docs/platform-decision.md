@@ -191,10 +191,40 @@ which shows stored-credential logon works in general. What is unproven: whether 
 completes unattended, or whether it stops for 2FA — `SecondFactorDevice` is blank and
 `--on2fatimeout=exit` is on IBC's command line, so a 2FA prompt is the plausible failure mode.
 
-It will be exercised on the next Sunday cold restart, with the `com.fx.gateway-watchdog` agent (spec
-`008`) as the net — the first time this class of failure has had a detector in place while it
-happened. Expect at most one watchdog alert if the cold logon runs longer than ~5 minutes; a quiet
-Sunday morning means it worked.
+### Tested the same day — the unattended logon works
+
+The risky half was tested deliberately on 2026-10-09 at 12:23 by sending **SIGTERM** (never SIGKILL —
+that is the 3h42m session-lock trap) to the Gateway's java process while the `autorestart` token was
+absent, i.e. reproducing the Sep 13 condition exactly.
+
+| | Sep 6 (failed) | 2026-10-09 test (succeeded) |
+|---|---|---|
+| `NS_AUTH_START` `initialTokenType` | **`TST`** (session token) | **`PWD`** (password) |
+| Outcome | `Authorization failed` — tokens expired | `IBC: Login has completed` |
+| Elapsed | stranded | **4 seconds** |
+| 2FA prompt | — | **none** |
+
+**So the 2FA worry was unfounded and the diagnosis is confirmed.** The Sep 13 failure was IBC
+attempting a token (`TST`) authentication that had expired and not falling back to a password login.
+A fresh process does `PWD` authentication from the stored `IbLoginId`/`IbPassword` and completes in
+seconds, unattended. Cold Restart performs exactly that, so `ColdRestartTime` is the right remedy.
+
+Full recovery took ~2.5 minutes end to end, almost all of it waiting for `local.ibc-gateway`'s 120s
+`StartInterval`; the logon itself was 4 seconds. The clean shutdown also confirmed the cold-start path
+that spec `008` relies on: once IBC is genuinely stopped its launchd job completes and the timer
+re-fires, which is the case that was never previously exercised because IBC was always alive.
+
+**What remains untested is narrow**: IBC's `ColdRestartTime` *trigger*, which only fires on Sundays.
+The mechanism it performs is now proven; only its clock is unverified.
+
+### Bonus: the watchdog's first real outage
+
+This was also the first outage since `com.fx.gateway-watchdog` existed, and it behaved correctly on
+live data rather than fixtures — it caught the outage, **stayed silent** (`consecutive_failures: 1`,
+below `ALERT_AFTER=2`, `last_alert_at: null`) because a 2.5-minute restart must not alarm, and
+correctly classified it as `broker not running — leaving cold start to local.ibc-gateway` rather than
+as a wedged Gateway. That "nothing running" vs "running but wedged" distinction is the whole point of
+the agent, and it got it right unprompted.
 
 ## What would change this
 
