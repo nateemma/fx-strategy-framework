@@ -1,12 +1,17 @@
 ---
 name: paper-track-live-state
-description: What is actually holding in the IBKR paper account DUQ218063 — the FX book runs as a cash overlay on top of three ETF sleeves that are ~90% of NAV
+description: What the IBKR paper account DUQ218063 held when the track STOPPED on 2026-10-14 — the FX book ran as a cash overlay on top of ETF sleeves that were ~90% of NAV. Positions left in place, not liquidated
 metadata: 
   node_type: memory
   type: project
   originSessionId: 844844bf-ae57-49de-90f7-44d806550f05
   modified: 2026-08-16T21:28:10.947Z
 ---
+
+**STOPPED 2026-10-14**, after 89 days (2026-07-17 → 2026-10-14). Final NAV ~990k from 994k at
+inception, −0.4%. The automation was shut down but the **positions were deliberately left in place**,
+so the account is a frozen snapshot rather than a flat one — 14 FX legs and 15 ETF positions. Read the
+present tense below as "as at 2026-10-14".
 
 The forward paper track (IBKR paper account **DUQ218063**, IB Gateway on port 4002) is not
 "the FX book plus some sleeves" — it is **~90% ETF sleeves by market value with the FX carry book

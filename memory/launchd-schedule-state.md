@@ -1,12 +1,18 @@
 ---
 name: launchd-schedule-state
-description: Seven launchd agents scheduled and verified; the 2026-08-01 post-move fix HAS now been exercised by launchd (2026-09-01 and 2026-10-01 both fired on time)
+description: STOPPED 2026-10-14 — all seven agents unloaded and removed. Historical record of how the schedule worked and what it taught, not current state
 metadata:
   node_type: memory
   type: project
 ---
 
-Unattended operation is wired. **Seven** agents installed and verified loaded (2026-08-21; watchdog added 2026-10-09):
+**STOPPED 2026-10-14.** All seven agents were unloaded and their plists removed
+(`scripts/install_schedules.sh uninstall`), and `local.ibc-gateway` was unloaded, when the operator
+stopped pursuing the program. Nothing below is running. Kept as the record of how unattended
+operation was wired and what it cost to learn, which is the part worth having.
+
+Unattended operation was wired as follows — seven agents, installed and verified loaded (2026-08-21;
+watchdog added 2026-10-09):
 
 | Agent | Schedule |
 |---|---|

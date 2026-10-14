@@ -1,6 +1,6 @@
 # Baseline — FX Strategy Framework
 
-**Status page. Updated 2026-10-09 (c).** At-a-glance view of what exists, what is running, what is in
+**Status page. Updated 2026-10-14 — THE PAPER TRACK IS STOPPED. See [Stopped](#stopped-2026-10-14).** At-a-glance view of what exists, what is running, what is in
 flight, and what remains. Written when the project migrated from Superpowers to Spec Kit; it
 consolidates the former `planning/`, `docs/`, and `docs/superpowers/{plans,specs}` trees into one
 source of truth; the superseded ones now live under `docs/archive/`.
@@ -77,10 +77,12 @@ Do not relitigate these without new *data*; a better model on the same inputs wa
 | Connect-with-retry | `forex/run/ibconnect.py` | Done. Rides through Gateway auto-restart. |
 | Scheduling | `scripts/install_schedules.sh` | Partially done — see In flight. |
 
-### Live paper track (account DUQ218063, IB Gateway port 4002)
+### Paper track — STOPPED 2026-10-14 (account DUQ218063, IB Gateway port 4002)
 
-Running since **2026-07-17**. NAV **~990k** from 994k at inception (2026-10-09) — i.e. **−0.4%**,
-after a −1.9% stretch through the September outage below.
+Ran **2026-07-17 → 2026-10-14**, 89 days. Final NAV **~990k** from 994k at inception — **−0.4%**,
+including a −1.9% stretch through the September outage. Positions were left in place, not liquidated;
+the account is a frozen record rather than a flat one. The table below is what it *held* when it
+stopped, not what is being traded.
 
 | Sleeve | Runner | Deployed | Holding |
 |---|---|---|---|
@@ -94,6 +96,41 @@ after a −1.9% stretch through the September outage below.
 **The ETF sleeves are ~90% of NAV**, so whole-account numbers measure the sleeves rather than
 `carry_cot_mom`. `scripts/track_report.py` now reports the two separately — but FX statistics are
 gated until 20 observations accumulate, and there is currently one.
+
+---
+
+## Stopped 2026-10-14
+
+**The operator stopped pursuing this. Everything that touched IBKR was shut down on 2026-10-14.**
+
+| | Before | After |
+|---|---|---|
+| Scheduled launchd agents | 7 (`com.fx.*`) | **0** — unloaded and plists removed via `scripts/install_schedules.sh uninstall` |
+| Gateway supervisor | `local.ibc-gateway` running | **unloaded** (plist left on disk) |
+| IB Gateway process | running | **stopped cleanly** — IBC logged `GATEWAY 10.45 has finished`, so no server-side session lock |
+| API port 4002 | serving | **closed** |
+
+**Deliberately not done:** the paper account still holds 14 FX legs and 15 ETF positions. Stopping the
+automation and liquidating the book are different decisions; holding costs nothing on a paper account,
+and unwinding 14 currency legs would pay the spread for no benefit.
+
+**Still outstanding, and it costs real money:** the **$10/month** IBKR futures market-data bundle
+(*US Securities Snapshot and Futures Value Bundle*) is still billing. T028 was the last thing it could
+buy and that is done, so it should be cancelled in Account Management. Nothing in this repo can cancel
+it.
+
+**To restore:** `bash scripts/install_schedules.sh` regenerates and loads all seven agents;
+`launchctl load ~/Library/LaunchAgents/local.ibc-gateway.plist` brings the Gateway back.
+`ColdRestartTime=04:30` remains set in `~/ibc/config.ini` and is correct if that ever happens.
+
+**Why it stopped** — not a technical failure. The engineering worked: three paper-validated executors,
+a 490-test offline suite, and by the end honest monitoring. What never arrived was an edge worth
+funding. The documented position had been that for two months
+([`docs/platform-decision.md`](../../docs/platform-decision.md)): *"nothing found so far clears a bar
+that justifies real money at a realistically fundable level."* FX carry is dead at retail financing
+(needs ~95bp all-in against 289bp), the trend sleeve was never validated because the futures history
+does not exist at this broker, and VIX carry is equity beta rather than diversification. The research
+record is the asset, and it is in this repo.
 
 ---
 
