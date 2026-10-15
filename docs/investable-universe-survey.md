@@ -112,6 +112,15 @@ survived was either cross-sectional and slow, non-price (COT), or diversificatio
 
 ## 5. Candidates not yet investigated
 
+> **SUPERSEDED IN PART, 2026-10-15.** Six of the candidates below — **A3, B2, B3, B4, B5, B6** — were
+> gated by spec `009-standalone-longshort-gates` and **all six are now closed**. None passed. Two were
+> tested and lost (A3 on a flat gross signal, B5 on cost), one died on arithmetic (B4), and three
+> could not be tested with free data at all (B6, B2, B3). Verdicts and evidence:
+> [`standalone-longshort-findings.md`](./standalone-longshort-findings.md). The priority ordering in
+> §6 below is therefore historical — it was written before any of them was tested, and this document's
+> own caveat that its rankings are "a sequencing aid, not evidence" held up.
+
+
 Priority weighs edge plausibility × data availability × **financing efficiency**.
 
 ### Tier A — high priority, financing-efficient, plausibly free data
