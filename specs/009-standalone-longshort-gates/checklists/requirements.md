@@ -56,6 +56,34 @@ fixed Sharpe threshold. This follows the repo's own practice, where the momentum
 losing to equal-weight of its own names and RSP by losing to SPY, rather than by missing a number. An
 absolute bar would have to be invented, and inventing one would be the more arbitrary choice.
 
+## Post-analysis record (2026-10-15)
+
+`/speckit-analyze` ran after tasks generation: **0 critical, 2 high, 2 medium, 4 low**, 90% requirement
+coverage. All eight findings were resolved. Two were resolved by *deciding and recording* rather than by
+changing anything, which is logged here so they are not re-raised:
+
+- **U2 — SC-002 ("no candidate consumes more than one working day") has no verification mechanism.**
+  **Accepted as unverifiable by design.** It is a *budget* the operator holds, not a property of the
+  software, and inventing a timing harness to police an afternoon would cost more than the afternoon.
+  The kill criteria in the register (T001) are the real enforcement: they are what make a day enough.
+- **D1 — the no-Gateway constraint is restated in spec (5×), plan (3×), research, quickstart and tasks.**
+  **Accepted as deliberate.** Normally this would be redundancy worth trimming; here the paper track was
+  shut down days earlier and the operator asked specifically whether this feature needs the Gateway, so
+  repetition at every entry point is the point. It is now also enforced by a test (T014) rather than only
+  asserted.
+
+The six substantive fixes: a new **T014** making FR-012/SC-005 structural (they had *zero* verifying
+tasks, on a NON-NEGOTIABLE principle); **T032** extended to cover B4, which had no verdict path if it
+survived its economics check and is the likeliest survivor; **T007** extended to pin the
+`(recent, distant)` return order of `distant_window()`, which reads backwards and would otherwise
+silently invert every verdict's eras while all other tests passed; **T011** extended to assert a missing
+benchmark fails (FR-002 required it and nothing checked it); **T019/T035** now record the chosen
+`holdout_years` and window boundaries, without which a per-candidate judgement call makes the verdict
+irreproducible; and plan.md's structure tree updated with the four files tasks.md had introduced.
+
+Tasks renumbered T001→T037 to insert T014 in execution order; verified no duplicates, no gaps, and every
+cross-reference resolving.
+
 **One scope note for the planning phase.** SC-002 budgets one working day per candidate, and FR-005
 requires the data gate before any modelling. These two together are what keep the feature bounded, and
 they are in tension with doing A3 first (US1), which also has to build the shared harness. The plan

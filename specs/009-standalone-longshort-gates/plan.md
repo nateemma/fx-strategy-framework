@@ -96,6 +96,8 @@ forex/backtest/
                               #   GateVerdict. Pure; no I/O.
 
 strategies/
+├── longshort_candidates.py   # NEW: the six-row candidate register (plain data), iterated by both
+│                             #   gate scripts so neither hardcodes six paths
 ├── curve_spread.py           # NEW (A3): 2s10s signal + two-leg weights
 ├── macro_spread.py           # NEW (B5, B6): breakeven and credit-spread signals — same shape,
                               #   so one module rather than two near-identical ones
@@ -111,8 +113,13 @@ docs/
 
 tests/
 ├── test_yahoo.py             # NEW: cache behaviour, granularity assertion, injected client
-├── test_gate.py              # NEW: era split, cost/financing application, verdict logic
-└── test_curve_spread.py      # NEW: signal arithmetic and causality
+├── test_gate.py              # NEW: era split (incl. the (recent, distant) return order),
+│                             #   cost/financing application, verdict logic
+├── test_curve_spread.py      # NEW: signal arithmetic and causality
+├── test_macro_spread.py      # NEW: the shared two-leg spread signal (B5/B6)
+├── test_data_feasibility.py  # NEW: the cull's status logic, probes injected
+└── test_no_broker.py         # NEW: FR-012 made structural — no module here imports a broker
+                              #   library or any execution path
 ```
 
 **Structure Decision**: the repo's established split is followed — **pure logic in `forex/` and

@@ -38,7 +38,7 @@ def evaluate(returns: pd.Series, benchmark: pd.Series, *, holdout_years: int,
 
 | Concern | Contract |
 |---|---|
-| Era split | Delegates to `validation.distant_window(index, holdout_years)`. `holdout_years` is **required, not defaulted** — the function's own default of 3 is tuned to the FX sample and is wrong for a 24-year history (research R3). |
+| Era split | Delegates to `validation.distant_window(index, holdout_years)`. `holdout_years` is **required, not defaulted** — the function's own default of 3 is tuned to the FX sample and is wrong for a 24-year history (research R3). **Mind the return order: it returns `(recent, distant)` — recent FIRST**, which reads backwards for a function of that name. An inverted unpack silently swaps the era labels on every verdict, and the verdict-rule tests would not catch it, so the ordering is pinned by a test (T007). |
 | Metrics | Delegates to `portfolio.metrics()`, so these figures mean the same thing as every other number in the repo. |
 | Costs | Applies `cost_bps` per unit turnover and `financing_annual` on gross exposure **before** any metric is computed. There is no code path that computes a metric on gross returns. |
 | Benchmark | Required, not optional. A verdict without a comparator is not a verdict (FR-002). |

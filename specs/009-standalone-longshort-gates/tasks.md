@@ -45,16 +45,25 @@ prediction markets, box spreads).
 
 ### Gate evaluator — tests first ⚠️ confirm they FAIL
 
-- [ ] T007 [P] Write a failing test that a series beating the benchmark in **one** window but losing in the other yields **`reject`**, never `pass` — in `tests/test_gate.py`. This is FR-004's dead-regime-ghost guard and the rule that makes a single good era worthless
+- [ ] T007 [P] Write a failing test that a series beating the benchmark in **one** window but losing in the other yields **`reject`**, never `pass` — in `tests/test_gate.py`. This is FR-004's dead-regime-ghost guard and the rule that makes a single good era worthless. **Also assert the window LABELLING**: `validation.distant_window()` returns `(recent, distant)` — recent **first**, which is counterintuitive for its name — so a test must pin which returned slice is the early era. Without it an inverted unpack mislabels every verdict's eras while every other test here still passes, because they check the rule rather than the labels
 - [ ] T008 [P] Write a failing test that `borrow_excluded=True` can **never** yield `pass`, capping at `inconclusive` — in `tests/test_gate.py` (research R2: a result that assumes free shorting is not a result)
 - [ ] T009 [P] Write a failing test that fewer than two windows yields `inconclusive` — in `tests/test_gate.py` (SC-003)
 - [ ] T010 [P] Write a failing test that `holdout_years` is **required** and has no default — in `tests/test_gate.py` (research R3: `distant_window`'s own default of 3 is tuned to the FX sample and would split a 24-year history 3-versus-21, where the distant era is too short to measure and the recent era averages over the regimes the split exists to separate)
-- [ ] T011 [P] Write a failing test that cost and financing are applied **before** any metric is computed, and that no public function accepts or returns a gross-of-cost series — in `tests/test_gate.py` (SC-004: there must be nowhere to put a gross figure)
+- [ ] T011 [P] Write a failing test that cost and financing are applied **before** any metric is computed, and that no public function accepts or returns a gross-of-cost series — in `tests/test_gate.py` (SC-004: there must be nowhere to put a gross figure). **Also assert that a missing or empty benchmark fails** rather than silently producing an absolute-performance verdict — FR-002 makes the comparator mandatory and nothing else checks it
 - [ ] T012 [P] Write a failing test that `evaluate()` is pure — same inputs, same `GateVerdict`, no clock and no filesystem — in `tests/test_gate.py`
 
 ### Gate evaluator — implementation
 
 - [ ] T013 Implement `evaluate()` plus the `GateVerdict` / `WindowResult` records in `forex/backtest/gate.py`, composing `portfolio.metrics()` and `validation.distant_window(index, holdout_years)` per [contracts/interfaces.md](./contracts/interfaces.md) §B — pure, no I/O, and reusing the existing helpers rather than reimplementing metrics or the split
+
+### Feature-wide guard — the constraint nothing else checks
+
+> Added by the 2026-10-15 `/speckit-analyze` pass, which found FR-012 and SC-005 had **zero**
+> verifying tasks. Principle IV is NON-NEGOTIABLE and the plan asserts compliance ("creates no
+> execution path"), but an assertion nobody checks is a promise, not a guarantee — and the realistic
+> way it erodes is somebody reaching for an existing broker helper to fetch a price mid-implementation.
+
+- [ ] T014 Write a test that **no module added by this feature imports a broker library or any execution path** — assert that `forex/data/yahoo.py`, `forex/backtest/gate.py`, `strategies/longshort_candidates.py`, `strategies/curve_spread.py`, `strategies/macro_spread.py` and both `scripts/gate_*.py` pull in neither `ib_async` nor `forex.run.execution` / `basket` / `futures` / `ibconnect` — in `tests/test_no_broker.py` (FR-012, SC-005). This makes the answer to "does this need the Gateway?" structural rather than remembered
 
 **Checkpoint**: the harness exists and is tested offline. Nothing has been gated yet.
 
@@ -73,15 +82,15 @@ verdict. Useful even if no other candidate is ever examined.
 
 ### Tests for User Story 1 ⚠️ write first, confirm they FAIL
 
-- [ ] T014 [P] [US1] Write failing tests for the 2s10s signal and the two-leg weights it implies — sign, scale, and that a flat curve produces no position — in `tests/test_curve_spread.py`
-- [ ] T015 [P] [US1] Write a failing **causality** test: the signal at date *t* is unchanged when all data after *t* is truncated — in `tests/test_curve_spread.py` (Constitution II, FR-015)
+- [ ] T015 [P] [US1] Write failing tests for the 2s10s signal and the two-leg weights it implies — sign, scale, and that a flat curve produces no position — in `tests/test_curve_spread.py`
+- [ ] T016 [P] [US1] Write a failing **causality** test: the signal at date *t* is unchanged when all data after *t* is truncated — in `tests/test_curve_spread.py` (Constitution II, FR-015)
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement the 2s10s signal and two-leg weight construction in `strategies/curve_spread.py` — plain functions following the `strategies/trend_book.py` precedent, **not** a `Strategy` subclass (the contract returns *currency* weights and does not fit; Constitution I also forbids adding a registry)
-- [ ] T017 [US1] Implement `scripts/gate_candidate.py` per [contracts/interfaces.md](./contracts/interfaces.md) §D — loads cached data, computes net returns, calls `gate.evaluate()`, prints the verdict and per-window table; written so the other candidates reuse it rather than each getting a script
-- [ ] T018 [US1] Fetch and cache the inputs (the 2y and 10y yield series, plus the proxy ETF adjusted closes) and run the A3 gate with `holdout_years` set to roughly the midpoint of available history (~12 for a 2002-start series), against a named benchmark
-- [ ] T019 [US1] Record the A3 verdict, stating explicitly that the ETF-proxy screen carries `borrow_excluded=True` and therefore **caps at `inconclusive`**, and that deployment would require Treasury futures — the A2 gate's conclusion was "viable **only** in futures; every ETF implementation loses to cash", so a positive screen informs the futures question rather than answering it (FR-011)
+- [ ] T017 [US1] Implement the 2s10s signal and two-leg weight construction in `strategies/curve_spread.py` — plain functions following the `strategies/trend_book.py` precedent, **not** a `Strategy` subclass (the contract returns *currency* weights and does not fit; Constitution I also forbids adding a registry)
+- [ ] T018 [US1] Implement `scripts/gate_candidate.py` per [contracts/interfaces.md](./contracts/interfaces.md) §D — loads cached data, computes net returns, calls `gate.evaluate()`, prints the verdict and per-window table; written so the other candidates reuse it rather than each getting a script
+- [ ] T019 [US1] Fetch and cache the inputs (the 2y and 10y yield series, plus the proxy ETF adjusted closes) and run the A3 gate with `holdout_years` set to roughly the midpoint of available history (~12 for a 2002-start series), against a named benchmark. **Record the chosen `holdout_years` and the resulting window boundaries** — it is a per-candidate judgement (research R3 argues against a fixed default), so a verdict is only reproducible if the split that produced it is written down
+- [ ] T020 [US1] Record the A3 verdict, stating explicitly that the ETF-proxy screen carries `borrow_excluded=True` and therefore **caps at `inconclusive`**, and that deployment would require Treasury futures — the A2 gate's conclusion was "viable **only** in futures; every ETF implementation loses to cash", so a positive screen informs the futures question rather than answering it (FR-011)
 
 **Checkpoint**: one real verdict exists, with its limits stated rather than implied.
 
@@ -100,16 +109,16 @@ own — it is pure subtraction.
 
 ### Tests for User Story 2 ⚠️ write first, confirm they FAIL
 
-- [ ] T020 [P] [US2] Write failing tests for the feasibility record logic — `testable` / `dead_on_data` / `dead_on_economics` are terminal, each carries the source checked and the usable span, and probes are injected so the test performs no network I/O — in `tests/test_data_feasibility.py`
+- [ ] T021 [P] [US2] Write failing tests for the feasibility record logic — `testable` / `dead_on_data` / `dead_on_economics` are terminal, each carries the source checked and the usable span, and probes are injected so the test performs no network I/O — in `tests/test_data_feasibility.py`
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Implement `scripts/gate_data_feasibility.py` per [contracts/interfaces.md](./contracts/interfaces.md) §C — iterate the register from T001, one cheap probe per candidate, emit the status table, and **build nothing** (FR-005)
-- [ ] T022 [P] [US2] Run the **B4** check: compare the index futures basis against round-trip commission at retail scale. Expected `dead_on_economics` — and this is the one candidate where the financing question is naturally clean, since its short leg is the future (research R2)
-- [ ] T023 [P] [US2] Run the **B2** probe: is free historical CEF discount/NAV data obtainable at all? Expected `dead_on_data` — this is the binding question and it is answered before any model
-- [ ] T024 [P] [US2] Run the **B3** probe: is bulk earnings-date and surprise history obtainable free? Expected `dead_on_data`
-- [ ] T025 [P] [US2] Run the **B5 and B6** probes: confirm the FRED spread series and the proxy ETF spans, recording the **granularity the source reported** rather than the one requested (research R1)
-- [ ] T026 [US2] Record all five feasibility results. **A candidate returning `testable` when it was expected dead is a finding to write down, not a problem** — the expectation in SC-007 is a prediction, not a target
+- [ ] T022 [US2] Implement `scripts/gate_data_feasibility.py` per [contracts/interfaces.md](./contracts/interfaces.md) §C — iterate the register from T001, one cheap probe per candidate, emit the status table, and **build nothing** (FR-005)
+- [ ] T023 [P] [US2] Run the **B4** check: compare the index futures basis against round-trip commission at retail scale. Expected `dead_on_economics` — and this is the one candidate where the financing question is naturally clean, since its short leg is the future (research R2)
+- [ ] T024 [P] [US2] Run the **B2** probe: is free historical CEF discount/NAV data obtainable at all? Expected `dead_on_data` — this is the binding question and it is answered before any model
+- [ ] T025 [P] [US2] Run the **B3** probe: is bulk earnings-date and surprise history obtainable free? Expected `dead_on_data`
+- [ ] T026 [P] [US2] Run the **B5 and B6** probes: confirm the FRED spread series and the proxy ETF spans, recording the **granularity the source reported** rather than the one requested (research R1)
+- [ ] T027 [US2] Record all five feasibility results. **A candidate returning `testable` when it was expected dead is a finding to write down, not a problem** — the expectation in SC-007 is a prediction, not a target
 
 **Checkpoint**: the remaining work is known and bounded. Expect three of the five to be closed here.
 
@@ -128,14 +137,14 @@ own — it is pure subtraction.
 
 ### Tests for User Story 3 ⚠️ write first, confirm they FAIL
 
-- [ ] T027 [P] [US3] Write failing tests for the shared two-leg macro-spread signal — applied to both the breakeven and the credit series, including the flat-spread no-position case — in `tests/test_macro_spread.py`
+- [ ] T028 [P] [US3] Write failing tests for the shared two-leg macro-spread signal — applied to both the breakeven and the credit series, including the flat-spread no-position case — in `tests/test_macro_spread.py`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Implement `strategies/macro_spread.py` as **one** module serving both B5 and B6, since both are the same shape — a two-leg spread driven by a FRED-published spread series — rather than two near-identical modules
-- [ ] T029 [US3] Run the **B5** (TIPS breakeven) gate and record its verdict, with `borrow_excluded=True` stated and the verdict capped at `inconclusive` accordingly
-- [ ] T030 [US3] Run the **B6** (credit spread) gate and record its verdict, noting explicitly that its *original* gate asked "does it add anything the basket does not already have?" — the portfolio-contribution question this feature exists to replace — so this is a genuine first standalone test rather than a repeat
-- [ ] T031 [US3] **Only if B2 or B3 survived T023/T024**: gate them with the equal-weight buy-and-hold null of the same names run **first**, not last. That null is what killed the momentum basket, and any universe must be built point-in-time — a prior assessment inflated a real +3.2pp/yr effect roughly **4×** through the author's own universe selection
+- [ ] T029 [US3] Implement `strategies/macro_spread.py` as **one** module serving both B5 and B6, since both are the same shape — a two-leg spread driven by a FRED-published spread series — rather than two near-identical modules
+- [ ] T030 [US3] Run the **B5** (TIPS breakeven) gate and record its verdict, with `borrow_excluded=True` stated and the verdict capped at `inconclusive` accordingly
+- [ ] T031 [US3] Run the **B6** (credit spread) gate and record its verdict, noting explicitly that its *original* gate asked "does it add anything the basket does not already have?" — the portfolio-contribution question this feature exists to replace — so this is a genuine first standalone test rather than a repeat
+- [ ] T032 [US3] **Only if B2, B3 or B4 survived T023/T024/T025**: gate the survivor properly rather than letting it fall through. **B4 is the likeliest surprise survivor** — research R2 found it the cleanest of the six on financing, since its short leg is the future — and SC-001 requires all six to end with a verdict, so a B4 that is *not* killed on economics needs a real gate here. For B2/B3 specifically, run the equal-weight buy-and-hold null of the same names **first**, not last. That null is what killed the momentum basket, and any universe must be built point-in-time — a prior assessment inflated a real +3.2pp/yr effect roughly **4×** through the author's own universe selection
 
 **Checkpoint**: all six candidates resolved.
 
@@ -143,11 +152,11 @@ own — it is pure subtraction.
 
 ## Phase 6: Polish & Validation
 
-- [ ] T032 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm green and no new violations
-- [ ] T033 Run [quickstart.md](./quickstart.md) steps 1–4, including the **median-bar-gap check** — a median gap of 1 day proves the granularity guard works; a median near 30 means monthly bars got through and no verdict can be trusted until the loader is fixed
-- [ ] T034 Author `docs/standalone-longshort-findings.md` as **one** document with a section per candidate, each carrying the hypothesis, the verdict, the per-window numbers beside the benchmark, the cost and financing basis including whether borrow was excluded, and the reasoning — each rejection reproducible from its section alone (FR-009)
-- [ ] T035 Update the backlog rows for all six candidates in `specs/000-baseline/baseline.md` to their resolved state, and update `docs/investable-universe-survey.md` §5 so its Tier A/B table no longer shows these as un-gated
-- [ ] T036 Commit and push spec, plan, tasks, code and findings (Constitution V — planning state that exists on one machine does not exist)
+- [ ] T033 Run `.venv/bin/python -m pytest -q` and `ruff check .`; confirm green and no new violations
+- [ ] T034 Run [quickstart.md](./quickstart.md) steps 1–4, including the **median-bar-gap check** — a median gap of 1 day proves the granularity guard works; a median near 30 means monthly bars got through and no verdict can be trusted until the loader is fixed
+- [ ] T035 Author `docs/standalone-longshort-findings.md` as **one** document with a section per candidate, each carrying the hypothesis, the verdict, the per-window numbers beside the benchmark, the cost and financing basis including whether borrow was excluded, **the `holdout_years` and window boundaries used**, and the reasoning — each rejection reproducible from its section alone (FR-009)
+- [ ] T036 Update the backlog rows for all six candidates in `specs/000-baseline/baseline.md` to their resolved state, and update `docs/investable-universe-survey.md` §5 so its Tier A/B table no longer shows these as un-gated
+- [ ] T037 Commit and push spec, plan, tasks, code and findings (Constitution V — planning state that exists on one machine does not exist)
 
 ---
 
@@ -172,8 +181,8 @@ Phase 1 (register)
 ### Parallel Opportunities
 
 - T002–T005 (loader tests) and T007–T012 (evaluator tests) are all parallel within their files.
-- T022–T025 (the four probes) are independent of each other and parallel.
-- T014–T015 (A3 tests) are parallel.
+- T023–T026 (the four probes) are independent of each other and parallel.
+- T015–T016 (A3 tests) are parallel.
 - Once Phase 2 is done, US1 and US2 can proceed concurrently.
 
 ---
@@ -189,7 +198,7 @@ prior, plus a harness the other five reuse.
 
 > **The success criterion that most constrains this work is SC-007**: at least three of six rejected on
 > data or economics within hours each, and *a feature where everything "needs more investigation" has
-> failed*. The tasks are deliberately arranged so the cheap kills are reachable early — T022–T025 are
+> failed*. The tasks are deliberately arranged so the cheap kills are reachable early — T023–T026 are
 > four probes that can close three candidates without a line of modelling code.
 
 > **And the one that most constrains the implementation is SC-004**: no figure is reported gross of
