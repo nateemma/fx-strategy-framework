@@ -1,6 +1,6 @@
 # Baseline — FX Strategy Framework
 
-**Status page. Updated 2026-10-15 — THE PAPER TRACK IS STOPPED. See [Stopped](#stopped-2026-10-14).** At-a-glance view of what exists, what is running, what is in
+**Status page. Updated 2026-10-15 (b) — THE PAPER TRACK IS STOPPED. See [Stopped](#stopped-2026-10-14).** At-a-glance view of what exists, what is running, what is in
 flight, and what remains. Written when the project migrated from Superpowers to Spec Kit; it
 consolidates the former `planning/`, `docs/`, and `docs/superpowers/{plans,specs}` trees into one
 source of truth; the superseded ones now live under `docs/archive/`.
@@ -38,7 +38,8 @@ Full design reference: `ARCHITECTURE.md`. Results and usage: `README.md`.
 | Lookahead check | `forex/diagnostics/` | Done. `forex causal-check`. |
 | Hyperopt | `forex/run/hyperopt.py` | Done, incl. parallel + progress. |
 | Config tiers | `forex/core/config.py` (RunConfig/EnvConfig) | Done. Secrets never in versioned config. |
-| Data layer | `forex/data/` (FRED, IBKR spot, CFTC COT) | Done. |
+| Data layer | `forex/data/` (FRED, IBKR spot, CFTC COT, free equity/ETF prices) | Done. `yahoo.py` added 2026-10-15 — cached adjusted daily closes, **no broker needed**. It asserts the granularity the source reports, because the obvious call silently returns monthly bars while claiming daily. |
+| Research gate harness | `forex/backtest/gate.py`, `forex/run/feasibility.py` | Done (2026-10-15). Spec `009`. One verdict record per candidate, enforcing the two-era split, net-of-cost figures, and the rule that an uncostable short leg caps a verdict at `inconclusive`. |
 | CLI | `forex/cli.py` | Done. Six modes. |
 
 ### Strategy library (`strategies/`)
@@ -278,6 +279,7 @@ Found while consolidating. Code is treated as the source of truth.
 | `docs/cross-asset-trend-findings.md` | **Live.** A2 gate: cross-asset trend passes, but only in futures. |
 | `docs/platform-decision.md` | **Live.** Why IBKR stays, why LEAN is research-only, and why capital is the real constraint. |
 | `docs/lean-migration-plan.md` | **Closed.** Staged LEAN plan; declined at stage 0. |
+| `docs/standalone-longshort-findings.md` | **Closed.** Spec `009`: six simple long/short candidates gated standalone, none passed. Two rejected on evidence, one on arithmetic, three dead because the free-data tier does not reach — and the two long-only ones died on plumbing rather than merit. Read it before proposing any of them again. |
 | `docs/lean-data-gate.md` | **Live.** Why LEAN was declined, and the **$10/month** IBKR subscription (US Securities Snapshot and Futures Value Bundle) that supplies futures quotes. Its own summary line still says "~$5/month", corrected in the body at the 2026-08-21 note — see discrepancy 9. |
 | `docs/box-spread-findings.md` | **Closed.** Box financing rejected: the book has nothing worth levering in cash instruments. |
 | `docs/prediction-markets-findings.md` | **Closed.** ForecastEx rejected on liquidity ($49/day median). Contains a reusable warning about filters that delete losers. |

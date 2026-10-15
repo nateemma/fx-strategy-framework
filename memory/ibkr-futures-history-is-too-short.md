@@ -9,7 +9,7 @@ metadata:
 Probed the live Gateway read-only on 2026-08-21, after three documents had recommended buying a
 market-data subscription to unblock the futures trend sleeve.
 
-**The subscription is bought and works — that is why data returns.** All eight markets deliver live L1
+**CANCELLED 2026-10-15** after spec `005` T028 passed — that was the last thing it could buy. Restarting futures work needs it re-purchased, and re-purchasing does not lengthen the history below. At the time of this probe: **the subscription is bought and works — that is why data returns.** All eight markets deliver live L1
 (`marketDataType=1`, no entitlement error, `usfuture` connected); SPY throws 10089 because the base
 bundle gives snapshot equities, not streaming. Do not repeat the error made here first time round:
 data flowing is evidence the purchase worked, not evidence it was unnecessary. US Futures **Trading**

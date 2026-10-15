@@ -10,4 +10,5 @@ is the index. Findings that generalise across trading projects belong in
 - [Launchd schedule state](memory/launchd-schedule-state.md) — **all seven agents unloaded 2026-10-14**; historical record of how the schedule worked and what it taught.
 - [Claude memory stranded by the repo move](memory/claude-memory-stranded-by-repo-move.md) — 25 pre-migration memories archived under `docs/archive/legacy-memory/`, deliberately not rehydrated.
 - [Gateway Sunday re-authentication](memory/gateway-sunday-reauth.md) — both outages began on a Sunday; IBC retries an expired TOKEN auth instead of falling back to PASSWORD auth, which works unattended in 4s.
-- [IBKR futures history is too short](memory/ibkr-futures-history-is-too-short.md) — data works with no subscription; ~2 years of micros is the real blocker, and a competing login zeroes all market data.
+- [Free data ceiling](memory/free-data-ceiling.md) — what FRED + the chart API can and cannot supply, the three measured traps, and why data is the binding purchase.
+- [IBKR futures history is too short](memory/ibkr-futures-history-is-too-short.md) — **subscription cancelled 2026-10-15**; ~2 years of micros was always the real blocker, and a competing login zeroes all market data.
